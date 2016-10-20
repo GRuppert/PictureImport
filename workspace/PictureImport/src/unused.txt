@@ -1,0 +1,65 @@
+	public void readMetaDataGen(File file) {
+        try {
+            Metadata metadata = ImageMetadataReader.readMetadata(file);
+            Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+            for (int i=0; i<directory.getTagCount(); i++) System.out.println(directory.getTagName(i) + " " + i);
+            Collection<Tag> tags = directory.getTags();
+            for (Tag tag : directory.getTags()) {
+            	 if (tag.getTagName().equals("Model")) System.out.println(tag.getDescription());
+            	 if (tag.getTagName().equals("Date/Time")) System.out.println(tag.getDescription());
+            }
+            
+
+//          print(metadata);
+        } catch (ImageProcessingException e) {
+        	System.out.print(e.toString());
+        } catch (IOException e) {
+        	System.out.print(e.toString());
+        }
+		
+	}
+	public void readMetaData(File file) {
+        try {
+            // We are only interested in handling
+            Iterable<JpegSegmentMetadataReader> readers = Arrays.asList(new ExifReader(), new IptcReader());
+
+            Metadata metadata = JpegMetadataReader.readMetadata(file, readers);
+
+            print(metadata);
+        } catch (JpegProcessingException e) {
+        	System.out.print(e.toString());
+            // handle exception
+        } catch (IOException e) {
+        	System.out.print(e.toString());
+            // handle exception
+        }
+	}
+
+        private void print(Metadata metadata)
+        {
+            System.out.println("-------------------------------------");
+
+            // Iterate over the data and print to System.out
+
+            //
+            // A Metadata object contains multiple Directory objects
+            //
+            for (Directory directory : metadata.getDirectories()) {
+
+                //
+                // Each Directory stores values in Tag objects
+                //
+                for (Tag tag : directory.getTags()) {
+                    System.out.println(tag);
+                }
+
+                //
+                // Each Directory may also contain error messages
+                //
+                if (directory.hasErrors()) {
+                    for (String error : directory.getErrors()) {
+                        System.err.println("ERROR: " + error);
+                    }
+                }
+            }
+        }		

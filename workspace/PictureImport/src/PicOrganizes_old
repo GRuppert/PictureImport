@@ -1,0 +1,181 @@
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.imaging.ImageProcessingException;
+import com.drew.imaging.jpeg.JpegMetadataReader;
+import com.drew.imaging.jpeg.JpegProcessingException;
+import com.drew.imaging.jpeg.JpegSegmentMetadataReader;
+import com.drew.metadata.Directory;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
+import com.drew.metadata.exif.ExifIFD0Descriptor;
+import com.drew.metadata.exif.ExifIFD0Directory;
+import com.drew.metadata.exif.ExifReader;
+import com.drew.metadata.exif.ExifSubIFDDescriptor;
+import com.drew.metadata.exif.ExifSubIFDDirectory;
+import com.drew.metadata.iptc.IptcReader;
+
+import java.io.File;
+import java.io.FilenameFilter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+
+public final class PicOrganizes {
+	Path tempDirectory = Paths.get("E:\\tempPicOrg");
+	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+	
+	private ArrayList<String> chooseDirectories() {
+		//Presets for different Makes
+		ArrayList<String> Sony = new ArrayList<String>();
+		Sony.add("\\DCIM\\108MSDCF");
+		Sony.add("\\PRIVATE\\AVCHD\\BDMV\\STREAM\\");
+		Sony.add("\\PRIVATE\\M4ROOT\\CLIP\\");
+		ArrayList<String> Samsung = new ArrayList<String>();
+		Samsung.add("\\DCIM\\Camera");
+		Samsung.add("\\WhatsApp\\Media\\WhatsApp Images");
+		
+		ArrayList<String> list = new ArrayList<String>();
+		list.add("D:");
+		return Sony;
+	}
+
+	
+	private void moveFiles(ArrayList<String> directories) {
+		Iterator<String> iter = directories.iterator();
+		while(iter.hasNext()) {
+			File dir1 = new File("H:"+iter.next());
+			if(dir1.isDirectory()) {
+			    File[] content = dir1.listFiles(new FilenameFilter() {
+			        public boolean accept(File dir, String name) {
+			        	name = name.toLowerCase();
+			            return name.endsWith(".mts") || name.endsWith(".mp4") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg");
+			        }});
+			    for(int i = 0; i < content.length; i++) {
+			    	System.out.println(content[i].toPath().toString() + " -> "+ readMetaDataMove(content[i], tempDirectory).toString());
+
+			    	/*					try {
+						Files.move(content[i].toPath(), readMetaDataMove(content[i], tempDirectory));
+			        } catch (IOException e) {
+			        	System.out.print(e.toString());
+			        }	*/ 	         
+			    }
+			}				
+		}
+	
+	}
+
+
+	
+	public PicOrganizes() {
+		ArrayList<String> directories = chooseDirectories();
+		moveFiles(directories);
+		/*
+    	File file = new File("E:\\_DSC1755.JPG"); 	
+    	File file2 = new File("E:\\20160522_140334.JPG");
+    	File file3 = new File("E:\\DSC04946.ARW");
+    	File file4 = new File("E:\\C0090.MP4");   //xml modelname 	
+   	
+    	readMetaDataGen(file3);*/
+    	
+	}
+	public Path readMetaDataMove(File file, Path path) {
+        String modelF = "NA";
+        String dateF = sdf.format(file.lastModified());
+        try {
+        	// obtain the Exif SubIFD directory
+            Metadata metadata = ImageMetadataReader.readMetadata(file);
+            Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+            for (Tag tag : directory.getTags()) {
+            	if (tag.getTagName().equals("Model")) modelF = tag.getDescription();
+            	if (tag.getTagName().equals("Date/Time")) dateF = tag.getDescription();
+        	}
+            dateF = dateF.replace(":", "");
+            dateF = dateF.replace(" ", "_");
+         } catch (ImageProcessingException e) {
+        	System.out.print(e.toString());
+        } catch (IOException e) {
+        	System.out.print(e.toString());
+        }
+        return Paths.get(path.toString() + "\\" + dateF + "_" + modelF + "-" + file.getName());
+		
+	}
+	public void readMetaDataGen(File file) {
+        try {
+            Metadata metadata = ImageMetadataReader.readMetadata(file);
+            Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+            for (int i=0; i<directory.getTagCount(); i++) System.out.println(directory.getTagName(i) + " " + i);
+            Collection<Tag> tags = directory.getTags();
+            for (Tag tag : directory.getTags()) {
+            	 if (tag.getTagName().equals("Model")) System.out.println(tag.getDescription());
+            	 if (tag.getTagName().equals("Date/Time")) System.out.println(tag.getDescription());
+            }
+            
+
+//          print(metadata);
+        } catch (ImageProcessingException e) {
+        	System.out.print(e.toString());
+        } catch (IOException e) {
+        	System.out.print(e.toString());
+        }
+		
+	}
+ 
+	public void readMetaData(File file) {
+        try {
+            // We are only interested in handling
+            Iterable<JpegSegmentMetadataReader> readers = Arrays.asList(new ExifReader(), new IptcReader());
+
+            Metadata metadata = JpegMetadataReader.readMetadata(file, readers);
+
+            print(metadata);
+        } catch (JpegProcessingException e) {
+        	System.out.print(e.toString());
+            // handle exception
+        } catch (IOException e) {
+        	System.out.print(e.toString());
+            // handle exception
+        }
+	}
+
+    private void print(Metadata metadata)
+    {
+        System.out.println("-------------------------------------");
+
+        // Iterate over the data and print to System.out
+
+        //
+        // A Metadata object contains multiple Directory objects
+        //
+        for (Directory directory : metadata.getDirectories()) {
+
+            //
+            // Each Directory stores values in Tag objects
+            //
+            for (Tag tag : directory.getTags()) {
+                System.out.println(tag);
+            }
+
+            //
+            // Each Directory may also contain error messages
+            //
+            if (directory.hasErrors()) {
+                for (String error : directory.getErrors()) {
+                    System.err.println("ERROR: " + error);
+                }
+            }
+        }
+    }		
+		
+
+	public static void main(String[] args) {
+		PicOrganizes O = new PicOrganizes();
+	}
+
+}
