@@ -172,13 +172,18 @@ public final class PicOrganizes {
                         File[] content = dir1.listFiles(new FilenameFilter() {
                             public boolean accept(File dir, String name) {
                                     name = name.toLowerCase();
-                                return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mov") || name.endsWith(".mpg") || name.endsWith(".3gp") || name.endsWith(".nef") || name.endsWith(".png");
+                                return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mov") || name.endsWith(".mpg") || name.endsWith(".3gp") || name.endsWith(".nef") || name.endsWith(".png") || name.endsWith(".dng") || name.endsWith(".gpx") || name.endsWith(".nar");
                             }});
                         if (content.length > 0) {
                             JProgressBar progressBar = new JProgressBar(0, content.length);
                             JDialog progressDialog = progressDiag(progressBar);                           
 
                             for(int i = 0; i < content.length; i++) {
+                                if (content[i].getName().toLowerCase().endsWith(".gpx") || content[i].getName().toLowerCase().endsWith(".nar")) {
+                                    files.add(new Path[] {content[i].toPath(), Paths.get(target + "\\" + content[i].getName())});
+                                    progressBar.setValue(i);
+                                    continue;
+                                }
                                 if (content[i].getName().toLowerCase().endsWith(".mp4")) {
                                     String thmb = content[i].toString().replaceFirst("CLIP", "THMBNL").replaceFirst(".MP4", "T01.JPG");
                                     File thmbF = new File(thmb);
@@ -257,7 +262,7 @@ public final class PicOrganizes {
                     File[] content = dir1.listFiles(new FilenameFilter() {
                         public boolean accept(File dir, String name) {
                                 name = name.toLowerCase();
-                            return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4");
+                            return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
                         }});
                     if (content.length > 0) {
                         Path target = null;
@@ -425,7 +430,7 @@ public final class PicOrganizes {
                         break;
                     case 1: 
                         JFileChooser chooser = new JFileChooser();
-                        chooser.setCurrentDirectory(new java.io.File("G:\\Pictures\\Fényképek\\Közös"));
+                        chooser.setCurrentDirectory(picDir);
                         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                         chooser.setAcceptAllFileFilterUsed(false);
                         int returnVal = chooser.showOpenDialog(null);
@@ -438,7 +443,7 @@ public final class PicOrganizes {
                         break;
                     case 2:
                         chooser = new JFileChooser();
-                        chooser.setCurrentDirectory(new java.io.File("E:\\tempPicOrg"));
+                        chooser.setCurrentDirectory(tempDirectory.toFile());
                         chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
                         chooser.setAcceptAllFileFilterUsed(false);
                         returnVal = chooser.showOpenDialog(null);
@@ -450,7 +455,7 @@ public final class PicOrganizes {
                         break;
                     case 3:
                         
-                        File[] dirs = new File("G:\\Pictures\\Fényképek\\Közös\\!Átválogatott").listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
+                        File[] dirs = tempDirectory.toFile().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
                         for(int j = 0; j < dirs.length; j++) {
                                 File[] content = dirs[j].listFiles();
   /*                              File[] content = dirs[j].listFiles(new FilenameFilter() {
