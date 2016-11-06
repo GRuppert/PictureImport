@@ -52,9 +52,11 @@ import javax.swing.ScrollPaneConstants;
 import javax.swing.filechooser.FileSystemView;
 
 public final class PicOrganizes {        
+	//Path tempDirectory = Paths.get("N:\\Fényképek\\Közös\\!Átválogatott");
 	Path tempDirectory = Paths.get("G:\\Pictures\\Fényképek\\Közös\\!Átválogatott");
         //Path tempDirectory = Paths.get("E:\\tempPicOrg");
         
+        //File picDir = new File("N:\\Fényképek\\Közös");
         File picDir = new File("G:\\Pictures\\Fényképek\\Közös");
 
 	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
@@ -172,14 +174,14 @@ public final class PicOrganizes {
                         File[] content = dir1.listFiles(new FilenameFilter() {
                             public boolean accept(File dir, String name) {
                                     name = name.toLowerCase();
-                                return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mov") || name.endsWith(".mpg") || name.endsWith(".3gp") || name.endsWith(".nef") || name.endsWith(".png") || name.endsWith(".dng") || name.endsWith(".gpx") || name.endsWith(".nar");
+                                return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mov") || name.endsWith(".mpg") || name.endsWith(".3gp") || name.endsWith(".nef") || name.endsWith(".png") || name.endsWith(".dng") || name.endsWith(".tif") || name.endsWith(".gpx") || name.endsWith(".nar") || name.endsWith(".pdf");
                             }});
                         if (content.length > 0) {
                             JProgressBar progressBar = new JProgressBar(0, content.length);
                             JDialog progressDialog = progressDiag(progressBar);                           
 
                             for(int i = 0; i < content.length; i++) {
-                                if (content[i].getName().toLowerCase().endsWith(".gpx") || content[i].getName().toLowerCase().endsWith(".nar")) {
+                                if (content[i].getName().toLowerCase().endsWith(".gpx") || content[i].getName().toLowerCase().endsWith(".nar") || content[i].getName().toLowerCase().endsWith(".pdf")) {
                                     files.add(new Path[] {content[i].toPath(), Paths.get(target + "\\" + content[i].getName())});
                                     progressBar.setValue(i);
                                     continue;
@@ -290,7 +292,7 @@ public final class PicOrganizes {
                                         target = dirs[j].toPath();
                                         files.add(new Path[] {source, Paths.get(target + "\\" + content[i].getName())});
                                         j = dirs.length;
-                                    }
+                                   }
                                 }
                             }    
                             oldName = fileName;
@@ -300,13 +302,19 @@ public final class PicOrganizes {
                             JProgressBar progressBar = new JProgressBar(0, files.size());
                             JDialog progressDialog = progressDiag(progressBar);
                             for (int i = 0; i < files.size(); i++) {
-                                try {                                    
-                                    if (mode == COPY) {
-                                        Files.copy(files.get(i)[0], files.get(i)[1]);                               
-                                    } else if (mode == MOVE) {
-                                        Files.move(files.get(i)[0], files.get(i)[1]);                               
+                                try {  
+                                    if (Files.exists(files.get(i)[1])) {
+                                        if (mode == MOVE) {
+                                            Files.delete(files.get(i)[0]);                               
+                                        }                                        
+                                    } else {
+                                        if (mode == COPY) {
+                                            Files.copy(files.get(i)[0], files.get(i)[1]);                               
+                                        } else if (mode == MOVE) {
+                                            Files.move(files.get(i)[0], files.get(i)[1]);                               
+                                        }
                                     }
-                                } catch (IOException e) {
+                               } catch (IOException e) {
                                     errorOut(e.getMessage());
                                 }                                 
                                 progressBar.setValue(i); 
@@ -359,7 +367,7 @@ public final class PicOrganizes {
      } catch (ImageProcessingException e) {
 //              errorOut(e.toString());         
         } catch (IOException e) {
-              errorOut(e.toString());
+              errorOut(file.getName() +e.toString());
         }
         dateF = dateF.replace(":", "");
         dateF = dateF.replace(" ", "_");
@@ -368,60 +376,13 @@ public final class PicOrganizes {
 		
 	}
 
-	public void readMetaData(File file) {
-        try {
-            // We are only interested in handling
-            Iterable<JpegSegmentMetadataReader> readers = Arrays.asList(new ExifReader(), new IptcReader());
-
-            Metadata metadata = JpegMetadataReader.readMetadata(file, readers);
-
-            print(metadata);
-        } catch (JpegProcessingException e) {
-        	System.out.print(e.toString());
-            // handle exception
-        } catch (IOException e) {
-        	System.out.print(e.toString());
-            // handle exception
-        }
-	}
-
-    private void print(Metadata metadata)
-    {
-        System.out.println("-------------------------------------");
-
-        // Iterate over the data and print to System.out
-
-        //
-        // A Metadata object contains multiple Directory objects
-        //
-        for (Directory directory : metadata.getDirectories()) {
-
-            //
-            // Each Directory stores values in Tag objects
-            //
-            for (Tag tag : directory.getTags()) {
-                System.out.println(tag);
-            }
-
-            //
-            // Each Directory may also contain error messages
-            //
-            if (directory.hasErrors()) {
-                for (String error : directory.getErrors()) {
-                    System.err.println("ERROR: " + error);
-                }
-            }
-        }
-    }		
-        
-        
 	public PicOrganizes() {
             Boolean run = true;
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             maxWidth = (int) (screenSize.getWidth() - 150);
             maxHeight = (int) (screenSize.getHeight() - 150);
             do {
-                Object[] options = {"Import", "Átnevezés", "Átpakolás", "Kilép"};
+                Object[] options = {"Import", "Átnevezés", "Átpakolás", "db szám", "Dátumok", "Kilép"};
                 int n = JOptionPane.showOptionDialog(null, "Mi legyen?", "Main", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[1]);
                 switch (n) {
                     case 0: 
@@ -454,7 +415,6 @@ public final class PicOrganizes {
                         }                    
                         break;
                     case 3:
-                        
                         File[] dirs = tempDirectory.toFile().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
                         for(int j = 0; j < dirs.length; j++) {
                                 File[] content = dirs[j].listFiles();
@@ -466,8 +426,9 @@ public final class PicOrganizes {
 */
                                 System.out.println(dirs[j].getName() + " : " + content.length);
                         }
-
-/*                        GregorianCalendar cal = new GregorianCalendar();
+                       break;
+                    case 4:
+                        GregorianCalendar cal = new GregorianCalendar();
                         File[] dirc = picDir.listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
                         Date startDate = cal.getTime();
                         Date endDate = cal.getTime();
@@ -488,8 +449,8 @@ public final class PicOrganizes {
                             oldDir = actDir;
                             endDate = cal.getTime();
                         }
-*/
- 
+                        break;
+                    case 5:
                         run = false;
                         break;
                 }
