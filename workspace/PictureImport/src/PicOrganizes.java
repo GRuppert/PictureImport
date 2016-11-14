@@ -14,6 +14,8 @@ import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.exif.ExifReader;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.drew.metadata.iptc.IptcReader;
+import com.univocity.parsers.csv.CsvParser;
+import com.univocity.parsers.csv.CsvParserSettings;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
@@ -28,15 +30,23 @@ import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -59,7 +69,7 @@ public final class PicOrganizes {
         //File picDir = new File("N:\\Fényképek\\Közös");
         File picDir = new File("G:\\Pictures\\Fényképek\\Közös");
 
-	SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+	static SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
         static int MOVE = 1;
         static int COPY = 0;
         int maxWidth, maxHeight;
@@ -174,7 +184,7 @@ public final class PicOrganizes {
                         File[] content = dir1.listFiles(new FilenameFilter() {
                             public boolean accept(File dir, String name) {
                                     name = name.toLowerCase();
-                                return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mov") || name.endsWith(".mpg") || name.endsWith(".3gp") || name.endsWith(".nef") || name.endsWith(".png") || name.endsWith(".dng") || name.endsWith(".tif") || name.endsWith(".gpx") || name.endsWith(".nar") || name.endsWith(".pdf");
+                                return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".avi") || name.endsWith(".mov") || name.endsWith(".mpg") || name.endsWith(".3gp") || name.endsWith(".nef") || name.endsWith(".png") || name.endsWith(".dng") || name.endsWith(".tif") || name.endsWith(".gpx") || name.endsWith(".nar") || name.endsWith(".pdf") || name.endsWith(".gif");
                             }});
                         if (content.length > 0) {
                             JProgressBar progressBar = new JProgressBar(0, content.length);
@@ -327,6 +337,100 @@ public final class PicOrganizes {
             
         }
 
+	private void removeFiles() {
+            File[] directories = tempDirectory.toFile().listFiles((File dir, String name) -> dir.isDirectory());
+            for (File dir1 : directories) {
+                if(dir1.isDirectory()) {
+                    File[] content = dir1.listFiles(new FilenameFilter() {
+                        public boolean accept(File dir, String name) {
+                                name = name.toLowerCase();
+                            return name.endsWith("__highres.jpg");
+                        }});
+                    if (content.length > 0) {
+                        for(int i = 0; i < content.length; i++) {
+                            String absolutePath = content[i].getAbsolutePath();
+                            try {
+                                Files.deleteIfExists(Paths.get(absolutePath.substring(0, absolutePath.length()-13) + ".jpg"));
+                            } catch (IOException e) {
+                                errorOut(e.getMessage());
+                            }
+                        }
+                    }
+                }				
+            }
+            
+        }
+
+        private static ArrayList<Object[]> readDirectoryContent(Path path) {
+            final ArrayList<Object[]> files = new ArrayList();
+            try
+            {
+                Files.walkFileTree (path, new SimpleFileVisitor<Path>() 
+                {
+                      @Override public FileVisitResult 
+                    visitFile(Path file, BasicFileAttributes attrs) {
+                            if (!attrs.isDirectory() && attrs.isRegularFile()) {
+                                files.add(new Object[]{file.toString(), sdf.format(attrs.lastModifiedTime().toMillis()), attrs.size()});                               
+                            }
+                            return FileVisitResult.CONTINUE;                            
+                        }
+
+                      @Override public FileVisitResult 
+                    visitFileFailed(Path file, IOException exc) {
+                            System.out.println("skipped: " + file + " (" + exc + ")");
+                            // Skip folders that can't be traversed
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                      @Override public FileVisitResult
+                    postVisitDirectory (Path dir, IOException exc) {
+                            if (exc != null)
+                                System.out.println("had trouble traversing: " + dir + " (" + exc + ")");
+                            // Ignore errors traversing a folder
+                            return FileVisitResult.CONTINUE;
+                        }
+                });
+            }
+            catch (IOException e)
+            {
+                throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
+            }
+            return files;
+        } 
+        
+        private void compare() {
+            long startTime = System.currentTimeMillis();
+            ArrayList<Object[]> readDirectoryContent = readDirectoryContent(picDir.toPath());
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+            CsvParserSettings csvParserSettings = new CsvParserSettings();
+            CsvParser parser = new CsvParser(new CsvParserSettings());
+            try {
+                List<String[]> filterData = parser.parseAll(new FileReader("e:\\filter.csv"));
+                List<String[]> backupData = parser.parseAll(new FileReader("e:\\fekete.csv"));
+                ArrayList<String[]> sizeMismatch = new ArrayList();
+                ArrayList<String[]> wrong = new ArrayList();
+                data:
+                for (String[] data : backupData) {
+                    for (String[] filter : filterData) {
+                        if (filter[0].endsWith(data[0])) {
+                            if (filter[1].equals(data[1])) {
+                                break data;
+                            } else {
+                                sizeMismatch.add(data);
+                                break data;
+                            }
+                        }
+                    }
+                    wrong.add(data);
+                }
+                System.out.println("Ennyi: " + sizeMismatch.size() + "/" + wrong.size() + "/" + backupData.size());
+                
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+               
 	public Path readMetaDataMove(File file) {
         String modelF = "NA";
         String dateF = sdf.format(file.lastModified());
@@ -356,12 +460,14 @@ public final class PicOrganizes {
                     if (tag.getTagName().equals("Model")) modelF = tag.getDescription();
                     if (tag.getTagName().equals("Date/Time")) dateF = tag.getDescription();
                 }
-            ExifSubIFDDirectory directory2 = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-            //getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL)
-            if (directory2 != null) {
-                Date dateOrig = directory2.getDateOriginal(TimeZone.getTimeZone("Europe/Budapest"));
-                if (dateOrig != null)
-                    dateF = sdf.format(dateOrig);
+            Iterable<ExifSubIFDDirectory> directories2 = metadata.getDirectoriesOfType(ExifSubIFDDirectory.class);
+            for (ExifSubIFDDirectory directory2 : directories2) {
+//            ExifSubIFDDirectory directory2 = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+                if (directory2 != null) {
+                    Date dateOrig = directory2.getDateOriginal(TimeZone.getTimeZone("Europe/Budapest"));
+                    if (dateOrig != null)
+                        dateF = sdf.format(dateOrig);
+                }
             }
 
      } catch (ImageProcessingException e) {
@@ -372,11 +478,36 @@ public final class PicOrganizes {
         dateF = dateF.replace(":", "");
         dateF = dateF.replace(" ", "_");
         modelF = modelF.replaceAll("[<>:\"\\/|?*]", "!");
+        if (file.getName().startsWith(dateF + "_" + modelF + "-")) return Paths.get("\\" + file.getName());
         return Paths.get("\\" + dateF + "_" + modelF + "-" + file.getName());
 		
 	}
+        
+	public void readMetaDataTest(File file) {
+            String modelF = "NA";
+            String dateF = sdf.format(file.lastModified());
+            Metadata metadata;
+            try {
+                metadata = ImageMetadataReader.readMetadata(file);
 
+                Iterable<Directory> directories = metadata.getDirectories();
+                for (Directory directory : directories) {
+                    System.out.println("\n" + directory.getName() + "-------------\n");
+                    for (Tag tag : directory.getTags()) {
+                        System.out.println(tag.getTagName() + " : " + tag.getDescription());
+                     }
+                }
+            } catch (ImageProcessingException e) {
+    //              errorOut(e.toString());         
+            } catch (IOException e) {
+                  errorOut(file.getName() +e.toString());
+            }
+	}
+        
 	public PicOrganizes() {
+//            readMetaDataTest(new File("e:\\DSC07914.ARW"));
+//            removeFiles();
+            compare();
             Boolean run = true;
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             maxWidth = (int) (screenSize.getWidth() - 150);
@@ -450,13 +581,13 @@ public final class PicOrganizes {
                             endDate = cal.getTime();
                         }
                         break;
-                    case 5:
+                    default:
                         run = false;
                         break;
                 }
             } while (run);    
 	}       
-		
+
 	public static void main(String[] args) {
 		PicOrganizes O = new PicOrganizes();
 	}
