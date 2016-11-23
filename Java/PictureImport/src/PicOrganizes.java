@@ -85,6 +85,33 @@ public class PicOrganizes extends Application {
             "Lumia 1020",
             "FinePix S5800 S800"
         );
+        String[] imageFiles = {
+            ".jpg",
+            ".jpeg",
+            ".png",
+            ".gif",
+            ".tif",
+            ".arw",
+            ".nef",
+            ".dng",
+            ".nar"            
+        };
+        String[] videoFiles = {
+            ".avi",
+            ".mpg",
+            ".mp4",
+            ".mts",
+            ".3gp",
+            ".mov"
+        };
+        String[] metaFiles = {
+            ".gpx",
+            ".sfv",
+            ".pdf",
+            ".doc",
+            ".xls",
+            ".xlsx"
+        };
         ComboBox camera = new ComboBox(cameras);
         String naModel;
 
@@ -187,17 +214,12 @@ public class PicOrganizes extends Application {
                 }
                 return list;		
 	}
-
        
-        private void list_Out(ArrayList<Path[]> objects) {
+        private void listOnScreen(ArrayList<Path[]> objects) {
             data.removeAll(data);
             for (Path[] obj:objects) {
               data.add(new fileLocs(obj[0].toString(), obj[1].toString()));
             }
-        }
-        
-        private void errorOut(String msg) {
-            JOptionPane.showMessageDialog(null, msg, "Error", JOptionPane.ERROR_MESSAGE);
         }
                        
 	private void renameFiles(ArrayList<String> directories, Path target) {
@@ -234,7 +256,7 @@ public class PicOrganizes extends Application {
                             }
                         }
                         if (files.size() > 0) {       
-                            list_Out(files);
+                            listOnScreen(files);
                         }
                     }				
             }
@@ -281,107 +303,13 @@ public class PicOrganizes extends Application {
                             }    
                             oldName = fileName;
                         }
-                        list_Out(files);
+                        listOnScreen(files);
                     }
                 }				
             }
             
         }
 
-	private void removeFiles() {
-            File[] directories = toDir.toFile().listFiles((File dir, String name) -> dir.isDirectory());
-            for (File dir1 : directories) {
-                if(dir1.isDirectory()) {
-                    File[] content = dir1.listFiles(new FilenameFilter() {
-                        public boolean accept(File dir, String name) {
-                                name = name.toLowerCase();
-                            return name.endsWith("__highres.jpg");
-                        }});
-                    if (content.length > 0) {
-                        for(int i = 0; i < content.length; i++) {
-                            String absolutePath = content[i].getAbsolutePath();
-                            try {
-                                Files.deleteIfExists(Paths.get(absolutePath.substring(0, absolutePath.length()-13) + ".jpg"));
-                            } catch (IOException e) {
-                                errorOut(e.getMessage());
-                            }
-                        }
-                    }
-                }				
-            }
-            
-        }
-
-        private static ArrayList<Object[]> readDirectoryContent(Path path) {
-            final ArrayList<Object[]> files = new ArrayList();
-            try
-            {
-                Files.walkFileTree (path, new SimpleFileVisitor<Path>() 
-                {
-                      @Override public FileVisitResult 
-                    visitFile(Path file, BasicFileAttributes attrs) {
-                            if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                                files.add(new Object[]{file.toString(), sdf.format(attrs.lastModifiedTime().toMillis()), attrs.size()});                               
-                            }
-                            return FileVisitResult.CONTINUE;                            
-                        }
-
-                      @Override public FileVisitResult 
-                    visitFileFailed(Path file, IOException exc) {
-                            System.out.println("skipped: " + file + " (" + exc + ")");
-                            // Skip folders that can't be traversed
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                      @Override public FileVisitResult
-                    postVisitDirectory (Path dir, IOException exc) {
-                            if (exc != null)
-                                System.out.println("had trouble traversing: " + dir + " (" + exc + ")");
-                            // Ignore errors traversing a folder
-                            return FileVisitResult.CONTINUE;
-                        }
-                });
-            }
-            catch (IOException e)
-            {
-                throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
-            }
-            return files;
-        } 
-        
-        private void compare() {
-            long startTime = System.currentTimeMillis();
-            ArrayList<Object[]> readDirectoryContent = readDirectoryContent(fromDir.toPath());
-            long stopTime = System.currentTimeMillis();
-            long elapsedTime = stopTime - startTime;
-            CsvParserSettings csvParserSettings = new CsvParserSettings();
-            CsvParser parser = new CsvParser(new CsvParserSettings());
-            try {
-                List<String[]> filterData = parser.parseAll(new FileReader("e:\\filter.csv"));
-                List<String[]> backupData = parser.parseAll(new FileReader("e:\\fekete.csv"));
-                ArrayList<String[]> sizeMismatch = new ArrayList();
-                ArrayList<String[]> wrong = new ArrayList();
-                data:
-                for (String[] data : backupData) {
-                    for (String[] filter : filterData) {
-                        if (filter[0].endsWith(data[0])) {
-                            if (filter[1].equals(data[1])) {
-                                break data;
-                            } else {
-                                sizeMismatch.add(data);
-                                break data;
-                            }
-                        }
-                    }
-                    wrong.add(data);
-                }
-                System.out.println("Ennyi: " + sizeMismatch.size() + "/" + wrong.size() + "/" + backupData.size());
-                
-            } catch (FileNotFoundException ex) {
-                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-               
 	public Path readMetaDataMove(File file) {
         naModel = camera.getSelectionModel().getSelectedItem().toString();
         String modelF = camera.getSelectionModel().getSelectedItem().toString();
@@ -398,7 +326,7 @@ public class PicOrganizes extends Application {
             if (newHourI < 10) newHour = "0" + newHour;
             if (oldHour > 23 - shift) {
                 int newDay = Integer.parseInt(dateF.substring(6, 8)) + 1;
-                if (newDay > 29) {errorOut("Hónapváltás? " + dateF + " : " + file.getName());}
+                if (newDay > 29) {JOptionPane.showMessageDialog(null, ("Hónapváltás? " + dateF + " : " + file.getName()), "Error", JOptionPane.ERROR_MESSAGE);}
                 dateF = dateF.substring(0, 6) + Integer.toString(newDay) + "_" + newHour + dateF.substring(11);
             } else {
                 dateF = dateF.substring(0, 9) + newHour + dateF.substring(11);
@@ -427,21 +355,23 @@ public class PicOrganizes extends Application {
             }
 
      } catch (ImageProcessingException e) {
-//              errorOut(e.toString());         
+            JOptionPane.showMessageDialog(null, file.getName() +e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         } catch (IOException e) {
-              errorOut(file.getName() +e.toString());
+            JOptionPane.showMessageDialog(null, file.getName() +e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
         dateF = dateF.replace(":", "");
         dateF = dateF.replace(" ", "_");
         modelF = modelF.replaceAll("[<>:\"\\/|?*]", "!");
-        printOut(calF);
+        dateFormat(calF);
         if (file.getName().startsWith(dateF + "_" + modelF + "-")) {
             return Paths.get("\\" + file.getName());
         }
         return Paths.get("\\" + dateF + "_" + modelF + "-" + file.getName());
 		
 	}
-               
+
+        
+        
 	private void nameFiles(ArrayList<String> directories, Path target) {
             Iterator<String> iter = directories.iterator();
             while(iter.hasNext()) {
@@ -464,25 +394,25 @@ public class PicOrganizes extends Application {
                                     String thmb = content[i].toString().replaceFirst("CLIP", "THMBNL").replaceFirst(".MP4", "T01.JPG");
                                     File thmbF = new File(thmb);
                                     if (thmbF.exists()) {
-                                        String thmbMeta = readMetaDataRe(thmbF).toString();
+                                        String thmbMeta = switchFormats(thmbF).toString();
                                         Path vid = Paths.get(target + thmbMeta.replaceFirst("T01.JPG", ".MP4"));
                                         files.add(new Path[] {content[i].toPath(), vid});
                                         progressIndicator.setProgress(i/content.length);
                                         continue;
                                     }
                                 }
-                                files.add(new Path[] {content[i].toPath(), Paths.get(target + readMetaDataRe(content[i]).toString())});
+                                files.add(new Path[] {content[i].toPath(), Paths.get(target + switchFormats(content[i]).toString())});
                                 progressIndicator.setProgress(i/content.length);
                             }
                         }
                         if (files.size() > 0) {       
-                            list_Out(files);
+                            listOnScreen(files);
                         }
                     }				
             }
 	}
         
-	public Path readMetaDataRe(File file) {
+	public Path switchFormats(File file) {
         naModel = camera.getSelectionModel().getSelectedItem().toString();
         String modelF = camera.getSelectionModel().getSelectedItem().toString();
         String dateF = sdf.format(file.lastModified());
@@ -498,7 +428,7 @@ public class PicOrganizes extends Application {
             if (newHourI < 10) newHour = "0" + newHour;
             if (oldHour > 23 - shift) {
                 int newDay = Integer.parseInt(dateF.substring(6, 8)) + 1;
-                if (newDay > 29) {errorOut("Hónapváltás? " + dateF + " : " + file.getName());}
+                if (newDay > 29) {}
                 dateF = dateF.substring(0, 6) + Integer.toString(newDay) + "_" + newHour + dateF.substring(11);
             } else {
                 dateF = dateF.substring(0, 9) + newHour + dateF.substring(11);
@@ -530,12 +460,12 @@ public class PicOrganizes extends Application {
      } catch (ImageProcessingException e) {
 //              errorOut(e.toString());         
         } catch (IOException e) {
-              errorOut(file.getName() +e.toString());
+            JOptionPane.showMessageDialog(null, file.getName() +e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
         dateF = dateF.replace(":", "");
         dateF = dateF.replace(" ", "_");
         modelF = modelF.replaceAll("[<>:\"\\/|?*]", "!");
-        String newForm = printOut(calF);
+        String newForm = dateFormat(calF);
         String addition = dateF + "_" + modelF + "-";
         String oldFileName = file.getName();
         if (oldFileName.startsWith(addition)) {
@@ -545,39 +475,13 @@ public class PicOrganizes extends Application {
 		
 	}
         
-        public String printOut(GregorianCalendar calendar) {
+        public String dateFormat(GregorianCalendar calendar) {
             int offsetInMillis = (calendar.get(Calendar.ZONE_OFFSET)+calendar.get(Calendar.DST_OFFSET));
             calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
             String offset = String.format("%02d%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
             return "K" + calendar.get(Calendar.YEAR) + "-" + String.format("%02d", calendar.get(Calendar.MONTH) + 1) + "-" + calendar.get(Calendar.WEEK_OF_MONTH) + "-" + calendar.get(Calendar.DAY_OF_WEEK) + "_" + String.format("%02d", calendar.get(Calendar.HOUR_OF_DAY)) + "-" + String.format("%02d", calendar.get(Calendar.MINUTE)) + "-" + String.format("%02d", calendar.get(Calendar.SECOND)) + "_" + ((offsetInMillis<0) ? "m" : "p") + offset + "-";
         }
 
-        public void createXMP(File file) {
-         //exiftool -ext jpg -tagsfromfile -@ exif2xmp.args -@ iptc2xmp.args %d%f.xmp
-         // -ext EXT
-        }
-        
-	public void readMetaDataTest(File file) {
-            String modelF = camera.getSelectionModel().getSelectedItem().toString();
-            String dateF = sdf.format(file.lastModified());
-            Metadata metadata;
-            try {
-                metadata = ImageMetadataReader.readMetadata(file);
-
-                Iterable<Directory> directories = metadata.getDirectories();
-                for (Directory directory : directories) {
-                    System.out.println("\n" + directory.getName() + "-------------\n");
-                    for (Tag tag : directory.getTags()) {
-                        System.out.println(tag.getTagName() + " : " + tag.getDescription());
-                     }
-                }
-            } catch (ImageProcessingException e) {
-    //              errorOut(e.toString());         
-            } catch (IOException e) {
-                  errorOut(file.getName() +e.toString());
-            }
-	}
-        
         @Override
         public void start(Stage primaryStage) {
             DirectoryChooser chooser = new DirectoryChooser();
@@ -762,7 +666,7 @@ public class PicOrganizes extends Application {
                                     Files.move(record.getOldPath(), record.getNewPath());                               
                                 }
                                 } catch (IOException e) {
-                                    errorOut(e.getMessage());
+                                    JOptionPane.showMessageDialog(null, e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
                                 }                                 
                                 progressIndicator.setProgress(i/data.size());
                                 i++;
@@ -820,4 +724,123 @@ public class PicOrganizes extends Application {
 //            removeFiles();
 //            compare();
 	}
+
+        
+        public void createXMP(File file) {
+         //exiftool -ext jpg -tagsfromfile -@ exif2xmp.args -@ iptc2xmp.args %d%f.xmp
+         // -ext EXT
+        }
+        
+	public void readMetaDataTest(File file) {
+            Metadata metadata;
+            try {
+                metadata = ImageMetadataReader.readMetadata(file);
+                Iterable<Directory> directories = metadata.getDirectories();
+                for (Directory directory : directories) {
+                    System.out.println("\n" + directory.getName() + "-------------\n");
+                    for (Tag tag : directory.getTags()) {
+                        System.out.println(tag.getTagName() + " : " + tag.getDescription());
+                     }
+                }
+            } catch (ImageProcessingException e) {
+                JOptionPane.showMessageDialog(null, file.getName() +e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+            } catch (IOException e) {
+                JOptionPane.showMessageDialog(null, file.getName() +e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+            }
+	}
+        
+        private void compare() {
+            long startTime = System.currentTimeMillis();
+            ArrayList<Object[]> readDirectoryContent = readDirectoryContent(fromDir.toPath());
+            long stopTime = System.currentTimeMillis();
+            long elapsedTime = stopTime - startTime;
+            CsvParserSettings csvParserSettings = new CsvParserSettings();
+            CsvParser parser = new CsvParser(new CsvParserSettings());
+            try {
+                List<String[]> filterData = parser.parseAll(new FileReader("e:\\filter.csv"));
+                List<String[]> backupData = parser.parseAll(new FileReader("e:\\fekete.csv"));
+                ArrayList<String[]> sizeMismatch = new ArrayList();
+                ArrayList<String[]> wrong = new ArrayList();
+                data:
+                for (String[] data : backupData) {
+                    for (String[] filter : filterData) {
+                        if (filter[0].endsWith(data[0])) {
+                            if (filter[1].equals(data[1])) {
+                                break data;
+                            } else {
+                                sizeMismatch.add(data);
+                                break data;
+                            }
+                        }
+                    }
+                    wrong.add(data);
+                }
+                System.out.println("Ennyi: " + sizeMismatch.size() + "/" + wrong.size() + "/" + backupData.size());
+                
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+               
+	private void removeFiles() {
+            File[] directories = toDir.toFile().listFiles((File dir, String name) -> dir.isDirectory());
+            for (File dir1 : directories) {
+                if(dir1.isDirectory()) {
+                    File[] content = dir1.listFiles(new FilenameFilter() {
+                        public boolean accept(File dir, String name) {
+                                name = name.toLowerCase();
+                            return name.endsWith("__highres.jpg");
+                        }});
+                    if (content.length > 0) {
+                        for(int i = 0; i < content.length; i++) {
+                            String absolutePath = content[i].getAbsolutePath();
+                            try {
+                                Files.deleteIfExists(Paths.get(absolutePath.substring(0, absolutePath.length()-13) + ".jpg"));
+                            } catch (IOException e) {
+                                JOptionPane.showMessageDialog(null, e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
+                    }
+                }				
+            }
+            
+        }
+
+        private static ArrayList<Object[]> readDirectoryContent(Path path) {
+            final ArrayList<Object[]> files = new ArrayList();
+            try
+            {
+                Files.walkFileTree (path, new SimpleFileVisitor<Path>() 
+                {
+                      @Override public FileVisitResult 
+                    visitFile(Path file, BasicFileAttributes attrs) {
+                            if (!attrs.isDirectory() && attrs.isRegularFile()) {
+                                files.add(new Object[]{file.toString(), sdf.format(attrs.lastModifiedTime().toMillis()), attrs.size()});                               
+                            }
+                            return FileVisitResult.CONTINUE;                            
+                        }
+
+                      @Override public FileVisitResult 
+                    visitFileFailed(Path file, IOException exc) {
+                            System.out.println("skipped: " + file + " (" + exc + ")");
+                            // Skip folders that can't be traversed
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                      @Override public FileVisitResult
+                    postVisitDirectory (Path dir, IOException exc) {
+                            if (exc != null)
+                                System.out.println("had trouble traversing: " + dir + " (" + exc + ")");
+                            // Ignore errors traversing a folder
+                            return FileVisitResult.CONTINUE;
+                        }
+                });
+            }
+            catch (IOException e)
+            {
+                throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
+            }
+            return files;
+        } 
+        
 }
