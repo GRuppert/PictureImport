@@ -71,10 +71,10 @@ import org.apache.commons.io.FilenameUtils;
 
 public class PicOrganizes extends Application {        
         String pictureSet = "K";
-        Path toDir = Paths.get("G:\\Pictures\\Fényképek\\Közös\\");
+        Path toDir = Paths.get("E:\\Képek\\ExifTest\\Export");
         //Path toDir = Paths.get("E:\\exiftoolTest");
         
-        File fromDir = new File("E:\\Montecarlo");
+        File fromDir = new File("E:\\Képek\\ExifTest");
         //File fromDir = new File("G:\\Pictures\\!Válogatás\\Közös");
         TimeZone timeZoneLocal = TimeZone.getTimeZone("Europe/Budapest");
 
@@ -193,6 +193,174 @@ public class PicOrganizes extends Application {
                 return Paths.get(newName.get());
             }
         }        
+
+        private class mediaFile {
+            //3gp -2 hours
+            //XML...
+            private File file;
+            private String fileName;
+            private String originalName;
+            private File fileXmp;
+            private String model = null;
+            private GregorianCalendar metaDate = null;
+            private GregorianCalendar originalDate = null;
+            private GregorianCalendar xmpDate = null;
+            private GregorianCalendar modDate = new GregorianCalendar();
+            private Boolean ok = true;
+            private String errorString = "";
+
+            private String getModel() {
+                return model.replaceAll("[<>:\"\\/|?*]", "!");
+            }
+            
+            public String getV2FileName() {
+                return dateFormat(getDate()) + originalName;
+            }
+            
+            public Boolean isOk() {
+                return ok;
+            }
+            
+            public String getError() {
+                return errorString;
+            }
+            
+            private GregorianCalendar getDate() {
+                if (xmpDate != null) return xmpDate;
+                if (metaDate != null) return metaDate;
+                if (originalDate != null) return originalDate;
+                return modDate;
+            }
+            
+            private mediaFile(String fileIn) {
+                this.file = new File(fileIn);
+                initValues();
+            }
+
+            private mediaFile(File fileIn) {
+                this.file = fileIn;
+                initValues();
+            }
+            
+            private void initValues() {               
+                fileName = file.getName();
+                originalName = fileName;
+                fileXmp = new File(file.toString() + ".xmp");
+                modDate.setTimeInMillis(file.lastModified());
+                modDate.setTimeZone(timeZoneLocal);
+                metaDate = readMeta(file);
+                xmpDate = readMeta(fileXmp);
+                getV1();
+                getV2();
+/*
+                        if (extension.equals("")) {
+                            if (content[i].getName().toLowerCase().endsWith(".mp4")) {
+                                String thmb = content[i].toString().replaceFirst("CLIP", "THMBNL").replaceFirst(".MP4", "T01.JPG");
+                                File thmbF = new File(thmb);
+                                if (thmbF.exists()) {
+                                    extension = getMetaDate(thmbF);
+                                }
+                            }
+                        }
+                
+                
+                */                
+                
+            }
+
+            private void getV1() {//20160924_144402_ILCE-5100-DSC00615.JPG
+                if (fileName.length() > 17+4+1) {
+                    DateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss"); 
+                    try {
+                        originalDate = new GregorianCalendar();
+                        originalDate.setTimeZone(timeZoneLocal);
+                        originalDate.setTime(df.parse(fileName.substring(0, 15)));
+                    } catch (ParseException e) {
+                        originalDate = null;
+                        return;         
+                    }
+                    for (String camera : cameras)
+                        if (fileName.substring(15 + 1).startsWith(camera)) {
+                            originalName = fileName.substring(15 + 1 + camera.length() + 1);
+                            return;
+                        }
+                    errorOut(fileName + " not recognized camera", new Exception());
+                }
+            }
+
+            private void getV2() {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
+                if (fileName.length() > 17+4+1) {
+                    DateFormat df = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ss"); 
+                    try {
+                        originalDate = new GregorianCalendar();
+                        originalDate.setTimeZone(timeZoneLocal);
+                        originalDate.setTime(df.parse(fileName.substring(1, 10) + fileName.substring(11, 17) + fileName.substring(18, 22)));
+                        originalName = fileName.substring(34);
+                    } catch (ParseException e) {
+                        originalDate = null;
+                        return;         
+                    }
+                }
+            }
+
+            private GregorianCalendar readMeta(File fileMeta) {
+                if (fileMeta.exists()) {
+                    Metadata metadata;
+                    GregorianCalendar captureDate = null;
+                    try {
+                        metadata = ImageMetadataReader.readMetadata(fileMeta);
+                        Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
+                        if (directory != null)
+                            for (Tag tag : directory.getTags()) {
+                                if (tag.getTagName().equals("Model")) model = tag.getDescription();
+                                if (tag.getTagName().equals("Date/Time")) {
+                                    String dateString = tag.getDescription(); //2016:11:03 07:50:24
+                                    DateFormat df = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss"); 
+                                    try {
+                                        captureDate = new GregorianCalendar();
+                                        captureDate.setTimeZone(timeZoneLocal);
+                                        captureDate.setTime(sdf.parse(dateString));
+                                    } catch (ParseException e) {
+                                        captureDate = null;         
+                                    }
+                                }
+                            }
+                        Iterable<ExifSubIFDDirectory> directories2 = metadata.getDirectoriesOfType(ExifSubIFDDirectory.class);
+                        for (ExifSubIFDDirectory directory2 : directories2) {
+            //            ExifSubIFDDirectory directory2 = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+                            if (directory2 != null) {
+                                if (directory2.getDateOriginal(timeZoneLocal) != null) {
+                                    captureDate = new GregorianCalendar();
+                                    captureDate.setTimeZone(timeZoneLocal);
+                                    captureDate.setTime(directory2.getDateOriginal(timeZoneLocal));
+                                }
+                            }
+                        }
+                    } catch (ImageProcessingException e) {
+                        captureDate = null;         
+                    } catch (IOException e) {
+                        captureDate = null;         
+                        errorOut(fileMeta.getName(), e);         
+                    }
+                    return captureDate;
+                } else {return null;}
+            }
+
+            private String dateFormat(GregorianCalendar calendar) {
+                int offsetInMillis = (calendar.get(Calendar.ZONE_OFFSET)+calendar.get(Calendar.DST_OFFSET));
+                String offset = String.format("%02d%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
+                System.out.print(calendar.getTime() + " : " + offset + "\n");
+                calendar.setTimeZone(TimeZone.getTimeZone("ETC/UTC"));
+                calendar.get(Calendar.HOUR_OF_DAY); //setTimeZone has a bug, get should be called to make it work
+                System.out.print(calendar.getTime() + "\n");
+                Date date = calendar.getTime();
+                DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ss");
+                DateFormat dayFormat = new SimpleDateFormat("EEE");
+                String dateS = dateFormat.format(date);
+                dateS = dateS.substring(0, 9) + "_" + dateS.substring(9, 15) + "_" + dateS.substring(15) + "_" + dayFormat.format(date) + "(" + ((offsetInMillis<0) ? "m" : "p") + offset + ")-";
+                return pictureSet + dateS;
+            }// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
+        }
         
         public static Boolean supportedFileType(String name) {
             if (supportedMetaFileType(name)) return true;
@@ -268,23 +436,6 @@ public class PicOrganizes extends Application {
             JOptionPane.showMessageDialog(null, "From :" + source + "\nMessage: " + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
 
-        private String originalFileName(File file) {
-            String fileName = file.getName();
-            if (fileName.length() < 24) return fileName;
-            String[] extensionOld = readMetaDataOld(file);
-            if (fileName.startsWith(extensionOld[0])) {
-                if (fileName.substring(extensionOld[0].length() + 1).startsWith(extensionOld[1])) {
-                    return fileName.substring(extensionOld[0].length() + extensionOld[1].length() + 2);
-                } else {
-                    for (String camera : cameras)
-                        if (fileName.substring(extensionOld[0].length() + 1).startsWith(camera)) 
-                            return fileName.substring(extensionOld[0].length() + camera.length() + 2);
-                    errorOut(fileName + " not recognized camera", new Exception());
-                }
-            }
-            return "";
-        }
-        
 	private ArrayList<fileLocs> fileRenameList(ArrayList<String> directories, Path target) {
             Iterator<String> iter = directories.iterator();
             ArrayList<fileLocs> files = new ArrayList<>();
@@ -293,41 +444,15 @@ public class PicOrganizes extends Application {
                 if(dir1.isDirectory()) {
                     File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
                     for(int i = 0; i < content.length; i++) {
+                        //If the file is some type of side/support format just copy it to the new location.
                         if (supportedMetaFileType(content[i].getName())) {
                             files.add(new fileLocs(content[i].toString(), target + "\\" + content[i].getName()));
                             progressIndicator.setProgress(i/content.length);
                             continue;
                         }
-                        String originalFileName = originalFileName(content[i]);
-                        String extension = readMetaData(content[i]);
-                        if (extension.equals("")) {
-                            String xmp = content[i].toString().replaceFirst(FilenameUtils.getExtension(content[i].getName()), ".xmp");
-                            File xmpFile = new File(xmp);
-                            if (xmpFile.exists()) extension = readMetaData(xmpFile);                            
-                        }
-                        if (extension.equals("")) {
-                            if (content[i].getName().toLowerCase().endsWith(".mp4")) {
-                                String thmb = content[i].toString().replaceFirst("CLIP", "THMBNL").replaceFirst(".MP4", "T01.JPG");
-                                File thmbF = new File(thmb);
-                                if (thmbF.exists()) {
-                                    extension = readMetaData(thmbF);
-                                }
-                            }
-                        }
-                        if (extension.equals("")) {
-                            GregorianCalendar calF = new GregorianCalendar(); 
-                            calF.setTimeInMillis(content[i].lastModified());
-                            extension = dateFormat(calF);
-                            files.add(new fileLocs(content[i].toString(), target + "\\" + extension + originalFileName, false, "No Date in Meta"));
-                            progressIndicator.setProgress(i/content.length);
-                            continue;
-                        }
-                        if (originalFileName.equals("")) {
-                            files.add(new fileLocs(content[i].toString(), target + "\\" + extension + content[i].getName(), false, "Date Mismatch"));
-                            progressIndicator.setProgress(i/content.length);
-                            continue;
-                        }
-                        files.add(new fileLocs(content[i].toString(), target + "\\" + extension + originalFileName));
+                        
+                        mediaFile mFile = new mediaFile(content[i]);
+                        files.add(new fileLocs(content[i].toString(), target + "\\" + mFile.getV2FileName(), mFile.isOk(), mFile.getError()));
                         progressIndicator.setProgress(i/content.length);
                     }
                 }				
@@ -381,117 +506,6 @@ public class PicOrganizes extends Application {
                 }				
             }
             
-        }
-
-	public String[] readMetaDataOld(File file) {
-            String modelF = "NA";
-            String dateF = sdf.format(file.lastModified());
-            GregorianCalendar calF = new GregorianCalendar(); 
-            calF.setTimeInMillis(file.lastModified());
-            if (file.getName().toLowerCase().endsWith(".3gp")) {
-                calF.add(Calendar.HOUR, -2);
-                int shift = 2;
-                int oldHour = Integer.parseInt(dateF.substring(9, 11));
-                int newHourI = oldHour + shift;
-                if (newHourI > 23) {newHourI -= 24;}
-                String newHour = Integer.toString(newHourI);
-                if (newHourI < 10) newHour = "0" + newHour;
-                if (oldHour > 23 - shift) {
-                    int newDay = Integer.parseInt(dateF.substring(6, 8)) + 1;
-                    dateF = dateF.substring(0, 6) + Integer.toString(newDay) + "_" + newHour + dateF.substring(11);
-                } else {
-                    dateF = dateF.substring(0, 9) + newHour + dateF.substring(11);
-                }
-
-            }
-     //       readMetaData(file);
-            Metadata metadata;
-            try {
-                metadata = ImageMetadataReader.readMetadata(file);
-                Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
-                if (directory != null)
-                    for (Tag tag : directory.getTags()) {
-                        if (tag.getTagName().equals("Model")) modelF = tag.getDescription();
-                        if (tag.getTagName().equals("Date/Time")) dateF = tag.getDescription();
-                    }
-                Iterable<ExifSubIFDDirectory> directories2 = metadata.getDirectoriesOfType(ExifSubIFDDirectory.class);
-                for (ExifSubIFDDirectory directory2 : directories2) {
-    //            ExifSubIFDDirectory directory2 = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-                    if (directory2 != null) {
-                        Date dateOrig = directory2.getDateOriginal(timeZoneLocal);
-                        if (dateOrig != null)
-                            dateF = sdf.format(dateOrig);
-                    }
-                }
-            } catch (ImageProcessingException e) {
-                //Who cares?    
-            } catch (IOException e) {
-                errorOut(file.getName(), e);         
-            }
-            dateF = dateF.replace(":", "");
-            dateF = dateF.replace(" ", "_");
-            modelF = modelF.replaceAll("[<>:\"\\/|?*]", "!");
-            dateFormat(calF);
-            String extension = dateF + "_" + modelF + "-";
-            return new String[] {dateF, modelF};
-        }
-
-	private String readMetaData(File file) {
-            GregorianCalendar calF = null; 
-            Metadata metadata;
-            try {
-                metadata = ImageMetadataReader.readMetadata(file);
-                Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
-                if (directory != null)
-                    for (Tag tag : directory.getTags()) {
-                        if (tag.getTagName().equals("Date/Time")) {
-                            String dateString = tag.getDescription(); //2016:11:03 07:50:24
-                            DateFormat df = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss"); 
-                            Date captureDate;
-                            try {
-                                captureDate = df.parse(dateString);
-                                calF = new GregorianCalendar();
-                                calF.setTimeInMillis(captureDate.getTime());
-                            } catch (ParseException e) {
-                                errorOut(file.getName(), e);         
-                            }
-                        }
-                    }
-                Iterable<ExifSubIFDDirectory> directories2 = metadata.getDirectoriesOfType(ExifSubIFDDirectory.class);
-                for (ExifSubIFDDirectory directory2 : directories2) {
-                    if (directory2 != null) {
-                        Date dateOrig = directory2.getDateOriginal(timeZoneLocal);
-                        if (dateOrig != null) {
-                            calF = new GregorianCalendar();
-                            calF.setTimeInMillis(dateOrig.getTime());
-                        }
-                    }
-                }
-            } catch (ImageProcessingException e) {
-                //Who cares?    
-            } catch (IOException e) {
-                errorOut(file.getName(), e);         
-            }
-            if (calF != null) return dateFormat(calF); else return "";
-	}
-        
-        public String dateFormat(GregorianCalendar calendar) {
-            int offsetInMillis = (calendar.get(Calendar.ZONE_OFFSET)+calendar.get(Calendar.DST_OFFSET));
-            calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
-            String offset = String.format("%02d%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
-            Date date = calendar.getTime();
-            DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ss");
-            DateFormat dayFormat = new SimpleDateFormat("EEE");
-            String dateS = dateFormat.format(date);
-            dateS = dateS.substring(0, 9) + "_" + dateS.substring(9, 15) + "_" + dateS.substring(15) + "_" + dayFormat.format(date) + "(" + ((offsetInMillis<0) ? "m" : "p") + offset + ")-";
-            return pictureSet + dateS;
-        }// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
-
-        public String dateFormatV(GregorianCalendar calendar) {
-            int offsetInMillis = (calendar.get(Calendar.ZONE_OFFSET)+calendar.get(Calendar.DST_OFFSET));
-            calendar.setTimeZone(TimeZone.getTimeZone("UTC"));
-            String offset = String.format("%02d%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
-            return pictureSet + calendar.get(Calendar.YEAR) + "-" + String.format("%02d", calendar.get(Calendar.MONTH) + 1) + "-" + calendar.get(Calendar.WEEK_OF_MONTH) + "-" + calendar.get(Calendar.DAY_OF_WEEK) + "_" + String.format("%02d", calendar.get(Calendar.HOUR_OF_DAY)) + "-" + String.format("%02d", calendar.get(Calendar.MINUTE)) + "-" + String.format("%02d", calendar.get(Calendar.SECOND)) + "_" + ((offsetInMillis<0) ? "m" : "p") + offset + "-";
         }
 
         @Override
