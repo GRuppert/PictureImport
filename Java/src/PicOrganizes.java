@@ -31,7 +31,9 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -67,7 +69,14 @@ import javafx.stage.Stage;
 
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileSystemView;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.io.FilenameUtils;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class PicOrganizes extends Application {        
         String pictureSet = "K";
@@ -116,189 +125,212 @@ public class PicOrganizes extends Application {
         };
         String naModel;
 
-	static SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd_HHmmss");
+	static SimpleDateFormat exifDateFormat = new SimpleDateFormat("yyyyMMdd_HHmmss");
+//        static SimpleDateFormat xmpDateFormat = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss"); //2016-11-24T20:05:46+02:00
+        static DateFormat xmpDateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX"); //2016-11-24T20:05:46+02:00
         static int MOVE = 1;
         static int COPY = 0;
         int copyOrMove;
         int maxWidth, maxHeight;
         final ProgressIndicator progressIndicator = new ProgressIndicator(0);
-        private TableView<fileLocs> table = new TableView<>();
-        private final ObservableList<fileLocs> data = FXCollections.observableArrayList();
+        private TableView<mediaFile> table = new TableView<>();
+        private final ObservableList<mediaFile> data = FXCollections.observableArrayList();
         
-        public static class fileLocs {
+        public class mediaFile {
             private final SimpleBooleanProperty processing;
-            private final SimpleStringProperty oldName;
+            private final SimpleStringProperty currentName;
             private final SimpleStringProperty newName;
             private final SimpleStringProperty note;
-
-            private fileLocs(String oName, String nName) {
-                this.oldName = new SimpleStringProperty(oName);
-                this.newName = new SimpleStringProperty(nName);
-                this.processing = new SimpleBooleanProperty(true);
-                this.note = new SimpleStringProperty("");
+            private final SimpleBooleanProperty xmpMissing;
+            private File file;
+            private File fileXmp;
+            private File fileXml;
+            private String originalName;
+            private String model = null;
+            private String targetDirectory = toDir.toString();
+            private HashMap<String, String> exifPar = null;
+            private GregorianCalendar modDate = new GregorianCalendar();
+            private GregorianCalendar filenameDate = null;
+            private GregorianCalendar metaDate = null;
+            private GregorianCalendar xmpDate = null;
+          
+                    
+            private mediaFile(String fileIn) {
+                this(new File(fileIn));
             }
 
-            private fileLocs(String oName, String nName, Boolean proc, String nNote) {
-                this.oldName = new SimpleStringProperty(oName);
-                this.newName = new SimpleStringProperty(nName);
-                this.processing = new SimpleBooleanProperty(proc);
-                this.note = new SimpleStringProperty(nNote);
+            private mediaFile(String fileIn, String targetDir) {
+                this(fileIn);
+                targetDirectory = targetDir;
             }
 
-            public final String getOldName() {
-                return oldName.get();
-            }
-            public final void setOldName(String fName) {
-                oldName.set(fName);
-            }
-            public SimpleStringProperty oldNameProperty() {
-                return oldName;
+            private mediaFile(File fileIn) {
+                this.file = fileIn;
+                processing = new SimpleBooleanProperty(true);
+                currentName = new SimpleStringProperty(file.toString());
+                note = new SimpleStringProperty("");
+                xmpMissing = new SimpleBooleanProperty(false);
+                originalName = file.getName();
+                if (supportedMediaFileType(currentName.get())) {
+                    fileXmp = new File(file.toString() + ".xmp");
+                    modDate.setTimeInMillis(file.lastModified());
+                    modDate.setTimeZone(timeZoneLocal);
+                    metaDate = readMeta(file);
+                    xmpDate = readMeta(fileXmp);
+                    getV1();
+                    getV2();
+                    fileXml = new File(file.toString().substring(0, file.toString().length()-4) + "M01.xml");
+                    readXML(fileXml);
+                    if (filenameDate != null) {
+                        if (metaDate != null) {
+                            if (Math.abs(filenameDate.getTimeInMillis() - metaDate.getTimeInMillis()) > 1000) {
+                                addNote("Filename and Meta(" + metaDate.getTime().toString() + ") Date mismatch");
+                            }
+                        }
+                        if (xmpDate != null) {
+                            if (Math.abs(filenameDate.getTimeInMillis() - xmpDate.getTimeInMillis()) > 1000) {
+                                addNote("Filename and XMP(" + xmpDate.getTime().toString() + ") Date mismatch");
+                            }
+                        }
+                    }
+                    if (metaDate != null) {
+                        if (xmpDate != null) {
+                            if (Math.abs(metaDate.getTimeInMillis() - xmpDate.getTimeInMillis()) > 1000) {
+                                addNote("Meta(" + metaDate.getTime().toString() + ") and XMP(" + xmpDate.getTime().toString() + ") Date mismatch");
+                            }
+                        }
+                    }
+                    newName = new SimpleStringProperty(targetDirectory + "\\" + dateFormat(getDate()) + originalName);
+                } else {
+                    newName = new SimpleStringProperty(targetDirectory + "\\" + originalName);
+                }
             }
 
-            public final String getNewName() {
-                return newName.get();
-            }
-            public final void setNewName(String fName) {
-                newName.set(fName);
-            }
-            public SimpleStringProperty newNameProperty() {
-                return newName;
-            }
+            public final String getNewName() {return newName.get();}
+            public final void setNewName(String fName) {newName.set(fName);}
+            public SimpleStringProperty newNameProperty() {return newName;}
 
-            public final Boolean getProcessing() {
-                return processing.get();
-            }
-            public final void setProcessing(Boolean fName) {
-                processing.set(fName);
-            }
-            public SimpleBooleanProperty processingProperty() {
-                return processing;
-            }
+            public final String getCurrentName() {return currentName.get();}
+            public final void setCurrentName(String fName) {currentName.set(fName);}
+            public SimpleStringProperty currentNameProperty() {return currentName;}
+
+            public final Boolean getProcessing() {return processing.get();}
+            public final void setProcessing(Boolean proc) {processing.set(proc);}
+            public SimpleBooleanProperty processingProperty() {return processing;}
             
-            public final String getNote() {
-                return note.get();
-            }
-            public final void setNote(String fName) {
-                note.set(fName);
-            }
-            public SimpleStringProperty processingNote() {
-                return note;
-            }
+            public final Boolean getXmpMissing() {return xmpMissing.get();}
+            public final void setXmpMissing(Boolean xmp) {xmpMissing.set(xmp);}
+            public SimpleBooleanProperty xmpMissingProperty() {return xmpMissing;}
+            
+            public final String getNote() {return note.get();}
+            public final void setNote(String fName) {note.set(fName);}
+            public SimpleStringProperty noteProperty() {return note;}
             
             public Path getOldPath() {
-                return Paths.get(oldName.get());
+                return Paths.get(currentName.get());
             }
             
             public Path getNewPath() {
                 return Paths.get(newName.get());
             }
-        }        
-
-        private class mediaFile {
-            //3gp -2 hours
-            //XML...
-            private File file;
-            private String fileName;
-            private String originalName;
-            private File fileXmp;
-            private String model = null;
-            private GregorianCalendar metaDate = null;
-            private GregorianCalendar originalDate = null;
-            private GregorianCalendar xmpDate = null;
-            private GregorianCalendar modDate = new GregorianCalendar();
-            private Boolean ok = true;
-            private String errorString = "";
-
-            private String getModel() {
-                return model.replaceAll("[<>:\"\\/|?*]", "!");
+           
+            public void write() {
+                if (processing.get()) {
+                    try {                                    
+                        if (Files.notExists(this.getNewPath().getParent())) {
+                                Files.createDirectory(this.getNewPath().getParent());
+                        }
+                        if (copyOrMove == COPY) {
+                            Files.copy(this.getOldPath(), this.getNewPath());                               
+                            if (fileXmp != null && fileXmp.exists())
+                                Files.copy(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
+                        } else if (copyOrMove == MOVE) {
+                            Files.move(this.getOldPath(), this.getNewPath());                               
+                            if (fileXmp != null && fileXmp.exists())
+                                Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
+                        }
+                        if (xmpMissing.get()) {
+                            try {
+                                Process exec = Runtime.getRuntime().exec("E:\\DRV\\ExifTool\\exiftool" + getXmpParam() + " E:\\temp.xmp");
+                            } catch(Exception e) {
+                                errorOut("xmp", e);
+                            }
+                            Files.move(Paths.get("E:\\temp.xmp"), Paths.get(this.getNewPath() + ".xmp"));                               
+                        }
+                    } catch (IOException e) {
+                        errorOut(this.getNewName(), e);         
+                    }                      
+                }
             }
-            
-            public String getV2FileName() {
-                return dateFormat(getDate()) + originalName;
-            }
-            
-            public Boolean isOk() {
-                return ok;
-            }
-            
-            public String getError() {
-                return errorString;
+                    
+            private String getXmpParam() {//, , LtcChangeTable halfStep, LtcChangeTable tcFps, 
+                if (!xmpMissing.get()) return "";
+                String param = "";
+                String get = exifPar.get("CreationDate value");
+                if (get != null) param += " -xmp:dateTimeOriginal=\"" + get + "\"";//2005:10:23 20:06:34.33-05:00
+                get = exifPar.get("Device manufacturer");
+                if (get != null) param += " -make=\"" + get + "\"";
+                get = exifPar.get("Device modelName");
+                if (get != null) param += " -model=\"" + get + "\"";
+                get = exifPar.get("Device serialNo");
+                if (get != null) param += " -SerialNumber=\"" + get + "\"";
+                get = exifPar.get("Duration value");
+                if (get != null) param += " -Duration={Scale=1.0,Value=" + get + "}";
+                get = exifPar.get("LtcChangeTable tcFps");
+                int fps = Integer.parseInt(get);
+                if (exifPar.get("LtcChangeTable halfStep").equals("true")) fps = fps * 2;
+                if (get != null) param += " -VideoFrameRate=\"" + fps + "\"";
+                return param;
             }
             
             private GregorianCalendar getDate() {
                 if (xmpDate != null) return xmpDate;
                 if (metaDate != null) return metaDate;
-                if (originalDate != null) return originalDate;
+                if (filenameDate != null) return filenameDate;
                 return modDate;
             }
             
-            private mediaFile(String fileIn) {
-                this.file = new File(fileIn);
-                initValues();
-            }
-
-            private mediaFile(File fileIn) {
-                this.file = fileIn;
-                initValues();
+            private void addNote(String addition) {
+                note.set(note.get() + addition);
+                processing.set(false);
             }
             
-            private void initValues() {               
-                fileName = file.getName();
-                originalName = fileName;
-                fileXmp = new File(file.toString() + ".xmp");
-                modDate.setTimeInMillis(file.lastModified());
-                modDate.setTimeZone(timeZoneLocal);
-                metaDate = readMeta(file);
-                xmpDate = readMeta(fileXmp);
-                getV1();
-                getV2();
-/*
-                        if (extension.equals("")) {
-                            if (content[i].getName().toLowerCase().endsWith(".mp4")) {
-                                String thmb = content[i].toString().replaceFirst("CLIP", "THMBNL").replaceFirst(".MP4", "T01.JPG");
-                                File thmbF = new File(thmb);
-                                if (thmbF.exists()) {
-                                    extension = getMetaDate(thmbF);
-                                }
-                            }
-                        }
-                
-                
-                */                
-                
-            }
-
             private void getV1() {//20160924_144402_ILCE-5100-DSC00615.JPG
-                if (fileName.length() > 17+4+1) {
-                    DateFormat df = new SimpleDateFormat("yyyyMMdd_HHmmss"); 
+                if (file.getName().length() > 17+4+1) {
+                    DateFormat dfV1 = new SimpleDateFormat("yyyyMMdd_HHmmss"); 
                     try {
-                        originalDate = new GregorianCalendar();
-                        originalDate.setTimeZone(timeZoneLocal);
-                        originalDate.setTime(df.parse(fileName.substring(0, 15)));
+                        GregorianCalendar captureDate = new GregorianCalendar();
+                        captureDate.setTimeZone(timeZoneLocal);
+                        captureDate.setTime(dfV1.parse(file.getName().substring(0, 15)));
+                        filenameDate = captureDate;
+                        for (String camera : cameras)
+                            if (file.getName().substring(15 + 1).startsWith(camera)) {
+                                if (model != null) {
+                                    if (!model.equals(camera))
+                                        addNote("Filename(" + camera + ") and (" + model + ") Model mismatch ");
+                                } else {
+                                    model = camera;
+                                    exifPar.put("Device modelName", model);
+                                    xmpMissing.set(true);
+                                }
+                                originalName = file.getName().substring(15 + 1 + camera.length() + 1);
+                                return;
+                            }
+                        addNote("Not recognized camera");
                     } catch (ParseException e) {
-                        originalDate = null;
-                        return;         
                     }
-                    for (String camera : cameras)
-                        if (fileName.substring(15 + 1).startsWith(camera)) {
-                            originalName = fileName.substring(15 + 1 + camera.length() + 1);
-                            return;
-                        }
-                    errorOut(fileName + " not recognized camera", new Exception());
                 }
             }
 
             private void getV2() {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
-                if (fileName.length() > 17+4+1) {
-                    DateFormat df = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ss"); 
+                if (file.getName().length() > 17+4+1) {
+                    DateFormat dfV2 = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ssZ"); 
                     try {
-                        originalDate = new GregorianCalendar();
-                        originalDate.setTimeZone(timeZoneLocal);
-                        originalDate.setTime(df.parse(fileName.substring(1, 10) + fileName.substring(11, 17) + fileName.substring(18, 22)));
-                        originalName = fileName.substring(34);
+                        GregorianCalendar captureDate = new GregorianCalendar();
+                        captureDate.setTime(dfV2.parse(file.getName().substring(1, 10) + file.getName().substring(11, 17) + file.getName().substring(18, 22) + file.getName().substring(27, 32)));
+                        filenameDate = captureDate;
+                        originalName = file.getName().substring(34);
                     } catch (ParseException e) {
-                        originalDate = null;
-                        return;         
                     }
                 }
             }
@@ -312,14 +344,18 @@ public class PicOrganizes extends Application {
                         Directory directory = metadata.getFirstDirectoryOfType(ExifIFD0Directory.class);
                         if (directory != null)
                             for (Tag tag : directory.getTags()) {
-                                if (tag.getTagName().equals("Model")) model = tag.getDescription();
+                                if (tag.getTagName().equals("Model"))
+                                    if (model != null) {
+                                        model = tag.getDescription();
+                                        if (!model.equals(tag.getDescription())) 
+                                            addNote("Meta(" + tag.getDescription() + ") and (" + model + ") Model mismatch ");
+                                    }
                                 if (tag.getTagName().equals("Date/Time")) {
                                     String dateString = tag.getDescription(); //2016:11:03 07:50:24
-                                    DateFormat df = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss"); 
                                     try {
                                         captureDate = new GregorianCalendar();
                                         captureDate.setTimeZone(timeZoneLocal);
-                                        captureDate.setTime(sdf.parse(dateString));
+                                        captureDate.setTime(exifDateFormat.parse(dateString));
                                     } catch (ParseException e) {
                                         captureDate = null;         
                                     }
@@ -349,17 +385,58 @@ public class PicOrganizes extends Application {
             private String dateFormat(GregorianCalendar calendar) {
                 int offsetInMillis = (calendar.get(Calendar.ZONE_OFFSET)+calendar.get(Calendar.DST_OFFSET));
                 String offset = String.format("%02d%02d", Math.abs(offsetInMillis / 3600000), Math.abs((offsetInMillis / 60000) % 60));
-                System.out.print(calendar.getTime() + " : " + offset + "\n");
-                calendar.setTimeZone(TimeZone.getTimeZone("ETC/UTC"));
-                calendar.get(Calendar.HOUR_OF_DAY); //setTimeZone has a bug, get should be called to make it work
-                System.out.print(calendar.getTime() + "\n");
                 Date date = calendar.getTime();
                 DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ss");
+                dateFormat.setTimeZone(TimeZone.getTimeZone("ETC/UTC"));
                 DateFormat dayFormat = new SimpleDateFormat("EEE");
+                dayFormat.setTimeZone(TimeZone.getTimeZone("ETC/UTC"));
                 String dateS = dateFormat.format(date);
-                dateS = dateS.substring(0, 9) + "_" + dateS.substring(9, 15) + "_" + dateS.substring(15) + "_" + dayFormat.format(date) + "(" + ((offsetInMillis<0) ? "m" : "p") + offset + ")-";
+                dateS = dateS.substring(0, 9) + "_" + dateS.substring(9, 15) + "_" + dateS.substring(15) + "_" + dayFormat.format(date) + "(" + ((offsetInMillis<0) ? "-" : "+") + offset + ")-";
                 return pictureSet + dateS;
             }// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
+            
+            private void readXML(File inputFile) {
+                if (inputFile.exists()) {
+                    try {	
+                        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+                        DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
+                        Document doc = dBuilder.parse(inputFile);
+                        exifPar = new HashMap<>();
+                        readNode(doc, "Device");
+                        readNode(doc, "CreationDate");
+                        readNode(doc, "LtcChangeTable");
+                        readNode(doc, "Duration");
+                        xmpMissing.set(true);
+                        String get = exifPar.get("CreationDate value");
+                        if (get != null) 
+                            try {
+                                //2005:10:23 20:06:34.33-05:00
+                                metaDate = new GregorianCalendar();
+                                metaDate.setTime(xmpDateFormat.parse(get));
+                            } catch (ParseException e) {
+                            }
+                        get = exifPar.get("Device modelName");
+                        if (get != null) {
+                            model = get;
+                            if (!model.equals(get)) 
+                                addNote("Meta(" + get + ") and (" + model + ") Model mismatch ");
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }                
+                }
+            }
+
+            private void readNode(Document doc, String nodeName) {
+                NodeList childNodes = doc.getElementsByTagName(nodeName);
+                for (int i = 0; i < childNodes.getLength(); i++) {
+                    Node child = childNodes.item(i);
+                    NamedNodeMap attributes = child.getAttributes();
+                    for (int j = 0; j < attributes.getLength(); j++) {
+                        exifPar.put(child.getNodeName()+ " " + attributes.item(j).getNodeName(), attributes.item(j).getNodeValue());
+                    }  
+                }
+            }
         }
         
         public static Boolean supportedFileType(String name) {
@@ -427,7 +504,7 @@ public class PicOrganizes extends Application {
                 return list;		
 	}
        
-        private void listOnScreen(ArrayList<fileLocs> newData) {
+        private void listOnScreen(ArrayList<mediaFile> newData) {
             data.removeAll(data);
             newData.stream().forEach((obj) -> {data.add(obj);});
         }
@@ -436,23 +513,15 @@ public class PicOrganizes extends Application {
             JOptionPane.showMessageDialog(null, "From :" + source + "\nMessage: " + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
         }
 
-	private ArrayList<fileLocs> fileRenameList(ArrayList<String> directories, Path target) {
+	private ArrayList<mediaFile> fileRenameList(ArrayList<String> directories, Path target) {
             Iterator<String> iter = directories.iterator();
-            ArrayList<fileLocs> files = new ArrayList<>();
+            ArrayList<mediaFile> files = new ArrayList<>();
             while(iter.hasNext()) {
                 File dir1 = new File(iter.next());
                 if(dir1.isDirectory()) {
                     File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
                     for(int i = 0; i < content.length; i++) {
-                        //If the file is some type of side/support format just copy it to the new location.
-                        if (supportedMetaFileType(content[i].getName())) {
-                            files.add(new fileLocs(content[i].toString(), target + "\\" + content[i].getName()));
-                            progressIndicator.setProgress(i/content.length);
-                            continue;
-                        }
-                        
-                        mediaFile mFile = new mediaFile(content[i]);
-                        files.add(new fileLocs(content[i].toString(), target + "\\" + mFile.getV2FileName(), mFile.isOk(), mFile.getError()));
+                        files.add(new mediaFile(content[i]));
                         progressIndicator.setProgress(i/content.length);
                     }
                 }				
@@ -473,7 +542,7 @@ public class PicOrganizes extends Application {
                     if (content.length > 0) {
                         Path target = null;
                         String oldName = "";
-                        ArrayList<fileLocs> files = new ArrayList<>();
+                        ArrayList<mediaFile> files = new ArrayList<>();
                         for (File content1 : content) {
                             Path source = content1.toPath();
                             String fileName = content1.getName().substring(0, 8);
@@ -494,7 +563,7 @@ public class PicOrganizes extends Application {
 //                                        Date endDate = new GregorianCalendar(eY, eM, eD).getTime();
                                     if (!(fileDate.before(startDate) || fileDate.after(endDate))) {
                                         target = dirs[j].toPath();
-                                        files.add(new fileLocs(source.toString(), target + "\\" + content1.getName()));
+                                        files.add(new mediaFile(source.toString(), target + "\\" + content1.getName()));
                                         j = dirs.length;
                                     }
                                 }
@@ -660,38 +729,32 @@ public class PicOrganizes extends Application {
             
                 table.setEditable(true);
                 table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-                TableColumn< fileLocs, Boolean > processingCol = new TableColumn<>( "Process" );
+                TableColumn< mediaFile, Boolean > processingCol = new TableColumn<>( "Ok" );
                 processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
                 processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
                 processingCol.setPrefWidth(50);
                 processingCol.setResizable(false);
                 TableColumn oldNameCol = new TableColumn("Current Filename");
-                oldNameCol.setCellValueFactory(new PropertyValueFactory<fileLocs, String>("oldName"));
+                oldNameCol.setCellValueFactory(new PropertyValueFactory<mediaFile, String>("currentName"));
                 TableColumn newNameCol = new TableColumn("After Rename");
-                newNameCol.setCellValueFactory(new PropertyValueFactory<fileLocs, String>("newName"));
+                newNameCol.setCellValueFactory(new PropertyValueFactory<mediaFile, String>("newName"));
                 TableColumn noteCol = new TableColumn("Remarks");
-                noteCol.setCellValueFactory(new PropertyValueFactory<fileLocs, String>("note"));
+                noteCol.setCellValueFactory(new PropertyValueFactory<mediaFile, String>("note"));
+                TableColumn< mediaFile, Boolean > xmpCol = new TableColumn<>( "xmp" );
+                xmpCol.setCellValueFactory( f -> f.getValue().xmpMissingProperty());
+                xmpCol.setCellFactory(CheckBoxTableCell.forTableColumn(xmpCol));
+                xmpCol.setPrefWidth(50);
+                xmpCol.setResizable(false);
                 table.setItems(data);
-                table.getColumns().addAll(processingCol, oldNameCol, newNameCol, noteCol);  
+                table.getColumns().addAll(processingCol, oldNameCol, newNameCol, noteCol, xmpCol);  
             root.setCenter(table);
                 Button btnGo = new Button("Go");
                 btnGo.setOnAction(new EventHandler<ActionEvent>(){
                     @Override
                     public void handle(ActionEvent event) {
                         int i = 0;
-                        for (fileLocs record : data) {
-                            try {                                    
-                                if (Files.notExists(record.getNewPath().getParent())) {
-                                        Files.createDirectory(record.getNewPath().getParent());
-                                }
-                                if (copyOrMove == COPY) {
-                                    Files.copy(record.getOldPath(), record.getNewPath());                               
-                                } else if (copyOrMove == MOVE) {
-                                    Files.move(record.getOldPath(), record.getNewPath());                               
-                                }
-                            } catch (IOException e) {
-                                errorOut(record.getNewName(), e);         
-                            }                                 
+                        for (mediaFile record : data) {
+                            record.write();
                             progressIndicator.setProgress(i/data.size());
                             i++;
                         }
@@ -711,13 +774,11 @@ public class PicOrganizes extends Application {
                 btnRefresh.setOnAction(new EventHandler<ActionEvent>(){
                     @Override
                     public void handle(ActionEvent event) {
-                        for(fileLocs paths:data) {
+                        for(mediaFile paths:data) {
                             Path newPath = paths.getNewPath();
                             String fileName = newPath.getFileName().toString();
-                            if (fileName.contains(naModel)) {
-                                String replacement = toDir + "\\" + fileName;
-                                paths.setNewName(replacement);
-                            }
+                            String replacement = toDir + "\\" + fileName;
+                            paths.setNewName(replacement);
                         }
                     }
                 });
@@ -747,10 +808,10 @@ public class PicOrganizes extends Application {
 //            removeFiles();
 //            compare();
 	}
-
         
         public void createXMP(File file) {
          //exiftool -ext jpg -tagsfromfile -@ exif2xmp.args -@ iptc2xmp.args %d%f.xmp
+         //exiftool -xmp:dateTimeOriginal="2005:10:23 20:06:34.33-05:00" a.jpg
          // -ext EXT
         }
         
@@ -838,7 +899,7 @@ public class PicOrganizes extends Application {
                       @Override public FileVisitResult 
                     visitFile(Path file, BasicFileAttributes attrs) {
                             if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                                files.add(new Object[]{file.toString(), sdf.format(attrs.lastModifiedTime().toMillis()), attrs.size()});                               
+                                files.add(new Object[]{file.toString(), exifDateFormat.format(attrs.lastModifiedTime().toMillis()), attrs.size()});                               
                             }
                             return FileVisitResult.CONTINUE;                            
                         }
