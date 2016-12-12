@@ -12,6 +12,8 @@ import com.drew.metadata.exif.ExifSubIFDDirectory;
 
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
+import java.awt.Dialog;
+import java.io.BufferedReader;
 
 
 import java.io.File;
@@ -19,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +36,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -46,6 +50,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Scene;
@@ -66,8 +71,12 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javax.swing.JDialog;
 
 import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
+import javax.swing.event.DocumentEvent;
 import javax.swing.filechooser.FileSystemView;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -78,14 +87,17 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
+//Exiftool must be in PATH
+
 public class PicOrganizes extends Application {        
         String pictureSet = "K";
-        Path toDir = Paths.get("E:\\Képek\\ExifTest\\Export");
+        Path toDir = Paths.get("J:\\Pictures");
         //Path toDir = Paths.get("E:\\exiftoolTest");
         
-        File fromDir = new File("E:\\Képek\\ExifTest");
-        //File fromDir = new File("G:\\Pictures\\!Válogatás\\Közös");
-        TimeZone timeZoneLocal = TimeZone.getTimeZone("Europe/Budapest");
+        File fromDir = new File("G:\\Pictures\\!Válogatós\\Közös\\Időzóna\\2015-05-01 - 2015-05-31 Ámerika");
+        //File fromDir = new File("G:\\Pictures\\!VÃ¡logatÃ¡s\\KÃ¶zÃ¶s");
+        TimeZone timeZoneLocal = TimeZone.getTimeZone("PST");
+//        TimeZone timeZoneLocal = TimeZone.getTimeZone("Europe/Budapest");
 
         static String[] cameras = {
             "NA",
@@ -94,7 +106,8 @@ public class PicOrganizes extends Application {
             "GT-I9192",
             "GT-I9195I",
             "Lumia 1020",
-            "FinePix S5800 S800"
+            "FinePix S5800 S800",
+            "TG-3            "
         };
         static String[] imageFiles = {
             "jpg",
@@ -147,8 +160,8 @@ public class PicOrganizes extends Application {
             private File fileXml;
             private String originalName;
             private String model = null;
-            private String targetDirectory = toDir.toString();
-            private HashMap<String, String> exifPar = null;
+            private String targetDirectory;
+            private HashMap<String, String> exifPar = new HashMap<>();;
             private GregorianCalendar modDate = new GregorianCalendar();
             private GregorianCalendar filenameDate = null;
             private GregorianCalendar metaDate = null;
@@ -171,10 +184,17 @@ public class PicOrganizes extends Application {
                 note = new SimpleStringProperty("");
                 xmpMissing = new SimpleBooleanProperty(false);
                 originalName = file.getName();
+                targetDirectory = toDir.toString() + "\\" + file.getParentFile().getName();
                 if (supportedMediaFileType(currentName.get())) {
+
+                    String ext = FilenameUtils.getExtension(originalName.toLowerCase());
+                    if (ext.equals("mp4")) {
+                        System.out.println();
+                    }
+
                     fileXmp = new File(file.toString() + ".xmp");
-                    modDate.setTimeInMillis(file.lastModified());
                     modDate.setTimeZone(timeZoneLocal);
+                    modDate.setTimeInMillis(file.lastModified());
                     metaDate = readMeta(file);
                     xmpDate = readMeta(fileXmp);
                     getV1();
@@ -233,7 +253,7 @@ public class PicOrganizes extends Application {
             public Path getNewPath() {
                 return Paths.get(newName.get());
             }
-           
+             
             public void write() {
                 if (processing.get()) {
                     try {                                    
@@ -249,12 +269,32 @@ public class PicOrganizes extends Application {
                             if (fileXmp != null && fileXmp.exists())
                                 Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
                         }
+                        File f = new File(this.getNewPath().toString());
+                        f.setReadOnly();
                         if (xmpMissing.get()) {
+
+                            final String command = "exiftool" + getXmpParam() + " E:\\temp.xmp";
                             try {
-                                Process exec = Runtime.getRuntime().exec("E:\\DRV\\ExifTool\\exiftool" + getXmpParam() + " E:\\temp.xmp");
+                              String line;
+                              Process p = Runtime.getRuntime().exec
+                                (command);
+                              BufferedReader input =
+                                new BufferedReader
+                                  (new InputStreamReader(p.getInputStream()));
+                              while ((line = input.readLine()) != null) {
+                                System.out.println(line);
+                              }
+                              input.close();
+                            }
+                            catch (Exception e) {
+                              errorOut("xmp", e);
+                            }
+         
+/*                            try {
+                                Process exec = Runtime.getRuntime().exec(command);
                             } catch(Exception e) {
                                 errorOut("xmp", e);
-                            }
+                            }*/
                             Files.move(Paths.get("E:\\temp.xmp"), Paths.get(this.getNewPath() + ".xmp"));                               
                         }
                     } catch (IOException e) {
@@ -277,9 +317,12 @@ public class PicOrganizes extends Application {
                 get = exifPar.get("Duration value");
                 if (get != null) param += " -Duration={Scale=1.0,Value=" + get + "}";
                 get = exifPar.get("LtcChangeTable tcFps");
-                int fps = Integer.parseInt(get);
-                if (exifPar.get("LtcChangeTable halfStep").equals("true")) fps = fps * 2;
-                if (get != null) param += " -VideoFrameRate=\"" + fps + "\"";
+                if (get != null) {
+                    int fps = Integer.parseInt(get);
+                    String dub = exifPar.get("LtcChangeTable halfStep");
+                    if (dub != null && dub.equals("true")) fps = fps * 2;
+                    param += " -VideoFrameRate=\"" + fps + "\"";
+                }
                 return param;
             }
             
@@ -297,21 +340,28 @@ public class PicOrganizes extends Application {
             
             private void getV1() {//20160924_144402_ILCE-5100-DSC00615.JPG
                 if (file.getName().length() > 17+4+1) {
-                    DateFormat dfV1 = new SimpleDateFormat("yyyyMMdd_HHmmss"); 
                     try {
+                        DateFormat dfV1 = new SimpleDateFormat("yyyyMMdd_HHmmss");
+                        dfV1.setTimeZone(timeZoneLocal);
                         GregorianCalendar captureDate = new GregorianCalendar();
                         captureDate.setTimeZone(timeZoneLocal);
                         captureDate.setTime(dfV1.parse(file.getName().substring(0, 15)));
                         filenameDate = captureDate;
+                        if (metaDate == null  && xmpDate == null) {
+                            exifPar.put("CreationDate value", xmpDateFormat.format(captureDate.getTime()));
+                            xmpMissing.set(true);
+                        }
                         for (String camera : cameras)
                             if (file.getName().substring(15 + 1).startsWith(camera)) {
-                                if (model != null) {
-                                    if (!model.equals(camera))
-                                        addNote("Filename(" + camera + ") and (" + model + ") Model mismatch ");
-                                } else {
-                                    model = camera;
-                                    exifPar.put("Device modelName", model);
-                                    xmpMissing.set(true);
+                                if (!camera.equals("NA")) {
+                                    if (model != null) {
+                                        if (!model.equals(camera))
+                                            addNote("Filename(" + camera + ") and (" + model + ") Model mismatch ");
+                                    } else {
+                                        model = camera;
+                                        exifPar.put("Device modelName", model);
+                                        xmpMissing.set(true);
+                                    }
                                 }
                                 originalName = file.getName().substring(15 + 1 + camera.length() + 1);
                                 return;
@@ -323,12 +373,16 @@ public class PicOrganizes extends Application {
             }
 
             private void getV2() {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
-                if (file.getName().length() > 17+4+1) {
-                    DateFormat dfV2 = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ssZ"); 
+                if (file.getName().length() > 34+1+4) {
                     try {
+                        DateFormat dfV2 = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ssZ");
                         GregorianCalendar captureDate = new GregorianCalendar();
                         captureDate.setTime(dfV2.parse(file.getName().substring(1, 10) + file.getName().substring(11, 17) + file.getName().substring(18, 22) + file.getName().substring(27, 32)));
                         filenameDate = captureDate;
+                        if (metaDate == null  && xmpDate == null) {
+                            exifPar.put("CreationDate value", xmpDateFormat.format(captureDate.getTime()));
+                            xmpMissing.set(true);
+                        }
                         originalName = file.getName().substring(34);
                     } catch (ParseException e) {
                     }
@@ -346,9 +400,10 @@ public class PicOrganizes extends Application {
                             for (Tag tag : directory.getTags()) {
                                 if (tag.getTagName().equals("Model"))
                                     if (model != null) {
-                                        model = tag.getDescription();
                                         if (!model.equals(tag.getDescription())) 
                                             addNote("Meta(" + tag.getDescription() + ") and (" + model + ") Model mismatch ");
+                                    } else {
+                                        model = tag.getDescription();
                                     }
                                 if (tag.getTagName().equals("Date/Time")) {
                                     String dateString = tag.getDescription(); //2016:11:03 07:50:24
@@ -388,7 +443,7 @@ public class PicOrganizes extends Application {
                 Date date = calendar.getTime();
                 DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ss");
                 dateFormat.setTimeZone(TimeZone.getTimeZone("ETC/UTC"));
-                DateFormat dayFormat = new SimpleDateFormat("EEE");
+                DateFormat dayFormat = new SimpleDateFormat("EEE", Locale.US);
                 dayFormat.setTimeZone(TimeZone.getTimeZone("ETC/UTC"));
                 String dateS = dateFormat.format(date);
                 dateS = dateS.substring(0, 9) + "_" + dateS.substring(9, 15) + "_" + dateS.substring(15) + "_" + dayFormat.format(date) + "(" + ((offsetInMillis<0) ? "-" : "+") + offset + ")-";
@@ -400,8 +455,7 @@ public class PicOrganizes extends Application {
                     try {	
                         DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
                         DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                        Document doc = dBuilder.parse(inputFile);
-                        exifPar = new HashMap<>();
+                        Document doc = dBuilder.parse(inputFile);                        
                         readNode(doc, "Device");
                         readNode(doc, "CreationDate");
                         readNode(doc, "LtcChangeTable");
@@ -520,10 +574,15 @@ public class PicOrganizes extends Application {
                 File dir1 = new File(iter.next());
                 if(dir1.isDirectory()) {
                     File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
+                    JProgressBar progressBar = new JProgressBar(0, content.length);
+                    JDialog progressDialog = progressDiag(progressBar);                           
                     for(int i = 0; i < content.length; i++) {
+                        
                         files.add(new mediaFile(content[i]));
+                        progressBar.setValue(i);
                         progressIndicator.setProgress(i/content.length);
                     }
+                    progressDialog.dispose();
                 }				
             }
             return files;
@@ -588,6 +647,16 @@ public class PicOrganizes extends Application {
                     }                
                 }
             });
+            ObservableList<String> timeZones = FXCollections.observableArrayList(TimeZone.getAvailableIDs());
+            exifDateFormat.setTimeZone(timeZoneLocal);
+            xmpDateFormat.setTimeZone(timeZoneLocal);
+            ComboBox comboBox = new ComboBox(timeZones);
+            comboBox.setOnAction((event) -> {
+                timeZoneLocal = TimeZone.getTimeZone(comboBox.getSelectionModel().getSelectedItem().toString());
+                exifDateFormat.setTimeZone(timeZoneLocal);
+                xmpDateFormat.setTimeZone(timeZoneLocal);
+            });
+            comboBox.getSelectionModel().select(timeZoneLocal.getID());
             RadioButton rbCopy = new RadioButton("Copy");
             rbCopy.setToggleGroup(group);
             rbCopy.setUserData(COPY);
@@ -720,7 +789,7 @@ public class PicOrganizes extends Application {
                             }
                         }
                     });
-                    fromTo.getChildren().addAll(from, btnFrom, to, btnTo);                   
+                    fromTo.getChildren().addAll(from, btnFrom, to, btnTo, comboBox);                   
                 VBox head = new VBox();
                 head.getChildren().addAll(header, fromTo);
             root.setTop(head);
@@ -734,6 +803,7 @@ public class PicOrganizes extends Application {
                 processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
                 processingCol.setPrefWidth(50);
                 processingCol.setResizable(false);
+                processingCol.setEditable(true);
                 TableColumn oldNameCol = new TableColumn("Current Filename");
                 oldNameCol.setCellValueFactory(new PropertyValueFactory<mediaFile, String>("currentName"));
                 TableColumn newNameCol = new TableColumn("After Rename");
@@ -753,12 +823,20 @@ public class PicOrganizes extends Application {
                     @Override
                     public void handle(ActionEvent event) {
                         int i = 0;
+
+                        JProgressBar progressBar = new JProgressBar(0, data.size());
+                        JDialog progressDialog = progressDiag(progressBar);                           
                         for (mediaFile record : data) {
                             record.write();
+                            progressIndicator.setProgress(i/data.size());
+                            progressBar.setValue(i);
                             progressIndicator.setProgress(i/data.size());
                             i++;
                         }
                         data.removeAll(data);                        
+                        progressDialog.dispose();
+
+
                     }
                 });
 
@@ -808,6 +886,20 @@ public class PicOrganizes extends Application {
 //            removeFiles();
 //            compare();
 	}
+     
+        
+        private JDialog progressDiag(JProgressBar bar) {
+            JDialog progressDialog = new JDialog(null, Dialog.ModalityType.MODELESS);
+            JPanel newContentPane = new JPanel();
+            newContentPane.setOpaque(true); //content panes must be opaque
+            progressDialog.setContentPane(newContentPane);
+            bar.setValue(0);
+            bar.setStringPainted(true);
+            newContentPane.add(bar);                            
+            progressDialog.pack();
+            progressDialog.setVisible(true);           
+            return progressDialog;
+        }
         
         public void createXMP(File file) {
          //exiftool -ext jpg -tagsfromfile -@ exif2xmp.args -@ iptc2xmp.args %d%f.xmp
