@@ -13,6 +13,7 @@ import com.drew.metadata.exif.ExifSubIFDDirectory;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import java.awt.Dialog;
+import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
 
 
@@ -72,6 +73,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javax.imageio.ImageIO;
 import javax.swing.JDialog;
 
 import javax.swing.JOptionPane;
@@ -92,10 +94,10 @@ import org.w3c.dom.NodeList;
 
 public class PicOrganizes extends Application {        
         String pictureSet = "K";
-        Path toDir = Paths.get("J:\\Pictures");
+        Path toDir = Paths.get("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika");
         //Path toDir = Paths.get("E:\\exiftoolTest");
         
-        File fromDir = new File("G:\\Pictures\\!Válogatós\\Közös\\Időzóna\\2015-05-01 - 2015-05-31 Ámerika");
+        File fromDir = new File("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika_");
         //File fromDir = new File("G:\\Pictures\\!VÃ¡logatÃ¡s\\KÃ¶zÃ¶s");
         TimeZone timeZoneLocal = TimeZone.getTimeZone("PST");
 //        TimeZone timeZoneLocal = TimeZone.getTimeZone("Europe/Budapest");
@@ -689,7 +691,7 @@ public class PicOrganizes extends Application {
             private void getV3() {
                 if (file.getName().length() > 7+1+4) {
                     try {
-                        Integer.parseInt(file.getName().substring(1, 7));
+                        Integer.parseInt(file.getName().substring(0, 6));
                         originalFileName = file.getName().substring(7);
                     } catch (NumberFormatException e) {
                     }
@@ -709,13 +711,16 @@ public class PicOrganizes extends Application {
                     for (Directory directory : metadata.getDirectories()) {
                         for (Directory directoryBase : metadataBase.getDirectories()) {
                             if (directoryBase.getName().equals(directory.getName())) {
-                                Collection<Tag> tagsBase = directoryBase.getTags();
                                 for (Tag tag : directory.getTags()) {
-                                    if (!tagsBase.contains(tag)) {
-                                        result += tag.getTagName() + ":" + tag.getDescription() + ";";
+                                    Boolean ok = false;
+                                    for (Tag tagBase : directoryBase.getTags()) {
+                                        if (!tagBase.equals(tag)) {
+                                            ok = true;
+                                            break;
+                                        }
                                     }
+                                    if (!ok) result += tag.getTagName() + ":" + tag.getDescription() + ";";
                                 }
-                                break;
                             }
                         }
                     }
@@ -724,7 +729,7 @@ public class PicOrganizes extends Application {
                     errorOut(fileMeta.getName(), e);         
                 }
             } else {return "No file found";}
-            return result;
+            return result.equals("") ? comparableFile.OK : result;
         }
         
         private ArrayList<comparableFile> readDirectoryContent(Path path) {
@@ -768,24 +773,42 @@ public class PicOrganizes extends Application {
             ArrayList<comparableFile> fromFiles = readDirectoryContent(fromDir.toPath());
             ArrayList<comparableFile> toFiles = readDirectoryContent(toDir);
             Boolean needsSFV = false;
+            JProgressBar progressBar = new JProgressBar(0, toFiles.size());
+            JDialog progressDialog = progressDiag(progressBar);                           
+            int i = 1;
             for (comparableFile file : toFiles) {
+                progressBar.setValue(i); i++;
                 for (comparableFile baseFile : fromFiles) {
                     if (file.originalFileName.equals(baseFile.originalFileName)) {
                         if (Objects.equals(file.size, baseFile.size)) {
                             file.result = comparableFile.OK;
+                            break;
                         } else {
                             if (Math.abs(file.size - baseFile.size) < 1000) {
                                 file.result = compareMeta(file.file, baseFile.file);
+                                if (!file.result.equals(comparableFile.OK)) return;
+                            }
+                            BufferedImage img = null;
+                            BufferedImage imgBase = null;
+                            try {
+                                img = ImageIO.read(file.file);
+                                imgBase = ImageIO.read(baseFile.file);
+                                if (img.equals(imgBase)) {
+                                    file.result = comparableFile.OK;
+                                }
+                            } catch (IOException e) {
                             }
                         }
                     } else {
                         if (Objects.equals(file.size, baseFile.size) && (file.file.getName().substring(file.file.getName().length() - 9, file.file.getName().length()).equals(baseFile.file.getName().substring(baseFile.file.getName().length() - 9, baseFile.file.getName().length())))) {
                             file.result = comparableFile.OK;
-                        } else {
-                            needsSFV = true;
-                            file.result = "SFV";
+                            break;
                         }
                     }
+                }
+                if (file.result == null) {
+                    needsSFV = true;
+                    file.result = "SFV";
                 }
             }
             if (needsSFV) {
@@ -1003,7 +1026,6 @@ public class PicOrganizes extends Application {
                         JDialog progressDialog = progressDiag(progressBar);                           
                         for (mediaFile record : data) {
                             record.write();
-                            progressIndicator.setProgress(i/data.size());
                             progressBar.setValue(i);
                             progressIndicator.setProgress(i/data.size());
                             i++;
