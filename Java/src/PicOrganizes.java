@@ -32,12 +32,13 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -636,6 +637,172 @@ public class PicOrganizes extends Application {
             
         }
 
+        private class comparableFile {
+            public static final String OK = "OK";
+            File file;
+            String originalFileName;
+            String date;
+            Long size;
+            String sfv;
+            String result;
+            
+            comparableFile(File fileIn, String dateIn, Long sizeIn) {
+                this.file = fileIn;
+                this.date = dateIn;
+                this.size = sizeIn;
+                originalFileName = file.getName();
+                getV1();
+                getV2();
+                getV3();
+            }
+        
+            private void getV1() {//20160924_144402_ILCE-5100-DSC00615.JPG
+                if (file.getName().length() > 17+4+1) {
+                    try {
+                        DateFormat dfV1 = new SimpleDateFormat("yyyyMMdd_HHmmss");
+                        dfV1.setTimeZone(timeZoneLocal);
+                        GregorianCalendar captureDate = new GregorianCalendar();
+                        captureDate.setTimeZone(timeZoneLocal);
+                        captureDate.setTime(dfV1.parse(file.getName().substring(0, 15)));
+                        for (String camera : cameras)
+                            if (file.getName().substring(15 + 1).startsWith(camera)) {
+                                originalFileName = file.getName().substring(15 + 1 + camera.length() + 1);
+                                return;
+                            }
+                    } catch (ParseException e) {
+                    }
+                }
+            }
+
+            private void getV2() {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
+                if (file.getName().length() > 34+1+4) {
+                    try {
+                        DateFormat dfV2 = new SimpleDateFormat("yyyy-MM-dd@HH-mm-ssZ");
+                        GregorianCalendar captureDate = new GregorianCalendar();
+                        captureDate.setTime(dfV2.parse(file.getName().substring(1, 10) + file.getName().substring(11, 17) + file.getName().substring(18, 22) + file.getName().substring(27, 32)));
+                        originalFileName = file.getName().substring(34);
+                    } catch (ParseException e) {
+                    }
+                }
+            }
+
+            private void getV3() {
+                if (file.getName().length() > 7+1+4) {
+                    try {
+                        Integer.parseInt(file.getName().substring(1, 7));
+                        originalFileName = file.getName().substring(7);
+                    } catch (NumberFormatException e) {
+                    }
+                }
+            }
+
+        }              
+
+        private String compareMeta(File fileMeta, File basefileMeta) {
+            String result = "";
+            if (fileMeta.exists() && basefileMeta.exists()) {
+                Metadata metadata;
+                Metadata metadataBase;
+                try {
+                    metadata = ImageMetadataReader.readMetadata(fileMeta);
+                    metadataBase = ImageMetadataReader.readMetadata(basefileMeta);
+                    for (Directory directory : metadata.getDirectories()) {
+                        for (Directory directoryBase : metadataBase.getDirectories()) {
+                            if (directoryBase.getName().equals(directory.getName())) {
+                                Collection<Tag> tagsBase = directoryBase.getTags();
+                                for (Tag tag : directory.getTags()) {
+                                    if (!tagsBase.contains(tag)) {
+                                        result += tag.getTagName() + ":" + tag.getDescription() + ";";
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                    }
+                } catch (ImageProcessingException e) {
+                } catch (IOException e) {
+                    errorOut(fileMeta.getName(), e);         
+                }
+            } else {return "No file found";}
+            return result;
+        }
+        
+        private ArrayList<comparableFile> readDirectoryContent(Path path) {
+            final ArrayList<comparableFile> files = new ArrayList();
+            try
+            {
+                Files.walkFileTree (path, new SimpleFileVisitor<Path>() 
+                {
+                      @Override public FileVisitResult 
+                    visitFile(Path file, BasicFileAttributes attrs) {
+                            if (!attrs.isDirectory() && attrs.isRegularFile()) {
+                                files.add(new comparableFile(file.toFile(), exifDateFormat.format(attrs.lastModifiedTime().toMillis()), attrs.size()));                               
+                            }
+                            return FileVisitResult.CONTINUE;                            
+                        }
+
+                      @Override public FileVisitResult 
+                    visitFileFailed(Path file, IOException exc) {
+                            System.out.println("skipped: " + file + " (" + exc + ")");
+                            // Skip folders that can't be traversed
+                            return FileVisitResult.CONTINUE;
+                        }
+
+                      @Override public FileVisitResult
+                    postVisitDirectory (Path dir, IOException exc) {
+                            if (exc != null)
+                                System.out.println("had trouble traversing: " + dir + " (" + exc + ")");
+                            // Ignore errors traversing a folder
+                            return FileVisitResult.CONTINUE;
+                        }
+                });
+            }
+            catch (IOException e)
+            {
+                throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
+            }
+            return files;
+        } 
+
+        private void compare() {
+            ArrayList<comparableFile> fromFiles = readDirectoryContent(fromDir.toPath());
+            ArrayList<comparableFile> toFiles = readDirectoryContent(toDir);
+            Boolean needsSFV = false;
+            for (comparableFile file : toFiles) {
+                for (comparableFile baseFile : fromFiles) {
+                    if (file.originalFileName.equals(baseFile.originalFileName)) {
+                        if (Objects.equals(file.size, baseFile.size)) {
+                            file.result = comparableFile.OK;
+                        } else {
+                            if (Math.abs(file.size - baseFile.size) < 1000) {
+                                file.result = compareMeta(file.file, baseFile.file);
+                            }
+                        }
+                    } else {
+                        if (Objects.equals(file.size, baseFile.size) && (file.file.getName().substring(file.file.getName().length() - 9, file.file.getName().length()).equals(baseFile.file.getName().substring(baseFile.file.getName().length() - 9, baseFile.file.getName().length())))) {
+                            file.result = comparableFile.OK;
+                        } else {
+                            needsSFV = true;
+                            file.result = "SFV";
+                        }
+                    }
+                }
+            }
+            if (needsSFV) {
+                
+            } 
+            int okFiles = 0;
+            for (comparableFile file : toFiles) {
+                if (file.result.equals(comparableFile.OK)) {
+                    okFiles++;
+                } else {
+                    System.out.println(file.file.getName() + " " + file.result);
+                }
+            }            
+            System.out.println("OK("+okFiles+"/"+toFiles.size()+")");
+        }
+
+    
         @Override
         public void start(Stage primaryStage) {
             DirectoryChooser chooser = new DirectoryChooser();
@@ -748,6 +915,14 @@ public class PicOrganizes extends Application {
                     }
                 });
             
+                Button btnComp = new Button("Compare");
+                btnComp.setOnAction(new EventHandler<ActionEvent>(){
+                    @Override
+                    public void handle(ActionEvent event) {
+                        compare();
+                    }
+                });
+            
             BorderPane root = new BorderPane();            
                 VBox settings = new VBox();
                     settings.getChildren().add(rbCopy);
@@ -755,7 +930,7 @@ public class PicOrganizes extends Application {
             root.setLeft(settings);
                 HBox header = new HBox();
                     header.setAlignment(Pos.CENTER);
-                    header.getChildren().addAll(btnImport, btnRename, btnMove, btnShow);
+                    header.getChildren().addAll(btnImport, btnRename, btnMove, btnShow, btnComp);
                 HBox fromTo = new HBox();
                     Label from = new Label(fromDir.toString());
                     Button btnFrom = new Button("Edit");
@@ -925,11 +1100,31 @@ public class PicOrganizes extends Application {
             }
 	}
         
-        private void compare() {
-            long startTime = System.currentTimeMillis();
-            ArrayList<Object[]> readDirectoryContent = readDirectoryContent(fromDir.toPath());
-            long stopTime = System.currentTimeMillis();
-            long elapsedTime = stopTime - startTime;
+	private void removeFiles() {
+            File[] directories = toDir.toFile().listFiles((File dir, String name) -> dir.isDirectory());
+            for (File dir1 : directories) {
+                if(dir1.isDirectory()) {
+                    File[] content = dir1.listFiles(new FilenameFilter() {
+                        public boolean accept(File dir, String name) {
+                                name = name.toLowerCase();
+                            return name.endsWith("__highres.jpg");
+                        }});
+                    if (content.length > 0) {
+                        for(int i = 0; i < content.length; i++) {
+                            String absolutePath = content[i].getAbsolutePath();
+                            try {
+                                Files.deleteIfExists(Paths.get(absolutePath.substring(0, absolutePath.length()-13) + ".jpg"));
+                            } catch (IOException e) {
+                                errorOut(content[i].getName(), e);         
+                            }
+                        }
+                    }
+                }				
+            }
+            
+        }
+
+        private void compareCSV() {
             CsvParserSettings csvParserSettings = new CsvParserSettings();
             CsvParser parser = new CsvParser(new CsvParserSettings());
             try {
@@ -957,66 +1152,5 @@ public class PicOrganizes extends Application {
                 Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
-               
-	private void removeFiles() {
-            File[] directories = toDir.toFile().listFiles((File dir, String name) -> dir.isDirectory());
-            for (File dir1 : directories) {
-                if(dir1.isDirectory()) {
-                    File[] content = dir1.listFiles(new FilenameFilter() {
-                        public boolean accept(File dir, String name) {
-                                name = name.toLowerCase();
-                            return name.endsWith("__highres.jpg");
-                        }});
-                    if (content.length > 0) {
-                        for(int i = 0; i < content.length; i++) {
-                            String absolutePath = content[i].getAbsolutePath();
-                            try {
-                                Files.deleteIfExists(Paths.get(absolutePath.substring(0, absolutePath.length()-13) + ".jpg"));
-                            } catch (IOException e) {
-                                errorOut(content[i].getName(), e);         
-                            }
-                        }
-                    }
-                }				
-            }
-            
-        }
-
-        private static ArrayList<Object[]> readDirectoryContent(Path path) {
-            final ArrayList<Object[]> files = new ArrayList();
-            try
-            {
-                Files.walkFileTree (path, new SimpleFileVisitor<Path>() 
-                {
-                      @Override public FileVisitResult 
-                    visitFile(Path file, BasicFileAttributes attrs) {
-                            if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                                files.add(new Object[]{file.toString(), exifDateFormat.format(attrs.lastModifiedTime().toMillis()), attrs.size()});                               
-                            }
-                            return FileVisitResult.CONTINUE;                            
-                        }
-
-                      @Override public FileVisitResult 
-                    visitFileFailed(Path file, IOException exc) {
-                            System.out.println("skipped: " + file + " (" + exc + ")");
-                            // Skip folders that can't be traversed
-                            return FileVisitResult.CONTINUE;
-                        }
-
-                      @Override public FileVisitResult
-                    postVisitDirectory (Path dir, IOException exc) {
-                            if (exc != null)
-                                System.out.println("had trouble traversing: " + dir + " (" + exc + ")");
-                            // Ignore errors traversing a folder
-                            return FileVisitResult.CONTINUE;
-                        }
-                });
-            }
-            catch (IOException e)
-            {
-                throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
-            }
-            return files;
-        } 
         
 }
