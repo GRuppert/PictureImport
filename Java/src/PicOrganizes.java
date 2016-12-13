@@ -1,3 +1,7 @@
+import com.adobe.xmp.XMPException;
+import com.adobe.xmp.XMPIterator;
+import com.adobe.xmp.XMPMeta;
+import com.adobe.xmp.properties.XMPPropertyInfo;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.TimeZone;
@@ -9,6 +13,7 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.drew.metadata.exif.ExifIFD0Directory;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
+import com.drew.metadata.xmp.XmpDirectory;
 
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
@@ -18,6 +23,7 @@ import java.io.BufferedReader;
 
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FilenameFilter;
@@ -94,10 +100,10 @@ import org.w3c.dom.NodeList;
 
 public class PicOrganizes extends Application {        
         String pictureSet = "K";
-        Path toDir = Paths.get("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika");
+        Path toDir = Paths.get("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika_");
         //Path toDir = Paths.get("E:\\exiftoolTest");
         
-        File fromDir = new File("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika_");
+        File fromDir = new File("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika");
         //File fromDir = new File("G:\\Pictures\\!VÃ¡logatÃ¡s\\KÃ¶zÃ¶s");
         TimeZone timeZoneLocal = TimeZone.getTimeZone("PST");
 //        TimeZone timeZoneLocal = TimeZone.getTimeZone("Europe/Budapest");
@@ -647,7 +653,15 @@ public class PicOrganizes extends Application {
             Long size;
             String sfv;
             String result;
-            
+            Boolean imageSizeEq = null;
+            Boolean imageEq = null;
+            String metaDataEq = null;
+            public static final String PLUS = "plus";
+            public static final String MISSING = "missing";
+            public static final String CONFLICT = "conflict";
+            public static final String EQUAL = "equal";
+            public static final String ERROR = "error";
+                        
             comparableFile(File fileIn, String dateIn, Long sizeIn) {
                 this.file = fileIn;
                 this.date = dateIn;
@@ -698,38 +712,133 @@ public class PicOrganizes extends Application {
                 }
             }
 
+            private boolean isImageChanged() throws IOException {
+                if (imageSizeEq != null && imageSizeEq) return true;
+                if (imageEq != null && imageEq) return true;
+                if (imageSizeEq != null && !imageSizeEq) return false;
+                if (imageEq != null && !imageEq) return false;
+                throw new IOException("Couldn't read");
+            }
+
         }              
 
-        private String compareMeta(File fileMeta, File basefileMeta) {
-            String result = "";
+        private String[] compareMeta(File fileMeta, File basefileMeta) {
+            String result = comparableFile.OK;
+            String metaType = null;
+            String[] res;
             if (fileMeta.exists() && basefileMeta.exists()) {
                 Metadata metadata;
                 Metadata metadataBase;
+                ArrayList<String[]> tags = new ArrayList();
+                ArrayList<String[]> tagsBase = new ArrayList();
+                ArrayList<String> unimportant = new ArrayList();
+                unimportant.add("Date/Time");
+                unimportant.add("Thumbnail Offset");
+                unimportant.add("File Size");
+                unimportant.add("File Modified Date");
                 try {
                     metadata = ImageMetadataReader.readMetadata(fileMeta);
                     metadataBase = ImageMetadataReader.readMetadata(basefileMeta);
+                    for (Directory directoryBase : metadataBase.getDirectories()) {
+                        if (!directoryBase.getClass().equals(XmpDirectory.class))
+                            for (Tag tagBase : directoryBase.getTags()) {
+                                String[] temp = {tagBase.getTagName(), tagBase.getDescription()};
+                                tagsBase.add(temp);
+                            }
+                    }
                     for (Directory directory : metadata.getDirectories()) {
-                        for (Directory directoryBase : metadataBase.getDirectories()) {
-                            if (directoryBase.getName().equals(directory.getName())) {
-                                for (Tag tag : directory.getTags()) {
-                                    Boolean ok = false;
-                                    for (Tag tagBase : directoryBase.getTags()) {
-                                        if (!tagBase.equals(tag)) {
-                                            ok = true;
-                                            break;
-                                        }
-                                    }
-                                    if (!ok) result += tag.getTagName() + ":" + tag.getDescription() + ";";
+                        if (!directory.getClass().equals(XmpDirectory.class))
+                            for (Tag tag : directory.getTags()) {
+                                String[] temp = {tag.getTagName(), tag.getDescription()};
+                                tags.add(temp);
+                            }
+                    }
+                    Collection<XmpDirectory> xmpDirectories = metadata.getDirectoriesOfType(XmpDirectory.class);
+                    for (XmpDirectory xmpDirectory : xmpDirectories) {
+                        XMPMeta xmpMeta = xmpDirectory.getXMPMeta();
+                        XMPIterator iterator;
+                        try {
+                            iterator = xmpMeta.iterator();
+                            while (iterator.hasNext()) {
+                                XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
+                                if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null) {
+                                    String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
+                                    tagsBase.add(temp);
                                 }
                             }
+                        } catch (XMPException ex) {
+                            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }                    
+                    Collection<XmpDirectory> xmpDirectoriesBase = metadata.getDirectoriesOfType(XmpDirectory.class);
+                    for (XmpDirectory xmpDirectory : xmpDirectoriesBase) {
+                        XMPMeta xmpMeta = xmpDirectory.getXMPMeta();
+                        XMPIterator iterator;
+                        try {
+                            iterator = xmpMeta.iterator();
+                            while (iterator.hasNext()) {
+                                XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
+                                if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null) {
+                                    String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
+                                    tagsBase.add(temp);
+                                }
+                            }
+                        } catch (XMPException ex) {
+                            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                        }
+                    }                    
+                    
+                    outerloop:
+                    for (int i = 0; i < tags.size();) {
+                        String[] tag = tags.get(i);
+                        for (int j = 0; j < tagsBase.size();) {
+                            String[] tagBase = tagsBase.get(j);
+                            if (tag[0].equals(tagBase[0])) {
+                                if (!tag[1].equals(tagBase[1])) {
+                                    if (!unimportant.contains(tag[0])) {
+                                        result += tag[0] + ":" + tag[1] + "-><-" +tagBase[1] + " | ";
+                                        metaType = comparableFile.CONFLICT;
+                                    }
+                                }
+                                tags.remove(tag);
+                                tagsBase.remove(tagBase);                                
+                                continue outerloop;
+                            }
+                            j++;
+                        }
+                        i++;
+                    }
+                    for (String[] tag : tags) {
+                        result += "+" + tag[0] + ":" + tag[1] + " | ";
+                    }
+                    for (String[] tag : tagsBase) {
+                        result += "-" + tag[0] + ":" + tag[1] + " | ";
+                    }
+                    if (metaType == null) {
+                        if (tags.size() > 0) {
+                            if (tagsBase.size() > 0)
+                                metaType = comparableFile.CONFLICT;
+                            else
+                                metaType = comparableFile.PLUS;
+                        } else {
+                            if (tagsBase.size() > 0)
+                                metaType = comparableFile.MISSING;
+                            else
+                                metaType = comparableFile.EQUAL;
                         }
                     }
                 } catch (ImageProcessingException e) {
+                    errorOut(fileMeta.getName(), e);         
+                    metaType = comparableFile.ERROR;
                 } catch (IOException e) {
                     errorOut(fileMeta.getName(), e);         
+                    metaType = comparableFile.ERROR;
                 }
-            } else {return "No file found";}
-            return result.equals("") ? comparableFile.OK : result;
+            } else {
+                metaType = comparableFile.ERROR;
+            }
+            res = new String[]{metaType, result};
+            return res;
         }
         
         private ArrayList<comparableFile> readDirectoryContent(Path path) {
@@ -769,6 +878,63 @@ public class PicOrganizes extends Application {
             return files;
         } 
 
+        public static final int META = 0;        
+        public static final int INTACT = 1;        
+        public static final int CHANGED = 2;        
+        public static final int ERROR = -1;        
+        private int compareImage(FileInputStream in, FileInputStream inB, long diff) {
+            try {
+                int c;
+                long j = 0;
+                while ((c = in.read()) != -1) {
+                    if (c == 255) {
+                        c = in.read();
+                        if (c == 218) {
+                            break;
+                        }
+                    }
+                    j++;
+                }
+                long jB = 0;
+                while ((c = inB.read()) != -1) {
+                    if (c == 255) {
+                        c = inB.read();
+                        if (c == 218) {
+                            break;
+                        }
+                    }
+                    jB++;
+                }
+                if (diff == Math.abs(j - jB)) return META;
+                else {
+                    int exit = 0;
+                    while ((c = in.read()) != -1 || exit == 2) {
+                        if (c == inB.read()) {
+                            if (exit == 1)
+                                if (c == 217) return INTACT; 
+                                else exit = 0;
+                            if (c == 255 && exit == 0) exit++;
+                            j++;
+                        } else {
+                            return CHANGED;
+                        }
+                    }
+                }
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+            } finally {
+                try {
+                    in.close();
+                    inB.close();
+                } catch (IOException ex) {
+                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            return ERROR;
+        }
+        
         private void compare() {
             ArrayList<comparableFile> fromFiles = readDirectoryContent(fromDir.toPath());
             ArrayList<comparableFile> toFiles = readDirectoryContent(toDir);
@@ -779,27 +945,52 @@ public class PicOrganizes extends Application {
             for (comparableFile file : toFiles) {
                 progressBar.setValue(i); i++;
                 for (comparableFile baseFile : fromFiles) {
+                    //Same filename
                     if (file.originalFileName.equals(baseFile.originalFileName)) {
+                        //Same filename, same filesize consider it's ok
                         if (Objects.equals(file.size, baseFile.size)) {
                             file.result = comparableFile.OK;
                             break;
+                        //Same filename, but different size. Where does it come from?
                         } else {
-                            if (Math.abs(file.size - baseFile.size) < 1000) {
-                                file.result = compareMeta(file.file, baseFile.file);
-                                if (!file.result.equals(comparableFile.OK)) return;
-                            }
-                            BufferedImage img = null;
-                            BufferedImage imgBase = null;
-                            try {
-                                img = ImageIO.read(file.file);
-                                imgBase = ImageIO.read(baseFile.file);
-                                if (img.equals(imgBase)) {
-                                    file.result = comparableFile.OK;
+//                            if (Math.abs(file.size - baseFile.size) < 1000) {
+                                file.result = "";
+                                long sizeDiff = Math.abs(file.size - baseFile.size);
+                                int result = ERROR;
+                                try {
+                                    FileInputStream in = new FileInputStream(file.file.toString());
+                                    FileInputStream inB = new FileInputStream(baseFile.file.toString());
+                                    result = compareImage(in, inB, sizeDiff);
+                                } catch (FileNotFoundException ex) {
+                                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
                                 }
-                            } catch (IOException e) {
-                            }
+                                switch (result) {
+                                    //Missing bytes found in the first segment
+                                    case META:
+                                        file.imageSizeEq = true;
+                                        break;
+                                    //At least the codec image hasn't been modified
+                                    case INTACT:
+                                        file.imageEq = true;
+                                        break;
+                                    //The image itself has been manipulated
+                                    case CHANGED:
+                                        file.imageEq = false;
+                                        break;
+                                    //Couldn't read the file    
+                                    case ERROR:
+                                        file.result = "Couldn't read the file. ";
+                                        break;
+                                }
+                                String[] res = compareMeta(file.file, baseFile.file);
+                                file.result += res[1];
+                                file.metaDataEq = res[0];
+                                if (!file.result.equals(comparableFile.OK)) break;
+//                            }
                         }
+                    //Different name, but
                     } else {
+                        //Same filesize and the last 5 digits as well as the format match, presume it's the same
                         if (Objects.equals(file.size, baseFile.size) && (file.file.getName().substring(file.file.getName().length() - 9, file.file.getName().length()).equals(baseFile.file.getName().substring(baseFile.file.getName().length() - 9, baseFile.file.getName().length())))) {
                             file.result = comparableFile.OK;
                             break;
@@ -811,18 +1002,37 @@ public class PicOrganizes extends Application {
                     file.result = "SFV";
                 }
             }
+            progressDialog.dispose();
             if (needsSFV) {
                 
             } 
             int okFiles = 0;
+            int changedPic = 0;
+            int metaMissing = 0;
+            int metaConflict = 0;
+            int error = 0;
             for (comparableFile file : toFiles) {
                 if (file.result.equals(comparableFile.OK)) {
                     okFiles++;
                 } else {
+                    try {
+                        if (file.isImageChanged()) changedPic++;
+                    } catch (IOException ex) {
+                        error++;
+                    }
+                    if (file.metaDataEq.equals(comparableFile.MISSING)) metaMissing++;
+                    else if (file.metaDataEq.equals(comparableFile.ERROR)) error++;
+                    else if (file.metaDataEq.equals(comparableFile.CONFLICT) || file.metaDataEq.equals(comparableFile.PLUS)) metaConflict++;                    
+                    /*
+            public static final String PLUS = "plus";
+            public static final String MISSING = "missing";
+            public static final String CONFLICT = "conflict";
+            public static final String EQUAL = "equal";
+                    */
                     System.out.println(file.file.getName() + " " + file.result);
                 }
             }            
-            System.out.println("OK("+okFiles+"/"+toFiles.size()+")");
+            System.out.println("OK:"+okFiles+"/Missing Meta:"+metaMissing+"/Meta Conflict:"+metaConflict+"/Pic changed:"+changedPic+"/Error:"+error+"/All:"+toFiles.size()+")");
         }
 
     
@@ -983,7 +1193,7 @@ public class PicOrganizes extends Application {
                             File file = chooser.showDialog(primaryStage);
                             if (file != null) {
                                 toDir = file.toPath();
-                                from.setText(toDir.toString());
+                                to.setText(toDir.toString());
                             }
                         }
                     });
