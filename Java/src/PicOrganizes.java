@@ -646,21 +646,15 @@ public class PicOrganizes extends Application {
         }
 
         private class comparableFile {
-            public static final String OK = "OK";
             File file;
             String originalFileName;
             String date;
             Long size;
             String sfv;
-            String result;
-            Boolean imageSizeEq = null;
-            Boolean imageEq = null;
-            String metaDataEq = null;
-            public static final String PLUS = "plus";
-            public static final String MISSING = "missing";
-            public static final String CONFLICT = "conflict";
-            public static final String EQUAL = "equal";
-            public static final String ERROR = "error";
+            int match = 0;
+            Boolean ok = false;
+            String warnings = "";
+            String errors = "";
                         
             comparableFile(File fileIn, String dateIn, Long sizeIn) {
                 this.file = fileIn;
@@ -711,20 +705,11 @@ public class PicOrganizes extends Application {
                     }
                 }
             }
-
-            private boolean isImageChanged() throws IOException {
-                if (imageSizeEq != null && imageSizeEq) return true;
-                if (imageEq != null && imageEq) return true;
-                if (imageSizeEq != null && !imageSizeEq) return false;
-                if (imageEq != null && !imageEq) return false;
-                throw new IOException("Couldn't read");
-            }
-
         }              
 
         private String[] compareMeta(File fileMeta, File basefileMeta) {
-            String result = comparableFile.OK;
-            String metaType = null;
+            String warnings = "";
+            String errors = "";
             String[] res;
             if (fileMeta.exists() && basefileMeta.exists()) {
                 Metadata metadata;
@@ -796,8 +781,7 @@ public class PicOrganizes extends Application {
                             if (tag[0].equals(tagBase[0])) {
                                 if (!tag[1].equals(tagBase[1])) {
                                     if (!unimportant.contains(tag[0])) {
-                                        result += tag[0] + ":" + tag[1] + "-><-" +tagBase[1] + " | ";
-                                        metaType = comparableFile.CONFLICT;
+                                        errors += tag[0] + ":" + tag[1] + "-><-" +tagBase[1] + " | ";
                                     }
                                 }
                                 tags.remove(tag);
@@ -809,35 +793,22 @@ public class PicOrganizes extends Application {
                         i++;
                     }
                     for (String[] tag : tags) {
-                        result += "+" + tag[0] + ":" + tag[1] + " | ";
+                        errors += "+" + tag[0] + ":" + tag[1] + " | ";
                     }
                     for (String[] tag : tagsBase) {
-                        result += "-" + tag[0] + ":" + tag[1] + " | ";
-                    }
-                    if (metaType == null) {
-                        if (tags.size() > 0) {
-                            if (tagsBase.size() > 0)
-                                metaType = comparableFile.CONFLICT;
-                            else
-                                metaType = comparableFile.PLUS;
-                        } else {
-                            if (tagsBase.size() > 0)
-                                metaType = comparableFile.MISSING;
-                            else
-                                metaType = comparableFile.EQUAL;
-                        }
+                        warnings += "-" + tag[0] + ":" + tag[1] + " | ";
                     }
                 } catch (ImageProcessingException e) {
                     errorOut(fileMeta.getName(), e);         
-                    metaType = comparableFile.ERROR;
+                    errors += e.getMessage() + " ";
                 } catch (IOException e) {
                     errorOut(fileMeta.getName(), e);         
-                    metaType = comparableFile.ERROR;
+                    errors += e.getMessage() + " ";
                 }
             } else {
-                metaType = comparableFile.ERROR;
+                errors += "MetaData unavailable ";
             }
-            res = new String[]{metaType, result};
+            res = new String[]{errors, warnings};
             return res;
         }
         
@@ -878,11 +849,7 @@ public class PicOrganizes extends Application {
             return files;
         } 
 
-        public static final int META = 0;        
-        public static final int INTACT = 1;        
-        public static final int CHANGED = 2;        
-        public static final int ERROR = -1;        
-        private int compareImage(FileInputStream in, FileInputStream inB, long diff) {
+        private String compareImage(FileInputStream in, FileInputStream inB, long diff) {
             try {
                 int c;
                 long j = 0;
@@ -905,34 +872,43 @@ public class PicOrganizes extends Application {
                     }
                     jB++;
                 }
-                if (diff == Math.abs(j - jB)) return META;
+                String markers = "";
+                if (diff == Math.abs(j - jB)) return "";
                 else {
                     int exit = 0;
                     while ((c = in.read()) != -1 || exit == 2) {
                         if (c == inB.read()) {
                             if (exit == 1)
-                                if (c == 217) return INTACT; 
-                                else exit = 0;
+                                //Not a marker(byte stuffing)
+                                if (c == 0) exit = 0;
+                                //0xD0(207)-0xD7(215) Reset
+                                else if (206 <= c && c <= 215) exit = 0;
+                                //End of image
+                                else if (c == 217) return ""; 
+                                else {
+                                    return "Marker: " + Integer.toString(c) + " ";
+                                }
+                            //0xFF could be a marker
                             if (c == 255 && exit == 0) exit++;
                             j++;
                         } else {
-                            return CHANGED;
+                            return "Data mismatch ";
                         }
                     }
                 }
+                return "No end of Image found ";
             } catch (FileNotFoundException ex) {
-                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                return ex.getMessage();
             } catch (IOException ex) {
-                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                return ex.getMessage();
             } finally {
                 try {
                     in.close();
                     inB.close();
                 } catch (IOException ex) {
-                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                    return ex.getMessage();
                 }
             }
-            return ERROR;
         }
         
         private void compare() {
@@ -949,57 +925,39 @@ public class PicOrganizes extends Application {
                     if (file.originalFileName.equals(baseFile.originalFileName)) {
                         //Same filename, same filesize consider it's ok
                         if (Objects.equals(file.size, baseFile.size)) {
-                            file.result = comparableFile.OK;
+                            file.ok = true;
+                            file.match++;
                             break;
                         //Same filename, but different size. Where does it come from?
                         } else {
-//                            if (Math.abs(file.size - baseFile.size) < 1000) {
-                                file.result = "";
+                            if (Math.abs(file.size - baseFile.size) < 1000) {
+                                file.match++;
                                 long sizeDiff = Math.abs(file.size - baseFile.size);
-                                int result = ERROR;
                                 try {
                                     FileInputStream in = new FileInputStream(file.file.toString());
                                     FileInputStream inB = new FileInputStream(baseFile.file.toString());
-                                    result = compareImage(in, inB, sizeDiff);
+                                    file.errors += compareImage(in, inB, sizeDiff);
                                 } catch (FileNotFoundException ex) {
                                     Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
                                 }
-                                switch (result) {
-                                    //Missing bytes found in the first segment
-                                    case META:
-                                        file.imageSizeEq = true;
-                                        break;
-                                    //At least the codec image hasn't been modified
-                                    case INTACT:
-                                        file.imageEq = true;
-                                        break;
-                                    //The image itself has been manipulated
-                                    case CHANGED:
-                                        file.imageEq = false;
-                                        break;
-                                    //Couldn't read the file    
-                                    case ERROR:
-                                        file.result = "Couldn't read the file. ";
-                                        break;
-                                }
                                 String[] res = compareMeta(file.file, baseFile.file);
-                                file.result += res[1];
-                                file.metaDataEq = res[0];
-                                if (!file.result.equals(comparableFile.OK)) break;
-//                            }
+                                file.errors += res[0];
+                                file.warnings += res[1];
+                            }
                         }
                     //Different name, but
                     } else {
                         //Same filesize and the last 5 digits as well as the format match, presume it's the same
                         if (Objects.equals(file.size, baseFile.size) && (file.file.getName().substring(file.file.getName().length() - 9, file.file.getName().length()).equals(baseFile.file.getName().substring(baseFile.file.getName().length() - 9, baseFile.file.getName().length())))) {
-                            file.result = comparableFile.OK;
+                            file.ok = true;
+                            file.match++;
                             break;
                         }
                     }
                 }
-                if (file.result == null) {
+                if (file.match == 0) {
                     needsSFV = true;
-                    file.result = "SFV";
+                    file.errors += "No match found ";
                 }
             }
             progressDialog.dispose();
@@ -1007,32 +965,28 @@ public class PicOrganizes extends Application {
                 
             } 
             int okFiles = 0;
-            int changedPic = 0;
-            int metaMissing = 0;
-            int metaConflict = 0;
-            int error = 0;
+            ArrayList<String> errorList = new ArrayList();
+            ArrayList<String> warningList = new ArrayList();
             for (comparableFile file : toFiles) {
-                if (file.result.equals(comparableFile.OK)) {
+                if (file.ok) {
                     okFiles++;
                 } else {
-                    try {
-                        if (file.isImageChanged()) changedPic++;
-                    } catch (IOException ex) {
-                        error++;
-                    }
-                    if (file.metaDataEq.equals(comparableFile.MISSING)) metaMissing++;
-                    else if (file.metaDataEq.equals(comparableFile.ERROR)) error++;
-                    else if (file.metaDataEq.equals(comparableFile.CONFLICT) || file.metaDataEq.equals(comparableFile.PLUS)) metaConflict++;                    
-                    /*
-            public static final String PLUS = "plus";
-            public static final String MISSING = "missing";
-            public static final String CONFLICT = "conflict";
-            public static final String EQUAL = "equal";
-                    */
-                    System.out.println(file.file.getName() + " " + file.result);
+                    if (!file.errors.equals("")) 
+                        errorList.add(file.file.getName() + " " + file.errors);
+                    if (!file.warnings.equals(""))
+                        warningList.add(file.file.getName() + " " + file.warnings);
                 }
-            }            
-            System.out.println("OK:"+okFiles+"/Missing Meta:"+metaMissing+"/Meta Conflict:"+metaConflict+"/Pic changed:"+changedPic+"/Error:"+error+"/All:"+toFiles.size()+")");
+            }              
+            System.out.println("Warnings:");
+            for (String war : warningList) {
+                System.out.println(war);
+            }
+            System.out.println("Errors:");
+            for (String err : errorList) {
+                System.out.println(err);
+            }
+            System.out.println("OK:"+okFiles+"/Warning:"+warningList.size()+"/Error:"+errorList.size()+"/All:"+toFiles.size()+")");
+//            System.out.println("OK:"+okFiles+"/Missing Meta:"+metaMissing+"/Meta Conflict:"+metaConflict+"/Pic changed:"+changedPic+"/Error:"+error+"/All:"+toFiles.size()+")");
         }
 
     
