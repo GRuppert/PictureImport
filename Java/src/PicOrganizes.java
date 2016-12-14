@@ -100,11 +100,11 @@ import org.w3c.dom.NodeList;
 
 public class PicOrganizes extends Application {        
         String pictureSet = "K";
-        Path toDir = Paths.get("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika_");
-        //Path toDir = Paths.get("E:\\exiftoolTest");
+//        Path toDir = Paths.get("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika_");
+        Path toDir = Paths.get("E:\\x");
         
-        File fromDir = new File("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika");
-        //File fromDir = new File("G:\\Pictures\\!VÃ¡logatÃ¡s\\KÃ¶zÃ¶s");
+//        File fromDir = new File("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika");
+        File fromDir = new File("E:\\labakozt");
         TimeZone timeZoneLocal = TimeZone.getTimeZone("PST");
 //        TimeZone timeZoneLocal = TimeZone.getTimeZone("Europe/Budapest");
 
@@ -849,54 +849,51 @@ public class PicOrganizes extends Application {
             return files;
         } 
 
+        private long startOfImage(FileInputStream in) throws IOException {
+            int c;
+            long j = 0;
+            while ((c = in.read()) != -1) {
+                if (c == 255) {
+                    j++;
+                    c = in.read();
+                    if (c == 216) {
+                        break;
+                    }
+                }
+                j++;
+            }
+            Boolean marker = false;
+            while ((c = in.read()) != -1) {
+                if (marker)
+                    //Not a marker(byte stuffing), shouldn't happen in header
+                    if (c == 0) marker = false;
+                    //Start of Quantization table, practically the image
+                    else if (c == 219) return j; 
+                    else {
+                        long jump = 256*in.read() + in.read() - 2;
+                        in.skip(jump);
+                        j += jump + 2;                        
+                        marker = false;
+                    }
+                else {
+                    if (c == 255 ) {
+                        marker = true;
+                    }
+/*                    else {
+                        return -1;
+                    }*/
+                }
+                j++;
+            }
+            return -1;  
+        }
+
         private String compareImage(FileInputStream in, FileInputStream inB, long diff) {
             try {
-                int c;
-                long j = 0;
-                while ((c = in.read()) != -1) {
-                    if (c == 255) {
-                        c = in.read();
-                        if (c == 218) {
-                            break;
-                        }
-                    }
-                    j++;
-                }
-                long jB = 0;
-                while ((c = inB.read()) != -1) {
-                    if (c == 255) {
-                        c = inB.read();
-                        if (c == 218) {
-                            break;
-                        }
-                    }
-                    jB++;
-                }
-                String markers = "";
+                long j = startOfImage(in);
+                long jB = startOfImage(inB);
+                if (j == -1 || jB == -1) return "Couldn't read the file ";
                 if (diff == Math.abs(j - jB)) return "";
-                else {
-                    int exit = 0;
-                    while ((c = in.read()) != -1 || exit == 2) {
-                        if (c == inB.read()) {
-                            if (exit == 1)
-                                //Not a marker(byte stuffing)
-                                if (c == 0) exit = 0;
-                                //0xD0(207)-0xD7(215) Reset
-                                else if (206 <= c && c <= 215) exit = 0;
-                                //End of image
-                                else if (c == 217) return ""; 
-                                else {
-                                    return "Marker: " + Integer.toString(c) + " ";
-                                }
-                            //0xFF could be a marker
-                            if (c == 255 && exit == 0) exit++;
-                            j++;
-                        } else {
-                            return "Data mismatch ";
-                        }
-                    }
-                }
-                return "No end of Image found ";
             } catch (FileNotFoundException ex) {
                 return ex.getMessage();
             } catch (IOException ex) {
@@ -909,6 +906,7 @@ public class PicOrganizes extends Application {
                     return ex.getMessage();
                 }
             }
+            return "Difference after the first header ";
         }
         
         private void compare() {
@@ -985,7 +983,7 @@ public class PicOrganizes extends Application {
             for (String err : errorList) {
                 System.out.println(err);
             }
-            System.out.println("OK:"+okFiles+"/Warning:"+warningList.size()+"/Error:"+errorList.size()+"/All:"+toFiles.size()+")");
+            System.out.println("OK:"+okFiles+"/Warning:"+warningList.size()+"/Error:"+errorList.size()+"/All:"+toFiles.size());
 //            System.out.println("OK:"+okFiles+"/Missing Meta:"+metaMissing+"/Meta Conflict:"+metaConflict+"/Pic changed:"+changedPic+"/Error:"+error+"/All:"+toFiles.size()+")");
         }
 
