@@ -100,11 +100,11 @@ import org.w3c.dom.NodeList;
 
 public class PicOrganizes extends Application {        
         String pictureSet = "K";
-//        Path toDir = Paths.get("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika_");
-        Path toDir = Paths.get("E:\\x");
+        Path toDir = Paths.get("j:\\Régi képek\\Nagyok\\2015-05-01 - 2015-05-31 Ámerika\\");
+//        Path toDir = Paths.get("E:\\x");
         
-//        File fromDir = new File("I:\\Nagyok\\Amerikák\\2015-05-01 - 2015-05-31 Ámerika");
-        File fromDir = new File("E:\\labakozt");
+        File fromDir = new File("g:\\Pictures\\Nyers\\2015-05-01 - 2015-05-31 Ámerika Nyers");
+//        File fromDir = new File("E:\\labakozt");
         TimeZone timeZoneLocal = TimeZone.getTimeZone("PST");
 //        TimeZone timeZoneLocal = TimeZone.getTimeZone("Europe/Budapest");
 
@@ -699,7 +699,8 @@ public class PicOrganizes extends Application {
             private void getV3() {
                 if (file.getName().length() > 7+1+4) {
                     try {
-                        Integer.parseInt(file.getName().substring(0, 6));
+                        int parseInt = Integer.parseInt(file.getName().substring(0, 6));
+                        if (parseInt < 110000)
                         originalFileName = file.getName().substring(7);
                     } catch (NumberFormatException e) {
                     }
@@ -721,6 +722,8 @@ public class PicOrganizes extends Application {
                 unimportant.add("Thumbnail Offset");
                 unimportant.add("File Size");
                 unimportant.add("File Modified Date");
+                unimportant.add("File Name");
+                unimportant.add("User Comment");
                 try {
                     metadata = ImageMetadataReader.readMetadata(fileMeta);
                     metadataBase = ImageMetadataReader.readMetadata(basefileMeta);
@@ -779,13 +782,15 @@ public class PicOrganizes extends Application {
                         for (int j = 0; j < tagsBase.size();) {
                             String[] tagBase = tagsBase.get(j);
                             if (tag[0].equals(tagBase[0])) {
-                                if (!tag[1].equals(tagBase[1])) {
-                                    if (!unimportant.contains(tag[0])) {
-                                        errors += tag[0] + ":" + tag[1] + "-><-" +tagBase[1] + " | ";
+                                if (tag[1] != null && !tag[1].equals("")) {
+                                    if (!tag[1].equals(tagBase[1])) {
+                                        if (!unimportant.contains(tag[0])) {
+                                            errors += tag[0] + ":" + tag[1] + "-><-" +tagBase[1] + " | ";
+                                        }
                                     }
+                                    tagsBase.remove(tagBase);                                
                                 }
                                 tags.remove(tag);
-                                tagsBase.remove(tagBase);                                
                                 continue outerloop;
                             }
                             j++;
@@ -879,16 +884,16 @@ public class PicOrganizes extends Application {
                     if (c == 255 ) {
                         marker = true;
                     }
-/*                    else {
+                    else {
                         return -1;
-                    }*/
+                    }
                 }
                 j++;
             }
             return -1;  
         }
 
-        private String compareImage(FileInputStream in, FileInputStream inB, long diff) {
+        private String compareJPG(FileInputStream in, FileInputStream inB, long diff) {
             try {
                 long j = startOfImage(in);
                 long jB = startOfImage(inB);
@@ -928,20 +933,26 @@ public class PicOrganizes extends Application {
                             break;
                         //Same filename, but different size. Where does it come from?
                         } else {
-                            if (Math.abs(file.size - baseFile.size) < 1000) {
-                                file.match++;
-                                long sizeDiff = Math.abs(file.size - baseFile.size);
-                                try {
-                                    FileInputStream in = new FileInputStream(file.file.toString());
-                                    FileInputStream inB = new FileInputStream(baseFile.file.toString());
-                                    file.errors += compareImage(in, inB, sizeDiff);
-                                } catch (FileNotFoundException ex) {
-                                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+//                            if (Math.abs(file.size - baseFile.size) < 1000) {
+                                if (FilenameUtils.getExtension(file.file.getName().toLowerCase()).equals("jpg") || FilenameUtils.getExtension(file.file.getName().toLowerCase()).equals("jpeg")) {
+                                    long sizeDiff = Math.abs(file.size - baseFile.size);
+                                    try {
+                                        FileInputStream in = new FileInputStream(file.file.toString());
+                                        FileInputStream inB = new FileInputStream(baseFile.file.toString());
+                                        String resComp = compareJPG(in, inB, sizeDiff);
+                                        if (resComp.equals("")) {
+                                            String[] res = compareMeta(file.file, baseFile.file);
+                                            file.errors += res[0];
+                                            file.warnings += res[1];
+                                        } else {
+                                            file.errors +=  resComp; 
+                                        }
+                                        file.match++;
+                                    } catch (FileNotFoundException ex) {
+                                        Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                                    }
                                 }
-                                String[] res = compareMeta(file.file, baseFile.file);
-                                file.errors += res[0];
-                                file.warnings += res[1];
-                            }
+//                            }
                         }
                     //Different name, but
                     } else {
