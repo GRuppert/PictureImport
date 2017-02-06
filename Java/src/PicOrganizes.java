@@ -154,6 +154,23 @@ public class PicOrganizes extends Application {
         private final ObservableList<mediaFile> data = FXCollections.observableArrayList();
         ZoneId zone;
         
+        private ArrayList<String> exifTool(String parameters) {
+            final String command = "exiftool " + parameters;
+            ArrayList<String> lines = new ArrayList<>();
+            try {
+                String line;
+                Process p = Runtime.getRuntime().exec(command);
+                BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                while ((line = input.readLine()) != null) {
+                    lines.add(line);
+                }
+                input.close();
+            } catch (Exception e) {
+                errorOut("xmp", e);
+            } 
+            return lines;
+        }
+        
         public class mediaFile {
             private class meta{
                 public String originalFilename;
@@ -493,65 +510,51 @@ public class PicOrganizes extends Application {
             
             private meta readExif(File fileMeta) {
                 if (fileMeta.exists()) {
-                    final String command = "exiftool -DateTimeOriginal -Model " + fileMeta;
-                    try {
-                        String line;
-                        String model = null;
-                        ZonedDateTime captureDate = null;
-                        Process p = Runtime.getRuntime().exec(command);
-                        BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                        while ((line = input.readLine()) != null) {
-                            String tagValue = line.substring(34);
-                            switch (line.substring(0, 4)) {
-                                case "Date":
-                                    String dateString = tagValue.length()>25 ? tagValue.substring(0, 25) : tagValue; //2016:11:03 07:50:24
-                                    captureDate = getTimeFromStr(dateString);
-                                  break;
-                                case "Came":
-                                    model = tagValue;
-                                  break;
-                                case "Warn":
-                                    errorOut("xmp", new Exception(line));
-                                  break;
-                            }
+                    ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -Model \"" + fileMeta + "\"");
+                    Iterator<String> iterator = exifTool.iterator();
+                    String model = null;
+                    ZonedDateTime captureDate = null;
+                    while (iterator.hasNext()) {
+                        String line = iterator.next();
+                        String tagValue = line.substring(34);
+                        switch (line.substring(0, 4)) {
+                            case "Date":
+                                String dateString = tagValue.length()>25 ? tagValue.substring(0, 25) : tagValue; //2016:11:03 07:50:24
+                                captureDate = getTimeFromStr(dateString);
+                              break;
+                            case "Came":
+                                model = tagValue;
+                              break;
+                            case "Warn":
+                                errorOut("xmp", new Exception(line));
+                              break;
                         }
-                        input.close();
-                        return new meta(null, captureDate, model);
-                    } catch (Exception e) {
-                        errorOut("xmp", e);
                     }
+                    return new meta(null, captureDate, model);
                 }
                 return null;
             }
 
             private void repairMP4() {
-                try {
-                    String command = "exiftool -DateTimeOriginal -CreationDateValue \"" + file + "\"";
-                    String line;
-                    Process p = Runtime.getRuntime().exec(command);
-                    BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                    String dto = null;
-                    String cdv = null;
-                    while ((line = input.readLine()) != null) {
-                      String tagValue = line.substring(34);
-                      switch (line.substring(0, 4)) {
-                          case "Date":
-                                dto = tagValue;
-                              break;
-                          case "Crea":
-                                cdv = tagValue;
-                              break;
-                      }
-                  }
-                  if (cdv != null && dto == null) {
-                        command = "exiftool -P -overwrite_original \"-DateTimeOriginal<CreationDateValue\" \"-Make<DeviceManufacturer\" \"-Model<DeviceModelName\" \"" + file + "\"";
-                        p = Runtime.getRuntime().exec(command);
-                  }
-                  input.close();
+                ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -CreationDateValue \"" + file + "\"");
+                Iterator<String> iterator = exifTool.iterator();
+                String dto = null;
+                String cdv = null;
+                while (iterator.hasNext()) {
+                    String line = iterator.next();
+                    String tagValue = line.substring(34);
+                    switch (line.substring(0, 4)) {
+                        case "Date":
+                            dto = tagValue;
+                            break;
+                        case "Crea":
+                            cdv = tagValue;
+                            break;
+                    }
                 }
-                catch (Exception e) {
-                  errorOut("xmp", e);
-                }
+                if (cdv != null && dto == null) {
+                    exifTool(" -P -overwrite_original \"-DateTimeOriginal<CreationDateValue\" \"-Make<DeviceManufacturer\" \"-Model<DeviceModelName\" \"" + file + "\"");
+                }                
             }
 
             private String dateFormat(ZonedDateTime zoned) {
@@ -734,49 +737,42 @@ public class PicOrganizes extends Application {
                         for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                             fileList += " \"" + content[j*chunkSize + f].getPath() + "\"";
                         }
-                        FileInputStream in = null;
-                        final String command = "exiftool -DateTimeOriginal -Model " + fileList;
-                        try {
-                            String line;
-                            Process p = Runtime.getRuntime().exec(command);
-                            BufferedReader input = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                            int i = -1;
-                            String filename = null;
-                            String model = null;
-                            String note = "";
-                            ZonedDateTime captureDate = null;
-                            while ((line = input.readLine()) != null) {
-                                if (line.startsWith("========")) {
-                                    if (i > -1) {
-                                        files.add(new mediaFile(new File(filename), model, captureDate, note));
-                                        progressBar.setValue(i + j*chunkSize);
-                                        progressIndicator.setProgress((i + j*chunkSize)/content.length);
-                                    }
-                                    i++;
-                                    filename = line.substring(9);
-                                    model = null;
-                                    captureDate = null;
-                                } else if (line.contains("image files read")){
+                        int i = -1;
+                        String filename = null;
+                        String model = null;
+                        String note = "";
+                        ZonedDateTime captureDate = null;
+                        ArrayList<String> exifTool = exifTool("exiftool -DateTimeOriginal -Model \"" + fileList + "\"");
+                        Iterator<String> iterator = exifTool.iterator();
+                        while (iterator.hasNext()) {
+                            String line = iterator.next();
+                            if (line.startsWith("========")) {
+                                if (i > -1) {
                                     files.add(new mediaFile(new File(filename), model, captureDate, note));
-                                } else {
-                                    String tagValue = line.substring(34);
-                                    switch (line.substring(0, 4)) {
-                                        case "Date":
-                                            String dateString = tagValue.length()>25 ? tagValue.substring(0, 25) : tagValue; //2016:11:03 07:50:24+02:00
-                                            captureDate = getTimeFromStr(dateString);
-                                            break;
-                                        case "Came":
-                                            model = tagValue;
-                                            break;
-                                        case "Warn":
-                                            errorOut("xmp", new Exception(line));
-                                            break;
-                                    }
+                                    progressBar.setValue(i + j*chunkSize);
+                                    progressIndicator.setProgress((i + j*chunkSize)/content.length);
+                                }
+                                i++;
+                                filename = line.substring(9);
+                                model = null;
+                                captureDate = null;
+                            } else if (line.contains("image files read")){
+                                files.add(new mediaFile(new File(filename), model, captureDate, note));
+                            } else {
+                                String tagValue = line.substring(34);
+                                switch (line.substring(0, 4)) {
+                                    case "Date":
+                                        String dateString = tagValue.length()>25 ? tagValue.substring(0, 25) : tagValue; //2016:11:03 07:50:24+02:00
+                                        captureDate = getTimeFromStr(dateString);
+                                        break;
+                                    case "Came":
+                                        model = tagValue;
+                                        break;
+                                    case "Warn":
+                                        errorOut("xmp", new Exception(line));
+                                        break;
                                 }
                             }
-                            input.close();
-                        } catch (Exception e) {
-                            errorOut("exifTool", e);
                         }
                     }
                     progressDialog.dispose();
@@ -1174,6 +1170,23 @@ public class PicOrganizes extends Application {
 //            System.out.println("OK:"+okFiles+"/Missing Meta:"+metaMissing+"/Meta Conflict:"+metaConflict+"/Pic changed:"+changedPic+"/Error:"+error+"/All:"+toFiles.size()+")");
         }
 
+        private Path backupMounted() {
+            ArrayList<File> drives = new ArrayList<>();
+            File[] paths;
+            FileSystemView fsv = FileSystemView.getFileSystemView();
+            paths = File.listRoots();
+            for(File path:paths)
+            {
+                String desc = fsv.getSystemDisplayName(path);
+                if (desc.startsWith("SP PHD U3")) return path.toPath();
+            }
+            return null;
+        }
+
+        private void importFiles(ArrayList<String> directories, Path backupdrive) {
+            throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        }
+        
         //Sets the whole look and function for the GUI
         @Override
         public void start(Stage primaryStage) {
@@ -1207,8 +1220,19 @@ public class PicOrganizes extends Application {
                 btnImport.setOnAction(new EventHandler<ActionEvent>(){
                     @Override
                     public void handle(ActionEvent event) {
-                        ArrayList<String> directories = chooseDirectories(); 
-                        listOnScreen(fileRenameList(directories, toDir));
+                        ArrayList<String> directories = chooseDirectories();
+                        Path backupdrive = null;
+                        while((backupdrive = backupMounted()) == null) {
+                            errorOut("No backup Drive", new Exception("Attach a backup drive!"));
+                        }
+                        importFiles(directories, backupdrive);
+                    }
+                });
+
+                Button btnShift = new Button("Time shift");
+                btnShift.setOnAction(new EventHandler<ActionEvent>(){
+                    @Override
+                    public void handle(ActionEvent event) {
                     }
                 });
 
@@ -1292,7 +1316,7 @@ public class PicOrganizes extends Application {
             root.setLeft(settings);
                 HBox header = new HBox();
                     header.setAlignment(Pos.CENTER);
-                    header.getChildren().addAll(btnImport, btnRename, btnMove, btnShow, btnComp);
+                    header.getChildren().addAll(btnImport, btnShift, btnRename, btnMove, btnShow, btnComp);
                 HBox fromTo = new HBox();
                     Label from = new Label(fromDir.toString());
                     Button btnFrom = new Button("Edit");
