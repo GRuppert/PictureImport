@@ -15,7 +15,7 @@ import java.time.format.DateTimeParseException;
  *
  * @author gabor
  */
-public class comparableMediaFile {
+public class comparableMediaFile{
     File file;
     String originalFileName;
     String date;

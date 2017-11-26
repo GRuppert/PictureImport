@@ -8,7 +8,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -27,6 +26,20 @@ import org.apache.commons.io.FilenameUtils;
 public class mediaFile {
     
     public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+
+    /**
+     * @return the dID
+     */
+    public String getdID() {
+        return dID;
+    }
+
+    /**
+     * @return the odID
+     */
+    public String getOdID() {
+        return odID;
+    }
 
     private class meta{
         public String originalFilename;
@@ -127,7 +140,7 @@ public class mediaFile {
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
             compareMeta(metaExif, metaFile);
 
-            newName = new SimpleStringProperty(/*targetDirectory + "\\" + */dateFormat(date) + odID + "-" + dID + "-" + originalName);
+            newName = new SimpleStringProperty(/*targetDirectory + "\\" + */dateFormat(date) + getOdID() + "-" + getdID() + "-" + originalName);
         } else {
             newName = new SimpleStringProperty(/*targetDirectory + "\\" + */originalName);
         }
@@ -160,24 +173,24 @@ public class mediaFile {
         } catch (IOException ex) {
             this.dID = EMPTYHASH;
         }
-        if (dID.equals(EMPTYHASH)) {
+        if (getdID().equals(EMPTYHASH)) {
             addNote("Error during hashing" + model);
         }
 
         if (metaExif.dID != null && !metaExif.dID.equals(this.dID)) addNote("dID has been changed");
         if (metaFile.dID != null && !metaFile.dID.equals(this.dID)) addNote("dID has been changed");
-        if (metaExif.dID == null) addExif("DocumentID" , dID);
+        if (metaExif.dID == null) addExif("DocumentID" , getdID());
         
         if (metaFile.odID != null) odID = metaFile.odID;
         if (metaExif.odID != null)
-            if (odID != null) {
+            if (getOdID() != null) {
                 if (!metaExif.odID.equals(odID)) addNote("odID has been changed");
             } else {
                 odID = metaFile.odID; addNote("odID already presented");
             }
-        if (odID == null) {
-            odID = dID;
-            addExif("OriginalDocumentID" , odID);
+        if (getOdID() == null) {
+            odID = getdID();
+            addExif("OriginalDocumentID" , getOdID());
         }
                 
         if (metaFile.date != null) date = metaFile.date;
