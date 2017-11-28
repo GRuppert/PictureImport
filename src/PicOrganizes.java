@@ -1,23 +1,10 @@
-import com.adobe.xmp.XMPException;
-import com.adobe.xmp.XMPIterator;
-import com.adobe.xmp.XMPMeta;
-import com.adobe.xmp.properties.XMPPropertyInfo;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import com.drew.imaging.ImageMetadataReader;
-import com.drew.imaging.ImageProcessingException;
-import com.drew.metadata.Directory;
-import com.drew.metadata.Metadata;
-import com.drew.metadata.Tag;
-import com.drew.metadata.xmp.XmpDirectory;
 
 import java.awt.Dialog;
-import java.io.BufferedInputStream;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
@@ -29,13 +16,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
-import java.util.Objects;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javafx.application.Application;
-import javafx.beans.NamedArg;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -51,17 +37,23 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
+import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 import javax.swing.JDialog;
 
 import javax.swing.JPanel;
@@ -143,9 +135,12 @@ public class PicOrganizes extends Application {
     private Stage primaryStage;
     private PicOrganizes view;
     private BorderPane root;
+    private Tab tab1 = new Tab();
+    private Tab tab2 = new Tab();
     private int maxWidth, maxHeight;
     private final ProgressIndicator progressIndicator = new ProgressIndicator(0);
     private final ObservableList<mediaFile> data = FXCollections.observableArrayList();
+    private final ObservableList<duplicate> pairs = FXCollections.observableArrayList();
 
     public static Boolean supportedFileType(String name) {
         if (supportedMetaFileType(name)) return true;
@@ -364,7 +359,7 @@ public class PicOrganizes extends Application {
                   @Override public FileVisitResult 
                 visitFile(Path file, BasicFileAttributes attrs) {
                         if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                            files.add(new mediaFile(view, file.toString()));                               
+                            files.add(new mediaFile(view, file.toString(), attrs.size()));                               
                         }
                         return FileVisitResult.CONTINUE;                            
                     }
@@ -392,31 +387,131 @@ public class PicOrganizes extends Application {
         return files;
     } 
     
-    private ArrayList<mediaFile> compare() {
+    private void compare() {
         ArrayList<mediaFile> fromFiles = readDirectoryContent(getFromDir().toPath());
         ArrayList<mediaFile> toFiles = readDirectoryContent(getToDir());
-        ArrayList<duplicate> pairs;
         ArrayList<mediaFile> singles = new ArrayList<>();
         fromFiles.stream().forEach((file) -> singles.add(file));
         toFiles.stream().forEach((file) -> singles.add(file));
-        pairs = new ArrayList<>();
+        pairs.clear();
         toFiles.stream().forEach((file) -> {
             fromFiles.stream().forEach((baseFile) -> {
                 if (file.getdID().equals(baseFile.getdID())) {
-                    pairs.add(new duplicate(baseFile, file, true));
+                    pairs.add(new duplicate(baseFile, file, true, baseFile.getFileSize() == file.getFileSize()));
                     singles.remove(baseFile);
                     singles.remove(file);
                 } else
                     if (file.getOdID().equals(baseFile.getOdID())) {
-                        pairs.add(new duplicate(baseFile, file, false));
+                        pairs.add(new duplicate(baseFile, file, false, baseFile.getFileSize() == file.getFileSize()));
                         singles.remove(baseFile);
                         singles.remove(file);
                     }
             });
         });
-        return singles;
+        data.removeAll(data);
+        singles.stream().forEach((obj) -> {data.add(obj);});
+        tab1.setText("Singles");
+        tab1.setContent(createMediafileTable());
+        tab2.setText("Duplicates");
+        tab2.setContent(createDuplicateTable());
+        StaticTools.beep();
     }
 
+    private TableView createDuplicateTable() {
+        TableView<duplicate> table = new TableView<>();
+        table.setEditable(true);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn< duplicate, Boolean > processingCol = new TableColumn<>( "Ok" );
+        processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
+        processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
+        processingCol.setPrefWidth(50);
+        processingCol.setResizable(false);
+        processingCol.setEditable(true);
+        TableColumn firstNameCol = new TableColumn("Left Filename");
+        firstNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("firstName"));
+        TableColumn buttonCol = new TableColumn("Metadata");
+        buttonCol.setMinWidth(150);
+        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, Object>("metaDiffs"));
+        buttonCol.setCellFactory(new Callback<TableColumn<duplicate, Object>, TableCell<duplicate, Object>>() {
+          @Override 
+          public TableCell<duplicate, Object> call(TableColumn<duplicate, Object> buttonCol) {
+            return new TableCell<duplicate, Object>() {
+              final Button button = new Button(); {
+                button.setMinWidth(130);
+              }
+              @Override public void updateItem(final Object object, boolean empty) {
+                super.updateItem(object, empty);
+                String[][] metaDiffs = (String[][]) object;
+                setGraphic(button);
+                if (metaDiffs != null) {
+                    button.setText(Integer.toString(metaDiffs.length));
+                    button.setOnAction(new EventHandler<ActionEvent>() {
+                      @Override public void handle(ActionEvent event) {
+                        StackPane pane = new StackPane();
+                        Scene scene = new Scene(pane);
+                        Stage stage = new Stage();
+                        stage.setScene(scene);
+                        TableView table = new TableView();
+                        table.setEditable(false);
+
+                        TableColumn nameCol = new TableColumn("Field");
+                        TableColumn firstCol = new TableColumn("Left Value");
+                        TableColumn secondCol = new TableColumn("Right Value");
+                        nameCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                            @Override
+                             public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                 String[] x = p.getValue();
+                                 if (x != null && x.length>0) {
+                                     return new SimpleStringProperty(x[0]);
+                                 } else {
+                                     return new SimpleStringProperty("<no name>");
+                                 }
+                             }
+                        });
+                        firstCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                            @Override
+                             public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                 String[] x = p.getValue();
+                                 if (x != null && x.length>0) {
+                                     return new SimpleStringProperty(x[1]);
+                                 } else {
+                                     return new SimpleStringProperty("<no name>");
+                                 }
+                             }
+                        });
+                        secondCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                            @Override
+                             public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                 String[] x = p.getValue();
+                                 if (x != null && x.length>0) {
+                                     return new SimpleStringProperty(x[2]);
+                                 } else {
+                                     return new SimpleStringProperty("<no name>");
+                                 }
+                             }
+                        });
+                        table.getItems().addAll(Arrays.asList(metaDiffs));
+                        table.getColumns().addAll(nameCol, firstCol, secondCol);
+                        pane.getChildren().add(table);
+                        stage.show();
+                      }
+                    });
+                } else {
+                    button.setText("");
+                }
+              }
+            };
+          }
+        });     
+        
+        
+        TableColumn secondNameCol = new TableColumn("Right Filename");
+        secondNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("secondName"));
+        table.setItems(pairs);
+        table.getColumns().addAll(processingCol, firstNameCol, buttonCol, secondNameCol); 
+        return table;
+    }
+   
     private Path backupMounted() {
         ArrayList<File> drives = new ArrayList<>();
         File[] paths;
@@ -438,11 +533,14 @@ public class PicOrganizes extends Application {
     private void listOnScreen(ArrayList<mediaFile> newData) {
         data.removeAll(data);
         newData.stream().forEach((obj) -> {data.add(obj);});
-        root.setCenter(createCenterTable());
+        tab1.setText("Results");
+        tab1.setContent(createMediafileTable());
+        tab2.setText("");
+        tab2.setContent(null);
         StaticTools.beep();
     }
 
-    private TableView createCenterTable() {
+    private TableView createMediafileTable() {
         TableView<mediaFile> table = new TableView<>();
         table.setEditable(true);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
@@ -705,7 +803,7 @@ public class PicOrganizes extends Application {
         btnComp.setOnAction(new EventHandler<ActionEvent>(){
             @Override
             public void handle(ActionEvent event) {
-                listOnScreen(compare());
+                compare();
             }
         });
 
@@ -859,11 +957,18 @@ public class PicOrganizes extends Application {
         return footer;
     }
     
+    private TabPane createCenter() {
+        TabPane tabPane = new TabPane();
+        tabPane.getTabs().addAll(tab1, tab2);
+        return tabPane;
+    }
+    
     private BorderPane createMainLook() {
         root = new BorderPane();            
         root.setLeft(createSettings());
         root.setTop(createHeader());
         root.setBottom(createFooter());
+        root.setCenter(createCenter());
         return root;
     }
     
