@@ -72,7 +72,8 @@ public class StaticTools {
                     results.add(new textMeta(filename, model, captureDate, note, dID, odID));
                 }
                 i++;
-                filename = dir + "\\" + line.substring(9);
+                String fileTemp = line.substring(9).replaceAll("./", "").replaceAll("/", "\\");
+                filename = dir + "\\" + fileTemp;
                 model = null;
                 captureDate = null;
                 dID = null;
@@ -86,7 +87,8 @@ public class StaticTools {
             } else if (line.contains("files could not be read")){
                             
             } else {
-                String tagValue = line.substring(34);
+                String tagValue = "";
+                if (line.length() > 34) tagValue = line.substring(34);
                 switch (line.substring(0, 4)) {
                     case "Date":
                         captureDate = tagValue;
@@ -234,7 +236,7 @@ public class StaticTools {
                 if (dateZ != null) {
                     date = dateZ.toEpochSecond();
                     if (model == null) {model = "NA";}
-                    Picture picture = new Picture(new File(dir + "\\" + next.filename), date, model);
+                    Picture picture = new Picture(new File(/*dir + "\\" + */next.filename), date, model);
                     if (!stripes.containsKey(model)) {
                         stripes.put(model, new Stripes(model, stripes.size(), tl));
                     }

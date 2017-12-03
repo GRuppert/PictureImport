@@ -15,7 +15,6 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 /*
@@ -33,12 +32,13 @@ public class duplicate {
     private final mediaFile second; 
     private final boolean sameImage;
     private final boolean sameSize;
-    private ArrayList<String> conflicts;
+    private ArrayList<String[]> conflicts;
 
     private SimpleBooleanProperty processing;
     private final SimpleStringProperty firstName;
     private final SimpleStringProperty secondName;
-    private final SimpleObjectProperty metaDiffs;
+    private final SimpleStringProperty meta;
+    
     
     public duplicate(mediaFile first, mediaFile second, boolean sameImage, boolean sameSize) {
         this.first = first;
@@ -47,29 +47,40 @@ public class duplicate {
         secondName = new SimpleStringProperty(second.getCurrentName());
         this.sameImage = sameImage;
         this.sameSize = sameSize;
-        metaDiffs = new SimpleObjectProperty("Equal");
+        meta = new SimpleStringProperty("Equal");
         processing = new SimpleBooleanProperty(true);
-        if (sameImage && !sameSize) metaDiffs.setValue(compareMeta());
-        Object test = metaDiffs.getValue();
+        if (sameImage) {if (!sameSize) meta.setValue(compareMeta());}
+        else {
+            if (!sameSize) meta.setValue("Image changed " + compareMeta());
+            else meta.set("Image changed");
+        }
+
+
+        Object test = meta.getValue();
         System.out.println(test);
     }
 
-    private Object compareMeta() {
+    private String compareMeta() {
         String warnings = "";
         String errors = "";
-        String[] res;
         Metadata metadata;
         Metadata metadataBase;
         ArrayList<String[]> tags = new ArrayList();
         ArrayList<String[]> tagsBase = new ArrayList();
-        ArrayList<String[]> differences = new ArrayList();
         ArrayList<String> unimportant = new ArrayList();
+        ArrayList<String> user = new ArrayList();
         unimportant.add("Date/Time");
         unimportant.add("Thumbnail Offset");
         unimportant.add("File Size");
         unimportant.add("File Modified Date");
         unimportant.add("File Name");
         unimportant.add("User Comment");
+        
+        user.add("GPS");
+        user.add("keyword");
+        user.add("rating");
+        int realConf = 0;
+        conflicts = new ArrayList();
         try {
             metadata = ImageMetadataReader.readMetadata(first.getFile());
             metadataBase = ImageMetadataReader.readMetadata(second.getFile());
@@ -77,14 +88,19 @@ public class duplicate {
                 if (!directoryBase.getClass().equals(XmpDirectory.class))
                     for (Tag tagBase : directoryBase.getTags()) {
                         String[] temp = {tagBase.getTagName(), tagBase.getDescription()};
-                        tagsBase.add(temp);
+                        String value = tagBase.getDescription();
+                        if (value != null && !value.replaceAll("\\s+","").equals("")) tagsBase.add(temp);
+/*                        System.out.println(tagBase.getTagName() + " : ");
+                        for (char b : value.toCharArray()) {System.out.print((int)b + " ");}
+                        System.out.print("\n");*/
                     }
             }
             for (Directory directory : metadata.getDirectories()) {
                 if (!directory.getClass().equals(XmpDirectory.class))
                     for (Tag tag : directory.getTags()) {
                         String[] temp = {tag.getTagName(), tag.getDescription()};
-                        tags.add(temp);
+                        String value = tag.getDescription();
+                        if (value != null && !value.replaceAll("\\s+","").equals("")) tags.add(temp);
                     }
             }
             Collection<XmpDirectory> xmpDirectories = metadata.getDirectoriesOfType(XmpDirectory.class);
@@ -95,9 +111,12 @@ public class duplicate {
                     iterator = xmpMeta.iterator();
                     while (iterator.hasNext()) {
                         XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
-                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null) {
+                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
                             String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
                             tagsBase.add(temp);
+/*                            System.out.print(xmpPropertyInfo.getPath() + " : ");
+                            for (char b : xmpPropertyInfo.getValue().toCharArray()) {System.out.print((int)b + " ");}
+                            System.out.print("\n");*/
                         }
                     }
                 } catch (XMPException ex) {
@@ -112,7 +131,7 @@ public class duplicate {
                     iterator = xmpMeta.iterator();
                     while (iterator.hasNext()) {
                         XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
-                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null) {
+                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
                             String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
                             tagsBase.add(temp);
                         }
@@ -131,8 +150,8 @@ public class duplicate {
                         if (tag[1] != null && !tag[1].equals("")) {
                             if (!tag[1].equals(tagBase[1])) {
                                 if (!unimportant.contains(tag[0])) {
-                                    differences.add(new String[]{tag[0], tag[1], tagBase[1]});
-                                    errors += tag[0] + ":" + tag[1] + "-><-" +tagBase[1] + " | ";
+                                    conflicts.add(new String[]{tag[0], tag[1], tagBase[1]});
+                                    realConf++;
                                 }
                             }
                             tagsBase.remove(tagBase);                                
@@ -145,22 +164,16 @@ public class duplicate {
                 i++;
             }
             for (String[] tag : tags) {
-                errors += "+" + tag[0] + ":" + tag[1] + "\n";
-                differences.add(new String[]{tag[0], tag[1], ""});
+                conflicts.add(new String[]{tag[0], tag[1], ""});
             }
             for (String[] tag : tagsBase) {
-                warnings += "-" + tag[0] + ":" + tag[1] + "\n";
-                differences.add(new String[]{tag[0], "", tag[1]});
+                conflicts.add(new String[]{tag[0], "", tag[1]});
             }
-        } catch (ImageProcessingException e) {
-            StaticTools.errorOut(firstName.getValue(), e);         
-            errors += e.getMessage() + " ";
-        } catch (IOException e) {
+        } catch (ImageProcessingException | IOException e) {
             StaticTools.errorOut(firstName.getValue(), e);         
             errors += e.getMessage() + " ";
         }
-        res = new String[]{errors, warnings};
-        return differences.toArray();
+        return Integer.toString(realConf) + " - " + Integer.toString(conflicts.size() - realConf);
     }
 
     public final Boolean getProcessing() {return processing.get();}
@@ -175,11 +188,11 @@ public class duplicate {
     public final void setSecondName(String proc) {secondName.set(proc);}
     public SimpleStringProperty processingSecondName() {return secondName;}
 
-    public final Object getMeta() {
-        return metaDiffs.get();
-    }
-    public final void setMeta(Object proc) {metaDiffs.set(proc);}
-    public SimpleObjectProperty processingMeta() {
-        return metaDiffs;
+    public final String getMeta() {return meta.get();}
+    public final void setMeta(String proc) {meta.set(proc);}
+    public SimpleStringProperty processingMeta() {return meta;}
+
+    public ArrayList<String[]> getConflicts() {
+        return conflicts;
     }
 }

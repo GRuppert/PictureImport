@@ -431,20 +431,21 @@ public class PicOrganizes extends Application {
         firstNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("firstName"));
         TableColumn buttonCol = new TableColumn("Metadata");
         buttonCol.setMinWidth(150);
-        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, Object>("metaDiffs"));
-        buttonCol.setCellFactory(new Callback<TableColumn<duplicate, Object>, TableCell<duplicate, Object>>() {
+        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("meta"));
+        buttonCol.setCellFactory(new Callback<TableColumn<duplicate, String>, TableCell<duplicate, String>>() {
           @Override 
-          public TableCell<duplicate, Object> call(TableColumn<duplicate, Object> buttonCol) {
-            return new TableCell<duplicate, Object>() {
+          public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {
+            return new TableCell<duplicate, String>() {
               final Button button = new Button(); {
                 button.setMinWidth(130);
               }
-              @Override public void updateItem(final Object object, boolean empty) {
+              @Override
+              public void updateItem(final String object, boolean empty) {
                 super.updateItem(object, empty);
-                String[][] metaDiffs = (String[][]) object;
+                int index = this.getIndex();
                 setGraphic(button);
-                if (metaDiffs != null) {
-                    button.setText(Integer.toString(metaDiffs.length));
+                if (object != null) {
+                    button.setText(object);
                     button.setOnAction(new EventHandler<ActionEvent>() {
                       @Override public void handle(ActionEvent event) {
                         StackPane pane = new StackPane();
@@ -490,7 +491,7 @@ public class PicOrganizes extends Application {
                                  }
                              }
                         });
-                        table.getItems().addAll(Arrays.asList(metaDiffs));
+                        table.getItems().addAll(pairs.get(index).getConflicts().toArray());
                         table.getColumns().addAll(nameCol, firstCol, secondCol);
                         pane.getChildren().add(table);
                         stage.show();
