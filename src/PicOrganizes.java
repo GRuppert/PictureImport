@@ -991,7 +991,12 @@ public class PicOrganizes extends Application {
     @Override
     public void start(Stage pStage) {
         try {
-            StaticTools.startOfScanTiff(new File("E:\\proba.arw"));
+            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\nef.nef")));
+            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\arw.arw")));
+            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\dng.dng")));
+            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\tif.tif")));
+            System.out.println(StaticTools.startOfScanTiff(new File("E:\\proba.arw")));
+
         } catch (IOException ex) {
             Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
         }

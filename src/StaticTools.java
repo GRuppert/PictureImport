@@ -390,7 +390,7 @@ public class StaticTools {
                 if (endian) {
                     c = (long) (c * Math.pow(256, i));
                 } else {
-                    c = (long) (c * Math.pow(256, length-i));
+                    c = (long) (c * Math.pow(256, length-1-i));
                 }
                 result += c;
             } catch (IOException ex) {
@@ -400,7 +400,7 @@ public class StaticTools {
         return result;
     }
 
-    private static long getPointers(ArrayList<ifdField> directories, File file, boolean endian) throws FileNotFoundException, IOException {
+    private static String getPointers(ArrayList<ifdField> imageLocationFields, File file, boolean endian) throws FileNotFoundException, IOException {
 /*      RawImageDigest
         Tag 50972 (C71C.H)
         Type BYTE
@@ -412,6 +412,7 @@ public class StaticTools {
         This tag is an MD5 digest of the raw image data. All pixels in the image are processed in rowscan
         order. Each pixel is zero padded to 16 or 32 bits deep (16-bit for data less than or equal to
         16 bits deep, 32-bit otherwise). The data for each pixel is processed in little-endian byte order         */
+        String abort = mediaFile.EMPTYHASH;
         long imageLength;
         long imageWidth;
         long pieceOffsets = 0;
@@ -422,107 +423,132 @@ public class StaticTools {
         long pieceByteCounts = 0;
         long pieceByteCountsCount = 0;
         int pieceByteLength = 0;
-        Iterator<ifdField> iterator = directories.iterator();
+        Iterator<ifdField> iterator = imageLocationFields.iterator();
         while (iterator.hasNext()) {
-            ifdField ifd = iterator.next();
-            switch (ifd.tag) {
+            ifdField field = iterator.next();
+            switch (field.tag) {
                 case 256:
-                    imageWidth = ifd.offset;
+                    imageWidth = field.offset;
                     break;
                 case 257:
-                    imageLength = ifd.offset;
+                    imageLength = field.offset;
                     break;
                 case 273:
                 case 324:
-                    pieceOffsets = ifd.offset;
-                    pieceOffsetsCount = ifd.count;
-                    pieceOffsetsLength = ifd.getTypeLength();
+                    pieceOffsets = field.offset;
+                    pieceOffsetsCount = field.count;
+                    pieceOffsetsLength = field.getTypeLength();
                     break;
                 case 322:
-                    pieceWidth = ifd.offset;
+                    pieceWidth = field.offset;
                     break;
                 case 278:
                 case 323:
-                    pieceLength = ifd.offset;
+                    pieceLength = field.offset;
                     break;
                 case 279:
                 case 325:
-                    pieceByteCounts = ifd.offset;
-                    pieceByteCountsCount = ifd.count;
-                    pieceByteLength = ifd.getTypeLength();
+                    pieceByteCounts = field.offset;
+                    pieceByteCountsCount = field.count;
+                    pieceByteLength = field.getTypeLength();
                     break;
             }
         }
-        if (pieceByteCountsCount != pieceOffsetsCount) return -1;
+        if (pieceByteCountsCount != pieceOffsetsCount) return abort;
         RandomAccessFile fileRand = new RandomAccessFile(file.getAbsolutePath(), "r");
         MessageDigest md5Digest = null;
         try {
             md5Digest = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException ex) {
         }
-        for (int j = 0; j < pieceOffsetsCount; j++) {
-            fileRand.seek(pieceByteCounts + j * pieceByteLength);
-            long actualPieceBytes = 0;
-            for(int i=0; i<pieceByteLength; i++) {
-                    long c = fileRand.read();
-                    if (endian) {
-                        c = (long) (c * Math.pow(256, i));
-                    } else {
-                        c = (long) (c * Math.pow(256, pieceByteLength-i));
-                    }
-                    actualPieceBytes += c;
-            }
-//            System.out.println("Count [" + j + "] =" + actualPieceBytes);
-            fileRand.seek(pieceOffsets + j * pieceOffsetsLength);
-            long actualPieceOffset = 0;
-            for(int i=0; i<pieceOffsetsLength; i++) {
-                    long c = fileRand.read();
-                    if (endian) {
-                        c = (long) (c * Math.pow(256, i));
-                    } else {
-                        c = (long) (c * Math.pow(256, pieceOffsetsLength-i));
-                    }
-                    actualPieceOffset += c;
-            }
-//            System.out.println("Offset [" + j + "] =" + actualPieceOffset);
-            fileRand.seek(actualPieceOffset);
-            long readed = 0;
-            int bufferSize = 4096;
-            while (readed + bufferSize < actualPieceBytes) {
-                byte chunk[] = new byte[bufferSize];
-                readed += fileRand.read(chunk); 
+        if (pieceOffsetsCount == 1) {
+                System.out.println(file.getName() + " bytes readed: " + pieceByteCounts + " File size " + file.length() + " % " + (100*pieceByteCounts/file.length()));
+                fileRand.seek(pieceOffsets);
+                long readed = 0;
+                int bufferSize = 4096;
+                while (readed + bufferSize < pieceByteCounts) {
+                    byte chunk[] = new byte[bufferSize];
+                    int read = fileRand.read(chunk);
+                    if (read == -1) return abort;
+                    readed += read; 
+                    md5Digest.update(chunk);
+                }
+                int residue = (int)(pieceByteCounts - readed);
+                byte chunk[] = new byte[residue];
+                int read = fileRand.read(chunk);
+                if (read == -1) return abort;
+                md5Digest.update(chunk);
+        } else {
+            long totalread = 0;
+            for (int j = 0; j < pieceOffsetsCount; j++) {
+                fileRand.seek(pieceByteCounts + j * pieceByteLength);
+                long actualPieceBytes = 0;
+                for(int i=0; i<pieceByteLength; i++) {
+                        long c = fileRand.read();
+                        if (endian) {
+                            c = (long) (c * Math.pow(256, i));
+                        } else {
+                            c = (long) (c * Math.pow(256, pieceByteLength-i));
+                        }
+                        actualPieceBytes += c;
+                }
+    //            System.out.println("Count [" + j + "] =" + actualPieceBytes);
+                fileRand.seek(pieceOffsets + j * pieceOffsetsLength);
+                long actualPieceOffset = 0;
+                for(int i=0; i<pieceOffsetsLength; i++) {
+                        long c = fileRand.read();
+                        if (endian) {
+                            c = (long) (c * Math.pow(256, i));
+                        } else {
+                            c = (long) (c * Math.pow(256, pieceOffsetsLength-i));
+                        }
+                        actualPieceOffset += c;
+                }
+                totalread += actualPieceBytes;
+    //            System.out.println("Offset [" + j + "] =" + actualPieceOffset);
+                fileRand.seek(actualPieceOffset);
+                long readed = 0;
+                int bufferSize = 4096;
+                while (readed + bufferSize < actualPieceBytes) {
+                    byte chunk[] = new byte[bufferSize];
+                    int read = fileRand.read(chunk);
+                    if (read == -1) return abort;
+                    readed += read; 
+                    md5Digest.update(chunk);
+                }
+                int residue = (int)(actualPieceBytes - readed);
+                byte chunk[] = new byte[residue];
+                int read = fileRand.read(chunk);
+                if (read == -1) return abort;
                 md5Digest.update(chunk);
             }
-            while (readed < actualPieceBytes) {
-                md5Digest.update((byte) fileRand.read());                
-                readed++;
-            }
+            System.out.println(file.getName() + " bytes readed: " + totalread + " File size " + file.length() + " % " + (100*totalread/file.length()));
         }
         byte[] digest = md5Digest.digest();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < digest.length; ++i) {
             sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1,3));
         }
-        System.out.println(file.getName() + " : " + sb.toString());
-        return -1;
+        return sb.toString();
     }
     
-    private static long readSubDirectory(File file, boolean endian, long pointer) throws IOException {
+    private static String readSubIFDirectory(ifdCursor cursor) throws IOException {
+        String abort = mediaFile.EMPTYHASH;
         System.out.println("*********************************************************");
-        BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toString()));
-        if (!skipBytes(in, pointer)) return -1;
-        int numberofDirs = (int) readEndianValue(in, 2, endian);
+        BufferedInputStream in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+        if (!skipBytes(in, cursor.getPointer())) return abort;
+        int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
         long subIFDs = 0;
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
         boolean mainImage = false;
-        ArrayList<ifdField> directories = new ArrayList<>();
-        for (int i = 0; i < numberofDirs; i++) {
+        ArrayList<ifdField> imageLocationFields = new ArrayList<>();
+        for (int i = 0; i < tagEntryCount; i++) {
             ifdField field = new ifdField();
-            field.tag = (int) readEndianValue(in, 2, endian);
-            field.type = (int) readEndianValue(in, 2, endian);
-            field.count = readEndianValue(in, 4, endian);
-            field.offset = readEndianValue(in, 4, endian);
+            field.tag = (int) readEndianValue(in, 2, cursor.getEndian());
+            field.type = (int) readEndianValue(in, 2, cursor.getEndian());
+            field.count = readEndianValue(in, 4, cursor.getEndian());
+            field.offset = readEndianValue(in, 4, cursor.getEndian());
             if (field.tag == 50972) System.out.println("!!!!!!!!!!" + field.count + " " + field.offset);
             if (field.tag == 254 && field.offset == 0) {mainImage = true;}
             if (field.tag == 330) {
@@ -531,43 +557,46 @@ public class StaticTools {
                 subIFDsPointerLength = field.getTypeLength();
             }
             System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
-            if (field.tag == 257 || field.tag == 256) directories.add(field); //Image
-            if (field.tag == 273 || field.tag == 278 || field.tag == 279) directories.add(field); //Stripe
-            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) directories.add(field); //Tile
+            if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
+            if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
+            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile
         }
-        if (mainImage) return getPointers(directories, file, endian);
+        if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
         if (subIFDs == 1) {
-            long readDirectory = readIFDirectory(file, endian, subIFDsPointer);
-            if (readDirectory != -1) return readDirectory;
+            cursor.setPointer(subIFDsPointer);
+            String hash = readSubIFDirectory(cursor);
+            if (hash != null) return hash;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {
-                in = new BufferedInputStream(new FileInputStream(file.toString()));
-                if (!skipBytes(in, subIFDsPointer)) return -1;
-                if (!skipBytes(in, j * subIFDsPointerLength)) return -1;
-                long readDirectory = readIFDirectory(file, endian, readEndianValue(in, subIFDsPointerLength, endian));
-                if (readDirectory != -1) return readDirectory;
+                in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+                if (!skipBytes(in, subIFDsPointer)) return abort;
+                if (!skipBytes(in, j * subIFDsPointerLength)) return abort;
+                cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
+                String hash = readSubIFDirectory(cursor);
+                if (hash != null) return hash;
             }
         }
-        return -1;
+        return null;
     }
     
-    private static long readIFDirectory(File file, boolean endian, long pointer) throws IOException {
+    private static String readIFDirectory(ifdCursor cursor) throws IOException {
+        String abort = mediaFile.EMPTYHASH;
         System.out.println("-------------------------------------------------------------");
-        BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toString()));
-        if (!skipBytes(in, pointer)) return -1;
-        int tagEntryCount = (int) readEndianValue(in, 2, endian);
+        BufferedInputStream in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+        if (!skipBytes(in, cursor.getPointer())) return abort;
+        int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
         long subIFDs = 0;
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
         long nextIFD = 0;
         boolean mainImage = false;
-        ArrayList<ifdField> directories = new ArrayList<>();
+        ArrayList<ifdField> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
             ifdField field = new ifdField();
-            field.tag = (int) readEndianValue(in, 2, endian);
-            field.type = (int) readEndianValue(in, 2, endian);
-            field.count = readEndianValue(in, 4, endian);
-            field.offset = readEndianValue(in, 4, endian);
+            field.tag = (int) readEndianValue(in, 2, cursor.getEndian());
+            field.type = (int) readEndianValue(in, 2, cursor.getEndian());
+            field.count = readEndianValue(in, 4, cursor.getEndian());
+            field.offset = readEndianValue(in, 4, cursor.getEndian());
             if (field.tag == 50972) System.out.println("!!!!!!!!!!" + field.count + " " + field.offset);
             if (field.tag == 254 && field.offset == 0) {mainImage = true;}
             if (field.tag == 330) {
@@ -576,35 +605,36 @@ public class StaticTools {
                 subIFDsPointerLength = field.getTypeLength();
             }
             System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
-            if (field.tag == 257 || field.tag == 256) directories.add(field); //Image
-            if (field.tag == 273 || field.tag == 278 || field.tag == 279) directories.add(field); //Stripe
-            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) directories.add(field); //Tile
+            if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
+            if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
+            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile
         }
-        nextIFD = readEndianValue(in, 4, endian);
-        if (mainImage) return getPointers(directories, file, endian);
-/*        if (subIFDs == 1) {
-            long readDirectory = readSubDirectory(file, endian, subIFDsPointer);
-            if (readDirectory != -1) return readDirectory;
+        nextIFD = readEndianValue(in, 4, cursor.getEndian());
+        if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
+        if (subIFDs == 1) {
+            cursor.setPointer(subIFDsPointer);
+            String hash = readSubIFDirectory(cursor);
+            if (hash != null) return hash;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {
-                in = new BufferedInputStream(new FileInputStream(file.toString()));
-                if (!skipBytes(in, subIFDsPointer)) return -1;
-                if (!skipBytes(in, j * subIFDsPointerLength)) return -1;
-                long readDirectory = readSubDirectory(file, endian, readEndianValue(in, subIFDsPointerLength, endian));
-                if (readDirectory != -1) return readDirectory;
+                in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+                if (!skipBytes(in, subIFDsPointer)) return abort;
+                if (!skipBytes(in, j * subIFDsPointerLength)) return abort;
+                cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
+                String hash = readSubIFDirectory(cursor);
+                if (hash != null) return hash;
             }
-        }*/
-        if (nextIFD == 0) return -1;
-        return readIFDirectory(file, endian, nextIFD);
+        }
+        cursor.setPointer(nextIFD);
+        return readIFDirectory(cursor);
     }
-    
+        
     //returns the pointer to the main image data in tiff based files
-    public static long startOfScanTiff(File file) throws IOException {
-        System.out.println(file);
+    public static String startOfScanTiff(File file) throws IOException {
+        String abort = mediaFile.EMPTYHASH;
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toString()));
         int c;
         long j = 0;
-        long pointer;
         Boolean endian = null;
         c = in.read();
         if (c == 73) {
@@ -612,20 +642,13 @@ public class StaticTools {
         } else if (c == 77) {
             if (in.read() == 77) endian = false;
         }
-        if (endian == null) {return -1;}
-        if (in.read() != 42) {return -1;}
-        c = in.read();
-        if (!((c == 0 && endian) || (c == 1 && !endian))) {return -1;}
-        boolean endOfFile = false;
-        pointer = readEndianValue(in, 4, endian);
-        while (!endOfFile) {
-            if (pointer == -1) {return -1;}
-            if (pointer == 0) {break;}
-            pointer = readIFDirectory(file, endian, pointer);
-            if (pointer > 1) {return pointer;}
-            else {pointer = -1 * pointer;}
-        }
-        return -1;
+        if (endian == null) {return abort;}
+        long tiffCheck = readEndianValue(in, 2, endian);
+        if (tiffCheck != 42) {return abort;}
+        ifdCursor cursor = new ifdCursor(file, endian, readEndianValue(in, 4, endian));
+        if (cursor.getPointer() == -1) {return abort;}
+        if (cursor.getPointer() == 0) {return abort;}
+        return readIFDirectory(cursor);
     }
     
     private static boolean skipBytes(InputStream in, long pointer) throws IOException {
@@ -720,9 +743,9 @@ public class StaticTools {
                     break;
     // </editor-fold>
                 case "dng":
-//                    startOfScanDNG(file);
-                    break;
                 case "arw":
+                case "tiff":
+                    return startOfScanTiff(file);
 //                case "dng":
                 case "nef":
     // <editor-fold defaultstate="collapsed" desc="raw">
