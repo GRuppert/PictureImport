@@ -11,7 +11,7 @@ import java.util.HashMap;
  *
  * @author gabor
  */
-public class ifd {
+public class ifdField {
     int tag;
     int type;
     long count; 
@@ -20,7 +20,7 @@ public class ifd {
     HashMap<Integer, String> typeDesc;
 
 
-    public ifd() {
+    public ifdField() {
         this.tagDesc = new HashMap<>();
 /*
 tagDesc.put(	254	, "	NewSubfileType      "); //must

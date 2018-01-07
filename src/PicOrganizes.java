@@ -990,6 +990,11 @@ public class PicOrganizes extends Application {
     
     @Override
     public void start(Stage pStage) {
+        try {
+            StaticTools.startOfScanTiff(new File("E:\\proba.arw"));
+        } catch (IOException ex) {
+            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+        }
 /*        StaticTools.copyAndBackup(new File("F:\\proba.arw"), new File("E:\\proba.arw"), new File("G:\\proba.arw"));
         String[] command = new String[]{"exiftool", "-a", "-G1", "20160325_130704_ILCE-5100-DSC05306.JPG"}; 
 //        String[] command = new String[]{"exiftool", "-overwrite_original", "-n", "-DateTimeOriginal=2017:05:10 21:10:36+02:00", "-DocumentID=\"48f57c56c937f9dfe8ffdf73ee979c56\" ", "-OriginalDocumentID=\"48f57c56c937f9dfe8ffdf73ee979c56\" ", "DSC06063.JPG"};

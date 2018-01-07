@@ -400,7 +400,7 @@ public class StaticTools {
         return result;
     }
 
-    private static long getPointers(ArrayList<ifd> directories, File file, boolean endian) throws FileNotFoundException, IOException {
+    private static long getPointers(ArrayList<ifdField> directories, File file, boolean endian) throws FileNotFoundException, IOException {
 /*      RawImageDigest
         Tag 50972 (C71C.H)
         Type BYTE
@@ -422,9 +422,9 @@ public class StaticTools {
         long pieceByteCounts = 0;
         long pieceByteCountsCount = 0;
         int pieceByteLength = 0;
-        Iterator<ifd> iterator = directories.iterator();
+        Iterator<ifdField> iterator = directories.iterator();
         while (iterator.hasNext()) {
-            ifd ifd = iterator.next();
+            ifdField ifd = iterator.next();
             switch (ifd.tag) {
                 case 256:
                     imageWidth = ifd.offset;
@@ -516,73 +516,73 @@ public class StaticTools {
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
         boolean mainImage = false;
-        ArrayList<ifd> directories = new ArrayList<>();
+        ArrayList<ifdField> directories = new ArrayList<>();
         for (int i = 0; i < numberofDirs; i++) {
-            ifd ifd = new ifd();
-            ifd.tag = (int) readEndianValue(in, 2, endian);
-            ifd.type = (int) readEndianValue(in, 2, endian);
-            ifd.count = readEndianValue(in, 4, endian);
-            ifd.offset = readEndianValue(in, 4, endian);
-            if (ifd.tag == 50972) System.out.println("!!!!!!!!!!" + ifd.count + " " + ifd.offset);
-            if (ifd.tag == 254 && ifd.offset == 0) {mainImage = true;}
-            if (ifd.tag == 330) {
-                subIFDsPointer = ifd.offset;
-                subIFDs = ifd.count;
-                subIFDsPointerLength = ifd.getTypeLength();
+            ifdField field = new ifdField();
+            field.tag = (int) readEndianValue(in, 2, endian);
+            field.type = (int) readEndianValue(in, 2, endian);
+            field.count = readEndianValue(in, 4, endian);
+            field.offset = readEndianValue(in, 4, endian);
+            if (field.tag == 50972) System.out.println("!!!!!!!!!!" + field.count + " " + field.offset);
+            if (field.tag == 254 && field.offset == 0) {mainImage = true;}
+            if (field.tag == 330) {
+                subIFDsPointer = field.offset;
+                subIFDs = field.count;
+                subIFDsPointerLength = field.getTypeLength();
             }
-            System.out.println(ifd.getTag() + " " + ifd.getType() + " " + ifd.getCount() + " " + ifd.getValue() + " " + ifd.getPointer());
-            if (ifd.tag == 257 || ifd.tag == 256) directories.add(ifd); //Image
-            if (ifd.tag == 273 || ifd.tag == 278 || ifd.tag == 279) directories.add(ifd); //Stripe
-            if (ifd.tag == 322 || ifd.tag == 323 || ifd.tag == 324 || ifd.tag == 325) directories.add(ifd); //Tile
+            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
+            if (field.tag == 257 || field.tag == 256) directories.add(field); //Image
+            if (field.tag == 273 || field.tag == 278 || field.tag == 279) directories.add(field); //Stripe
+            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) directories.add(field); //Tile
         }
         if (mainImage) return getPointers(directories, file, endian);
         if (subIFDs == 1) {
-            long readDirectory = readDirectory(file, endian, subIFDsPointer);
+            long readDirectory = readIFDirectory(file, endian, subIFDsPointer);
             if (readDirectory != -1) return readDirectory;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {
                 in = new BufferedInputStream(new FileInputStream(file.toString()));
                 if (!skipBytes(in, subIFDsPointer)) return -1;
                 if (!skipBytes(in, j * subIFDsPointerLength)) return -1;
-                long readDirectory = readDirectory(file, endian, readEndianValue(in, subIFDsPointerLength, endian));
+                long readDirectory = readIFDirectory(file, endian, readEndianValue(in, subIFDsPointerLength, endian));
                 if (readDirectory != -1) return readDirectory;
             }
         }
         return -1;
     }
     
-    private static long readDirectory(File file, boolean endian, long pointer) throws IOException {
+    private static long readIFDirectory(File file, boolean endian, long pointer) throws IOException {
         System.out.println("-------------------------------------------------------------");
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toString()));
         if (!skipBytes(in, pointer)) return -1;
-        int numberofDirs = (int) readEndianValue(in, 2, endian);
+        int tagEntryCount = (int) readEndianValue(in, 2, endian);
         long subIFDs = 0;
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
         long nextIFD = 0;
         boolean mainImage = false;
-        ArrayList<ifd> directories = new ArrayList<>();
-        for (int i = 0; i < numberofDirs; i++) {
-            ifd ifd = new ifd();
-            ifd.tag = (int) readEndianValue(in, 2, endian);
-            ifd.type = (int) readEndianValue(in, 2, endian);
-            ifd.count = readEndianValue(in, 4, endian);
-            ifd.offset = readEndianValue(in, 4, endian);
-            if (ifd.tag == 50972) System.out.println("!!!!!!!!!!" + ifd.count + " " + ifd.offset);
-            if (ifd.tag == 254 && ifd.offset == 0) {mainImage = true;}
-            if (ifd.tag == 330) {
-                subIFDsPointer = ifd.offset;
-                subIFDs = ifd.count;
-                subIFDsPointerLength = ifd.getTypeLength();
+        ArrayList<ifdField> directories = new ArrayList<>();
+        for (int i = 0; i < tagEntryCount; i++) {
+            ifdField field = new ifdField();
+            field.tag = (int) readEndianValue(in, 2, endian);
+            field.type = (int) readEndianValue(in, 2, endian);
+            field.count = readEndianValue(in, 4, endian);
+            field.offset = readEndianValue(in, 4, endian);
+            if (field.tag == 50972) System.out.println("!!!!!!!!!!" + field.count + " " + field.offset);
+            if (field.tag == 254 && field.offset == 0) {mainImage = true;}
+            if (field.tag == 330) {
+                subIFDsPointer = field.offset;
+                subIFDs = field.count;
+                subIFDsPointerLength = field.getTypeLength();
             }
-            System.out.println(ifd.getTag() + " " + ifd.getType() + " " + ifd.getCount() + " " + ifd.getValue() + " " + ifd.getPointer());
-            if (ifd.tag == 257 || ifd.tag == 256) directories.add(ifd); //Image
-            if (ifd.tag == 273 || ifd.tag == 278 || ifd.tag == 279) directories.add(ifd); //Stripe
-            if (ifd.tag == 322 || ifd.tag == 323 || ifd.tag == 324 || ifd.tag == 325) directories.add(ifd); //Tile
+            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
+            if (field.tag == 257 || field.tag == 256) directories.add(field); //Image
+            if (field.tag == 273 || field.tag == 278 || field.tag == 279) directories.add(field); //Stripe
+            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) directories.add(field); //Tile
         }
         nextIFD = readEndianValue(in, 4, endian);
         if (mainImage) return getPointers(directories, file, endian);
-        if (subIFDs == 1) {
+/*        if (subIFDs == 1) {
             long readDirectory = readSubDirectory(file, endian, subIFDsPointer);
             if (readDirectory != -1) return readDirectory;
         } else if (subIFDs > 1) {
@@ -593,11 +593,13 @@ public class StaticTools {
                 long readDirectory = readSubDirectory(file, endian, readEndianValue(in, subIFDsPointerLength, endian));
                 if (readDirectory != -1) return readDirectory;
             }
-        }
-        return -nextIFD;
+        }*/
+        if (nextIFD == 0) return -1;
+        return readIFDirectory(file, endian, nextIFD);
     }
     
-    public static long startOfScanDNG(File file) throws IOException {
+    //returns the pointer to the main image data in tiff based files
+    public static long startOfScanTiff(File file) throws IOException {
         System.out.println(file);
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toString()));
         int c;
@@ -619,7 +621,7 @@ public class StaticTools {
         while (!endOfFile) {
             if (pointer == -1) {return -1;}
             if (pointer == 0) {break;}
-            pointer = readDirectory(file, endian, pointer);
+            pointer = readIFDirectory(file, endian, pointer);
             if (pointer > 1) {return pointer;}
             else {pointer = -1 * pointer;}
         }
