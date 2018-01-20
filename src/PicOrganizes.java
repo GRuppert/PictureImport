@@ -7,6 +7,7 @@ import java.awt.Dialog;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -55,6 +57,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Callback;
 import javax.swing.JDialog;
+import javax.swing.JOptionPane;
 
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
@@ -66,8 +69,8 @@ import org.apache.commons.io.FilenameUtils;
 public class PicOrganizes extends Application {        
     // <editor-fold defaultstate="collapsed" desc="User variables">
     private String pictureSet = "K";
-    private Path toDir = Paths.get("E:\\UDI");
-    private File fromDir = new File("E:\\uid");
+    private Path toDir = Paths.get("E:\\");
+    private File fromDir = new File("E:\\");
 //    private Path toDir = Paths.get("G:\\Pictures\\Photos\\V4\\Közös");
 //    private File fromDir = new File("G:\\Pictures\\Photos\\Új");
     private String naModel;
@@ -132,6 +135,11 @@ public class PicOrganizes extends Application {
     /**
     * Variables
     */
+    private long fileSizeCountTotal = 0;
+    private long fileSizeCount = 0;
+    private long fileCountTotal = 0;
+    private long fileCount = 0;
+
     private Stage primaryStage;
     private PicOrganizes view;
     private BorderPane root;
@@ -715,6 +723,101 @@ public class PicOrganizes extends Application {
         return str;
     }
 
+    private void listFiles(Path path, int start) {
+        fileSizeCountTotal = 0;
+        fileSizeCount = 0;
+        fileCountTotal = 0;
+        fileCount = 0;
+        String filename = "";
+        try
+        {
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                  @Override public FileVisitResult 
+                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
+                            fileSizeCountTotal += attrs.size();
+                            fileCountTotal++;
+//                            System.out.println(file.getFileName());
+                        }
+                        return FileVisitResult.CONTINUE;                            
+                    }
+
+                  @Override public FileVisitResult 
+                visitFileFailed(Path file, IOException exc) {
+                        StaticTools.errorOut(file.toString(), exc);
+                        // Skip folders that can't be traversed
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                  @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+                        if (exc != null)
+                        StaticTools.errorOut(dir.toString(), exc);
+                        // Ignore errors traversing a folder
+                        return FileVisitResult.CONTINUE;
+                    }
+            });
+            JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
+            JDialog progressDialog = progressDiag(progressBar); 
+            PrintWriter pw = new PrintWriter(new File("e:\\test.csv"));
+            long startTime = System.nanoTime();
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                  @Override public FileVisitResult 
+                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
+                            StringBuilder sb = new StringBuilder();
+                            sb.append(start + fileCount);
+                            sb.append(';');
+                            sb.append(StaticTools.getHash(file.toFile()));
+                            sb.append(';');
+                            sb.append(StaticTools.getHash(file.toFile()));
+                            sb.append(';');
+                            sb.append(';');
+                            sb.append(file.getParent().toString().substring(2));
+                            sb.append(';');
+                            sb.append(file.getFileName());
+                            sb.append(';');
+                            sb.append(attrs.size());
+                            sb.append('\n');
+                            pw.write(sb.toString());
+                            fileSizeCount += attrs.size();
+                            fileCount++;
+                            if ((fileCount % 10000) == 0) {
+                                long toSeconds = TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()-startTime);
+                                System.out.print("Time elasped: " + toSeconds + "s Data processed: " + fileSizeCount/1048576 + "MB from " + fileCount + " files" );
+                                System.out.println(" Avg. speed " + fileSizeCount/1048576/toSeconds + "MB/s ETA: " + toSeconds*(fileSizeCountTotal - fileSizeCount)/fileSizeCount + "s Data left: " + (fileSizeCountTotal-fileSizeCount)/1048576 + "MB from " + (fileCountTotal-fileCount) + " files");
+                                pw.flush();
+                            }
+                            progressBar.setValue((int)(fileSizeCount/1000000));
+                            progressIndicator.setProgress(fileSizeCount/fileSizeCountTotal);
+                        }
+                        return FileVisitResult.CONTINUE;                            
+                    }
+
+                  @Override public FileVisitResult 
+                visitFileFailed(Path file, IOException exc) {
+//                        StaticTools.errorOut(file.toString(), exc);
+                        // Skip folders that can't be traversed
+                        return FileVisitResult.CONTINUE;
+                    }
+
+                  @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+//                        if (exc != null)
+//                        StaticTools.errorOut(dir.toString(), exc);
+                        // Ignore errors traversing a folder
+                        return FileVisitResult.CONTINUE;
+                    }
+            });
+            pw.close();
+            progressDialog.dispose();
+        }
+        catch (IOException e)
+        {
+            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+    }
+    
     
     // <editor-fold defaultstate="collapsed" desc="Sets the whole look and function for the GUI">
     private HBox createFunctionButtons() {
@@ -808,9 +911,25 @@ public class PicOrganizes extends Application {
             }
         });
 
+        Button btnList = new Button("List");
+        btnList.setOnAction(new EventHandler<ActionEvent>(){
+            @Override
+            public void handle(ActionEvent event) {
+                File file = StaticTools.getDir(getFromDir());
+                int start = -1;
+                do {
+                    String result= JOptionPane.showInputDialog("Last record value: ");
+                    try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
+                } while (start == -1);
+                if(file != null) {
+                    listFiles(file.toPath(), start + 1);
+                }
+            }
+        });
+
         HBox header = new HBox();
         header.setAlignment(Pos.CENTER);
-        header.getChildren().addAll(btnImport, btnShift, btnRename, btnMove, btnShow, btnComp);
+        header.getChildren().addAll(btnImport, btnShift, btnRename, btnMove, btnShow, btnComp, btnList);
         return header;
     }
     
@@ -987,15 +1106,9 @@ public class PicOrganizes extends Application {
     }
     // </editor-fold>
 
-    
-    @Override
-    public void start(Stage pStage) {
-        try {
-            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\nef.nef")));
-            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\arw.arw")));
-            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\dng.dng")));
-            System.out.println(StaticTools.startOfScanTiff(new File("E:\\Képek\\Dev\\testImp\\Formats\\tif.tif")));
-            System.out.println(StaticTools.startOfScanTiff(new File("E:\\proba.arw")));
+    private void test() {
+/*        try {
+            StaticTools.getHash(new File("E:\\Kepek\\jatszoter\\Test\\egy\\K2007-05-0_5@09-1_4-00(+0200)(Sat)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0021.jpg"));
 
         } catch (IOException ex) {
             Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
@@ -1034,6 +1147,12 @@ public class PicOrganizes extends Application {
             writer.close();
         }
 */
+        
+    }
+    
+    @Override
+    public void start(Stage pStage) {
+        test();
         view = this;
         this.primaryStage = pStage;
 

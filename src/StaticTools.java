@@ -334,10 +334,10 @@ public class StaticTools {
             switch (c) {
                 case 0:
                     break;
-                case 255:
+                case 0xFF://255
                     c = in.read();
                     j++;
-                    if (c == 216) {break OUTER;}
+                    if (c == 0xD8 /*216*/) {break OUTER;}
                 default:
                     return -1;
             }
@@ -357,7 +357,7 @@ public class StaticTools {
                 //Start of Quantization table, practically the image
 //Didn't work                else if (c == 219) return j;
                 //Start of Scan
-                else if (c == 218) return j; 
+                else if (c == 0xDA /*218*/) return j; 
                 else {
 //                    System.out.print("ff" + Integer.toHexString(c) + " ");
                     long jump = 256*in.read() + in.read() - 2;
@@ -371,7 +371,7 @@ public class StaticTools {
                     marker = false;
                 }
             else {
-                if (c == 255) {marker = true;
+                if (c == 0xFF/*255*/) {marker = true;
 //                } else if (c == 0) {//byte stuffing
                 } else {
                     return -1;
@@ -400,7 +400,7 @@ public class StaticTools {
         return result;
     }
 
-    private static String getPointers(ArrayList<ifdField> imageLocationFields, File file, boolean endian) throws FileNotFoundException, IOException {
+    private static byte[] getPointers(ArrayList<ifdField> imageLocationFields, File file, boolean endian) throws FileNotFoundException, IOException {
 /*      RawImageDigest
         Tag 50972 (C71C.H)
         Type BYTE
@@ -412,7 +412,6 @@ public class StaticTools {
         This tag is an MD5 digest of the raw image data. All pixels in the image are processed in rowscan
         order. Each pixel is zero padded to 16 or 32 bits deep (16-bit for data less than or equal to
         16 bits deep, 32-bit otherwise). The data for each pixel is processed in little-endian byte order         */
-        String abort = mediaFile.EMPTYHASH;
         long imageLength;
         long imageWidth;
         long pieceOffsets = 0;
@@ -454,7 +453,7 @@ public class StaticTools {
                     break;
             }
         }
-        if (pieceByteCountsCount != pieceOffsetsCount) return abort;
+        if (pieceByteCountsCount != pieceOffsetsCount) return null;
         RandomAccessFile fileRand = new RandomAccessFile(file.getAbsolutePath(), "r");
         MessageDigest md5Digest = null;
         try {
@@ -462,21 +461,21 @@ public class StaticTools {
         } catch (NoSuchAlgorithmException ex) {
         }
         if (pieceOffsetsCount == 1) {
-                System.out.println(file.getName() + " bytes readed: " + pieceByteCounts + " File size " + file.length() + " % " + (100*pieceByteCounts/file.length()));
+//                System.out.println(file.getName() + " bytes readed: " + pieceByteCounts + " File size " + file.length() + " % " + (100*pieceByteCounts/file.length()));
                 fileRand.seek(pieceOffsets);
                 long readed = 0;
                 int bufferSize = 4096;
                 while (readed + bufferSize < pieceByteCounts) {
                     byte chunk[] = new byte[bufferSize];
                     int read = fileRand.read(chunk);
-                    if (read == -1) return abort;
+                    if (read == -1) return null;
                     readed += read; 
                     md5Digest.update(chunk);
                 }
                 int residue = (int)(pieceByteCounts - readed);
                 byte chunk[] = new byte[residue];
                 int read = fileRand.read(chunk);
-                if (read == -1) return abort;
+                if (read == -1) return null;
                 md5Digest.update(chunk);
         } else {
             long totalread = 0;
@@ -512,31 +511,25 @@ public class StaticTools {
                 while (readed + bufferSize < actualPieceBytes) {
                     byte chunk[] = new byte[bufferSize];
                     int read = fileRand.read(chunk);
-                    if (read == -1) return abort;
+                    if (read == -1) return null;
                     readed += read; 
                     md5Digest.update(chunk);
                 }
                 int residue = (int)(actualPieceBytes - readed);
                 byte chunk[] = new byte[residue];
                 int read = fileRand.read(chunk);
-                if (read == -1) return abort;
+                if (read == -1) return null;
                 md5Digest.update(chunk);
             }
-            System.out.println(file.getName() + " bytes readed: " + totalread + " File size " + file.length() + " % " + (100*totalread/file.length()));
+//            System.out.println(file.getName() + " bytes readed: " + totalread + " File size " + file.length() + " % " + (100*totalread/file.length()));
         }
-        byte[] digest = md5Digest.digest();
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < digest.length; ++i) {
-            sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1,3));
-        }
-        return sb.toString();
+        return md5Digest.digest();
     }
     
-    private static String readSubIFDirectory(ifdCursor cursor) throws IOException {
-        String abort = mediaFile.EMPTYHASH;
-        System.out.println("*********************************************************");
+    private static byte[] readSubIFDirectory(ifdCursor cursor) throws IOException {
+//        System.out.println("*********************************************************");
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
-        if (!skipBytes(in, cursor.getPointer())) return abort;
+        if (!skipBytes(in, cursor.getPointer())) return null;
         int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
         long subIFDs = 0;
         long subIFDsPointer = 0;
@@ -556,7 +549,7 @@ public class StaticTools {
                 subIFDs = field.count;
                 subIFDsPointerLength = field.getTypeLength();
             }
-            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
+//            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
             if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
             if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
             if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile
@@ -564,26 +557,25 @@ public class StaticTools {
         if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
         if (subIFDs == 1) {
             cursor.setPointer(subIFDsPointer);
-            String hash = readSubIFDirectory(cursor);
+            byte[] hash = readSubIFDirectory(cursor);
             if (hash != null) return hash;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {
                 in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
-                if (!skipBytes(in, subIFDsPointer)) return abort;
-                if (!skipBytes(in, j * subIFDsPointerLength)) return abort;
+                if (!skipBytes(in, subIFDsPointer)) return null;
+                if (!skipBytes(in, j * subIFDsPointerLength)) return null;
                 cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
-                String hash = readSubIFDirectory(cursor);
+                byte[] hash = readSubIFDirectory(cursor);
                 if (hash != null) return hash;
             }
         }
         return null;
     }
     
-    private static String readIFDirectory(ifdCursor cursor) throws IOException {
-        String abort = mediaFile.EMPTYHASH;
-        System.out.println("-------------------------------------------------------------");
+    private static byte[] readIFDirectory(ifdCursor cursor) throws IOException {
+//        System.out.println("-------------------------------------------------------------");
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
-        if (!skipBytes(in, cursor.getPointer())) return abort;
+        if (!skipBytes(in, cursor.getPointer())) return null;
         int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
         long subIFDs = 0;
         long subIFDsPointer = 0;
@@ -604,7 +596,7 @@ public class StaticTools {
                 subIFDs = field.count;
                 subIFDsPointerLength = field.getTypeLength();
             }
-            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
+//            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
             if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
             if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
             if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile
@@ -613,15 +605,15 @@ public class StaticTools {
         if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
         if (subIFDs == 1) {
             cursor.setPointer(subIFDsPointer);
-            String hash = readSubIFDirectory(cursor);
+            byte[] hash = readSubIFDirectory(cursor);
             if (hash != null) return hash;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {
                 in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
-                if (!skipBytes(in, subIFDsPointer)) return abort;
-                if (!skipBytes(in, j * subIFDsPointerLength)) return abort;
+                if (!skipBytes(in, subIFDsPointer)) return null;
+                if (!skipBytes(in, j * subIFDsPointerLength)) return null;
                 cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
-                String hash = readSubIFDirectory(cursor);
+                byte[] hash = readSubIFDirectory(cursor);
                 if (hash != null) return hash;
             }
         }
@@ -630,8 +622,7 @@ public class StaticTools {
     }
         
     //returns the pointer to the main image data in tiff based files
-    public static String startOfScanTiff(File file) throws IOException {
-        String abort = mediaFile.EMPTYHASH;
+    public static byte[] startOfScanTiff(File file) throws IOException {
         BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toString()));
         int c;
         long j = 0;
@@ -642,12 +633,12 @@ public class StaticTools {
         } else if (c == 77) {
             if (in.read() == 77) endian = false;
         }
-        if (endian == null) {return abort;}
+        if (endian == null) {return null;}
         long tiffCheck = readEndianValue(in, 2, endian);
-        if (tiffCheck != 42) {return abort;}
+        if (tiffCheck != 42) {return null;}
         ifdCursor cursor = new ifdCursor(file, endian, readEndianValue(in, 4, endian));
-        if (cursor.getPointer() == -1) {return abort;}
-        if (cursor.getPointer() == 0) {return abort;}
+        if (cursor.getPointer() == -1) {return null;}
+        if (cursor.getPointer() == 0) {return null;}
         return readIFDirectory(cursor);
     }
     
@@ -676,13 +667,14 @@ public class StaticTools {
             return mediaFile.EMPTYHASH;
         }
         byte[] digestDef = md5Digest.digest();
+        byte[] digest = null;
         try (BufferedInputStream fileStream = new BufferedInputStream(new FileInputStream(file.toString())); DigestInputStream in = new DigestInputStream(fileStream, md5Digest)) {
             byte[] buffer = new byte[4096];
             long length;
             String ext = FilenameUtils.getExtension(file.getName().toLowerCase());
             switch (ext) {
-                case "mp4":
     // <editor-fold defaultstate="collapsed" desc="mp4">
+                case "mp4":
                     in.on(false);
                     boolean EOF = false;
                     String desc = "";
@@ -706,21 +698,27 @@ public class StaticTools {
                         if (desc.equals("mdat")) {
                             in.on(true);
                             while (buffer.length <= length) {
-                                in.read(buffer);
-                                length -= buffer.length;
+                                int read = in.read(buffer);
+                                length -= read;
                             }
-                            in.read(buffer, 0, (int)length);
+                            while (length > 0) {
+                                int read = in.read(buffer, 0, (int)length);
+                                if (read == -1) {digest = null; break;}
+                                length -= read;
+                            }
                             break;
                         } else {
                             if (!skipBytes(in, length)) break;
                         }
                     } while(!EOF);    
+                    digest = md5Digest.digest();
                     break;
     // </editor-fold>
+    // <editor-fold defaultstate="collapsed" desc="JPG">
                 case "jpg":
                 case "jpeg":
-    // <editor-fold defaultstate="collapsed" desc="JPG">
                     int scanLength;
+                    int scanLengthOld = 0;
                     do {
                         in.on(false);
                         md5Digest.reset();
@@ -736,26 +734,28 @@ public class StaticTools {
                                 return mediaFile.EMPTYHASH;
                             }
                             scanLength ++;
-                        } while (!(oldc == 255 && c == 217));
-                        long av = in.available();
-//                        System.out.println(scanLength + " " + av);
-                    } while (scanLength < in.available());
+                        } while (!(oldc == 0xFF && c == 0xD9/*217*/));
+                        if (scanLength > scanLengthOld) {digest = md5Digest.digest(); scanLengthOld = scanLength;}
+                    } while (scanLengthOld < in.available());
                     break;
     // </editor-fold>
+    // <editor-fold defaultstate="collapsed" desc="raw">
+                case "nef":
                 case "dng":
                 case "arw":
                 case "tiff":
-                    return startOfScanTiff(file);
-//                case "dng":
-                case "nef":
-    // <editor-fold defaultstate="collapsed" desc="raw">
+                    digest = startOfScanTiff(file);
+    // </editor-fold>
+                default:
                     in.on(true);
                     while (in.read(buffer) != -1) {}
+                    digest = md5Digest.digest();
                     break;
-    // </editor-fold>
             }
         }
-        byte[] digest = md5Digest.digest();
+        if (digest == null) {
+            return mediaFile.EMPTYHASH;
+        }
         if (Arrays.equals(digest, digestDef)) {
             return mediaFile.EMPTYHASH;
         }
@@ -764,6 +764,11 @@ public class StaticTools {
             sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1,3));
         }
         return sb.toString();
+    }
+    
+    public static String formatHash(String hash) {
+        if (hash.length()!=32) return hash;
+        return hash.substring(0, 8) + "-" + hash.substring(8, 12) + "-" + hash.substring(12, 16) + "-" + hash.substring(16, 20) + "-" + hash.substring(20, 32);
     }
 
     public static boolean copyAndBackup(File source, File dest, File backup) {
