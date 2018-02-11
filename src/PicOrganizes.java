@@ -28,12 +28,16 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.chart.AreaChart;
+import javafx.scene.chart.NumberAxis;
+import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -135,18 +139,21 @@ public class PicOrganizes extends Application {
     /**
     * Variables
     */
+    public static PicOrganizes view;
+    public final ProgressIndicator progressIndicator = new ProgressIndicator(0);
+    public XYChart.Series speeds = new XYChart.Series();
+
     private long fileSizeCountTotal = 0;
     private long fileSizeCount = 0;
     private long fileCountTotal = 0;
     private long fileCount = 0;
-
     private Stage primaryStage;
-    private PicOrganizes view;
     private BorderPane root;
     private Tab tab1 = new Tab();
     private Tab tab2 = new Tab();
     private int maxWidth, maxHeight;
-    private final ProgressIndicator progressIndicator = new ProgressIndicator(0);
+    private Task currentTask;
+    private Label statusLabel;
     private final ObservableList<mediaFile> data = FXCollections.observableArrayList();
     private final ObservableList<duplicate> pairs = FXCollections.observableArrayList();
 
@@ -236,7 +243,7 @@ public class PicOrganizes extends Application {
                     int i = 0;
                     while (iterator.hasNext()) {
                         textMeta next = iterator.next();
-                        files.add(new mediaFile(this, next));
+                        files.add(new mediaFile(next));
                         progressBar.setValue(i + j*chunkSize);
                         progressIndicator.setProgress((i + j*chunkSize)/content.length);
                     }
@@ -258,7 +265,7 @@ public class PicOrganizes extends Application {
                         String line = iterator.next();
                         if (line.startsWith("========")) {
                             if (i > -1) {
-                                files.add(new mediaFile(this, new File(filename), model, captureDate, note, dID, odID));
+                                files.add(new mediaFile(new File(filename), model, captureDate, note, dID, odID));
                                 progressBar.setValue(i + j*chunkSize);
                                 progressIndicator.setProgress((i + j*chunkSize)/content.length);
                             }
@@ -273,7 +280,7 @@ public class PicOrganizes extends Application {
                         //End of exiftool output
                         } else if (line.contains("image files read")){
                             if (!line.contains(" 0 image files read")) {
-                                files.add(new mediaFile(this, new File(filename), model, captureDate, note, dID, odID));
+                                files.add(new mediaFile(new File(filename), model, captureDate, note, dID, odID));
                             }
                         } else if (line.contains("files could not be read")){
                             
@@ -337,13 +344,13 @@ public class PicOrganizes extends Application {
                                 int eY = Integer.parseInt(actDir.substring(13, 17)), eM = Integer.parseInt(actDir.substring(18, 20))-1, eD = Integer.parseInt(actDir.substring(21, 23));
                                 if ((fY*10000 + fM*100 + fD >= sY*10000 + sM*100 + sD) && (fY*10000 + fM*100 + fD <= eY*10000 + eM*100 + eD)) {
                                     target = dirs[j].toPath();
-                                    files.add(new mediaFile(this, source.toString(), target + "\\"));
+                                    files.add(new mediaFile(source.toString(), target + "\\"));
                                     System.out.println(source.toString() + " -> " + target);
                                     j = dirs.length;
                                 }
                             }
                         } else {
-                            files.add(new mediaFile(this, source.toString(), target + "\\"));
+                            files.add(new mediaFile(source.toString(), target + "\\"));
                             System.out.println(source.toString() + " -> " + target);
                         }   
                         oldName = fileName;
@@ -367,7 +374,7 @@ public class PicOrganizes extends Application {
                   @Override public FileVisitResult 
                 visitFile(Path file, BasicFileAttributes attrs) {
                         if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                            files.add(new mediaFile(view, file.toString(), attrs.size()));                               
+                            files.add(new mediaFile(file.toString(), attrs.size()));                               
                         }
                         return FileVisitResult.CONTINUE;                            
                     }
@@ -611,7 +618,7 @@ public class PicOrganizes extends Application {
                     int i = 0;
                     while (iterator.hasNext()) {
                         textMeta next = iterator.next();
-                        mediaFile media = new mediaFile(this, next);
+                        mediaFile media = new mediaFile(next);
                         if (media.getProcessing()) {
                             media.write();
                         } else {
@@ -641,7 +648,7 @@ public class PicOrganizes extends Application {
                         String line = iterator.next();
                         if (line.startsWith("========")) {
                             if (i > -1) {
-                                mediaFile media = new mediaFile(this, new File(filename), model, captureDate, note, dID, odID);
+                                mediaFile media = new mediaFile(new File(filename), model, captureDate, note, dID, odID);
                                 if (media.getProcessing()) {
                                     media.write();
                                 } else {
@@ -661,7 +668,7 @@ public class PicOrganizes extends Application {
                         //End of exiftool output
                         } else if (line.contains("image files read")){
                             if (!line.contains(" 0 image files read")) {
-                                mediaFile media = new mediaFile(this, new File(filename), model, captureDate, note, dID, odID);
+                                mediaFile media = new mediaFile(new File(filename), model, captureDate, note, dID, odID);
                                 if (media.getProcessing()) {
                                     media.write();
                                 } else {
@@ -759,24 +766,21 @@ public class PicOrganizes extends Application {
             });
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
             JDialog progressDialog = progressDiag(progressBar); 
-            PrintWriter pw = new PrintWriter(new File("e:\\test.csv"));
+            PrintWriter pw = new PrintWriter(new File("e:\\test2.csv"));
             long startTime = System.nanoTime();
+            String delimiter = "\t";
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                   @Override public FileVisitResult 
                 visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
                             StringBuilder sb = new StringBuilder();
-                            sb.append(start + fileCount);
-                            sb.append(';');
-                            sb.append(StaticTools.getHash(file.toFile()));
-                            sb.append(';');
-                            sb.append(StaticTools.getHash(file.toFile()));
-                            sb.append(';');
-                            sb.append(';');
-                            sb.append(file.getParent().toString().substring(2));
-                            sb.append(';');
-                            sb.append(file.getFileName());
-                            sb.append(';');
+                            String hash = StaticTools.getHash(file.toFile());
+                            sb.append(start + fileCount).append(delimiter);
+                            sb.append(hash).append(delimiter);
+                            sb.append(hash).append(delimiter);
+                            sb.append(delimiter);
+                            sb.append(file.getParent().toString().substring(2)).append(delimiter);
+                            sb.append(file.getFileName()).append(delimiter);
                             sb.append(attrs.size());
                             sb.append('\n');
                             pw.write(sb.toString());
@@ -916,6 +920,27 @@ public class PicOrganizes extends Application {
             @Override
             public void handle(ActionEvent event) {
                 File file = StaticTools.getDir(getFromDir());
+                File output = StaticTools.getFile(getFromDir());
+                int start = -1;
+                do {
+                    String result= JOptionPane.showInputDialog("Last record value: ");
+                    try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
+                } while (start == -1);
+                if(file != null && output != null) {
+//                    listFiles(file.toPath(), start + 1);
+                    currentTask = new Listing(file.toPath(), start + 1, output);
+                    Thread th = new Thread(currentTask);
+                    progressIndicator.progressProperty().unbind();
+                    progressIndicator.progressProperty().bind(currentTask.progressProperty());
+                    statusLabel.textProperty().bind(currentTask.messageProperty());
+                    th.setDaemon(true);
+                    th.start();
+                }
+                
+//                Listing p = new Listing();
+//                new Thread(p).start();
+
+/*                File file = StaticTools.getDir(getFromDir());
                 int start = -1;
                 do {
                     String result= JOptionPane.showInputDialog("Last record value: ");
@@ -924,6 +949,7 @@ public class PicOrganizes extends Application {
                 if(file != null) {
                     listFiles(file.toPath(), start + 1);
                 }
+                */
             }
         });
 
@@ -1055,6 +1081,7 @@ public class PicOrganizes extends Application {
             @Override
             public void handle(ActionEvent event) {
                 data.removeAll(data);
+                currentTask.cancel();
             }
         });
 
@@ -1070,10 +1097,28 @@ public class PicOrganizes extends Application {
                 }
             }
         });
+
+        final NumberAxis xAxis = new NumberAxis(0, 100, 10);
+        xAxis.setMinorTickVisible(false);
+        final NumberAxis yAxis = new NumberAxis();
+        yAxis.setMinorTickVisible(false);
+        final AreaChart<Number,Number> ac =  new AreaChart<>(xAxis,yAxis);
+//        ac.setTitle("Speed");
+        ac.getData().addAll(speeds);
+        ac.setLegendVisible(false);
+        ac.getXAxis().setTickLabelsVisible(false);
+        ac.getXAxis().setOpacity(0);
+
+        ac.setPrefSize(300, 100);
+        ac.setMinSize(300, 100);
+        ac.setMaxSize(300, 100);
+        
+        statusLabel = new Label();
+
         HBox footer = new HBox();
         footer.setSpacing(10);
         footer.setAlignment(Pos.CENTER);
-        footer.getChildren().addAll(btnGo, btnClr, btnRefresh, progressIndicator);
+        footer.getChildren().addAll(btnGo, btnClr, btnRefresh, progressIndicator, statusLabel, ac);
         return footer;
     }
     
@@ -1108,8 +1153,8 @@ public class PicOrganizes extends Application {
 
     private void test() {
 /*        try {
-            StaticTools.getHash(new File("E:\\Kepek\\jatszoter\\Test\\egy\\K2007-05-0_5@09-1_4-00(+0200)(Sat)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0021.jpg"));
-
+            ArrayList<String> hash = StaticTools.getHash(Paths.get("E:\\rosszJPG"));
+            System.out.println("h");
         } catch (IOException ex) {
             Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -1158,6 +1203,7 @@ public class PicOrganizes extends Application {
 
         Parent mainLook = createMainLook();
         Scene mainScene = new Scene(mainLook);
+        mainScene.getStylesheets().add("Chart.css");
         primaryStage.setScene(mainScene);
 
         //set Stage boundaries to visible bounds of the main screen

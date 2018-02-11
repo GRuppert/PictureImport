@@ -83,7 +83,6 @@ public class mediaFile {
     private final SimpleStringProperty newName;
     private final SimpleStringProperty note;
     private final SimpleBooleanProperty xmpMissing;
-    private PicOrganizes view;
     private File file;
     private File fileXmp;
     private String originalName;
@@ -97,38 +96,37 @@ public class mediaFile {
     private ZonedDateTime date = null;//Filename, Exif, xmp, xml, mod +TZ
 
 
-    public mediaFile(PicOrganizes view, String fileIn) {
-        this(view, new File(fileIn));
+    public mediaFile(String fileIn) {
+        this(new File(fileIn));
     }
 
-    public mediaFile(PicOrganizes view, String fileIn, long size) {        
-        this(view, new File(fileIn));
+    public mediaFile(String fileIn, long size) {        
+        this(new File(fileIn));
         fileSize = size;
     }
 
-    public mediaFile(PicOrganizes view, String fileIn, String targetDir) {
-        this(view, fileIn);
+    public mediaFile(String fileIn, String targetDir) {
+        this(fileIn);
         targetDirectory = targetDir;
     }
 
-    public mediaFile(PicOrganizes view, File fileIn) {
-        this(view, fileIn, null, null, "", null, null);
+    public mediaFile(File fileIn) {
+        this(fileIn, null, null, "", null, null);
     }
     
-    public mediaFile(PicOrganizes view, textMeta meta) {
-        this(view, new File(meta.filename), meta.model, meta.date, meta.note, meta.dID, meta.odID);
+    public mediaFile(textMeta meta) {
+        this(new File(meta.filename), meta.model, meta.date, meta.note, meta.dID, meta.odID);
     }
     
-    public mediaFile(PicOrganizes viewIn, File fileIn, String exifModel, String exifDate, String noteIn, String dIDin, String odIDin) {
+    public mediaFile(File fileIn, String exifModel, String exifDate, String noteIn, String dIDin, String odIDin) {
         this.file = fileIn;
-        this.view = viewIn;
         processing = new SimpleBooleanProperty(true);
         currentName = new SimpleStringProperty(getFile().getName());
         note = new SimpleStringProperty("");
         if (!noteIn.equals("")) addNote(noteIn);
         xmpMissing = new SimpleBooleanProperty(false);
         originalName = file.getName();
-        targetDirectory = view.getToDir().toString() + "\\" + file.getParentFile().getName();  
+        targetDirectory = PicOrganizes.view.getToDir().toString() + "\\" + file.getParentFile().getName();  
         if (PicOrganizes.supportedMediaFileType(currentName.get())) {
             String ext = FilenameUtils.getExtension(originalName.toLowerCase());
             //standardizes data in Sony mp4 
@@ -156,7 +154,7 @@ public class mediaFile {
                 } else {
                     ZonedDateTime dateZ = StaticTools.getZonedTimeFromStr(exifDate);
                     if (dateZ == null) {
-                        dateZ = StaticTools.getTimeFromStr(exifDate, view.getZone());
+                        dateZ = StaticTools.getTimeFromStr(exifDate, PicOrganizes.view.getZone());
                         if (dateZ != null)
                             addExif("DateTimeOriginal", dateZ);
                     }
@@ -252,8 +250,8 @@ public class mediaFile {
     private String getMetaAltDate(meta metaIn) {
         if (metaIn != null) {
             if (metaIn.date != null)
-                if (!metaIn.date.getOffset().equals(metaIn.date.withZoneSameInstant(view.getZone()).getOffset()))
-                return metaIn.date.withZoneSameInstant(view.getZone()).format(PicOrganizes.XmpDateFormatTZ);
+                if (!metaIn.date.getOffset().equals(metaIn.date.withZoneSameInstant(PicOrganizes.view.getZone()).getOffset()))
+                return metaIn.date.withZoneSameInstant(PicOrganizes.view.getZone()).format(PicOrganizes.XmpDateFormatTZ);
         }
         return "Null";
     }
@@ -356,11 +354,11 @@ public class mediaFile {
                         Files.createDirectory(this.getNewPath().getParent());
                 }
                 updateExif();
-                if (view.getCopyOrMove() == PicOrganizes.COPY) {
+                if (PicOrganizes.view.getCopyOrMove() == PicOrganizes.COPY) {
                     Files.copy(this.getOldPath(), this.getNewPath());                               
                     if (fileXmp != null && fileXmp.exists())
                         Files.copy(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
-                } else if (view.getCopyOrMove() == PicOrganizes.MOVE) {
+                } else if (PicOrganizes.view.getCopyOrMove() == PicOrganizes.MOVE) {
                     Files.move(this.getOldPath(), this.getNewPath());                               
                     if (fileXmp != null && fileXmp.exists())
                         Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
@@ -504,7 +502,7 @@ public class mediaFile {
                         if (dateString != null) {
                             captureDate = StaticTools.getZonedTimeFromStr(dateString);
                             if (captureDate == null) {
-                                captureDate = StaticTools.getTimeFromStr(dateString, view.getZone());
+                                captureDate = StaticTools.getTimeFromStr(dateString, PicOrganizes.view.getZone());
                                 if (captureDate != null)
                                     addExif("DateTimeOriginal", captureDate);
                             }
@@ -590,7 +588,7 @@ public class mediaFile {
         
         String dateS = zoned.withZoneSameInstant(ZoneId.of("UTC")).format(PicOrganizes.outputFormat);
         dateS = dateS.substring(0, 9) + "_" + dateS.substring(9, 15) + "_" + dateS.substring(15) + "(" + offsetSign + offsetH + offsetM + ")" + "(" + zoned.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.US) + ")" + "-";
-        return view.getPictureSet() + dateS;
+        return PicOrganizes.view.getPictureSet() + dateS;
     }// "K2016-11-0_3@07-5_0-24(+0100)(Thu)-"
 
     //Unused code, meant to extract information from sony xml, but those are already presented in the mp4 file embedded

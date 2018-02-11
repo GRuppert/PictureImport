@@ -14,8 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javax.swing.JOptionPane;
 import org.apache.commons.io.FilenameUtils;
 
@@ -348,7 +349,7 @@ public class StaticTools {
     public static long startOfScanJPG(BufferedInputStream in) throws IOException {
         int c;
         long j = startOfImageJPG(in);
-        if (j == -1) return j;
+        if (j == -1) return -1;
         Boolean marker = false;
         while ((c = in.read()) != -1) {
             if (marker)
@@ -382,7 +383,7 @@ public class StaticTools {
         return -1;  
     }
     
-    private static long readEndianValue(BufferedInputStream in, int length, boolean endian) {
+    private static long readEndianValue(InputStream in, int length, boolean endian) {
         long result = 0;
         for(int i=0; i<length; i++) {
             try {
@@ -651,12 +652,27 @@ public class StaticTools {
         return true;
     }
     
-    public static byte[] readBytes(DigestInputStream in, int size) throws IOException {
+    public static byte[] readBytes(InputStream in, int size) throws IOException {
         byte result[] = new byte[size];
         for (int i = 0; i < size; i++) {
             result[i] = (byte)in.read();
         }
         return result;
+    }
+    
+    public static ArrayList<String> getHash(Path folderPath) throws FileNotFoundException, IOException {
+        ArrayList<String> hashes = new ArrayList<>();
+        File[] listOfFiles = folderPath.toFile().listFiles();
+        for (File listOfFile : listOfFiles) {
+            if (listOfFile.isFile()) {
+                if (PicOrganizes.supportedFileType(listOfFile.getName())) {
+                    hashes.add(getHash(listOfFile));
+                }
+            } else if (listOfFile.isDirectory()) {
+                hashes.addAll(getHash(listOfFile.toPath()));    
+            }
+        }
+        return hashes;
     }
     
     public static String getHash(File file) throws FileNotFoundException, IOException {
@@ -677,24 +693,21 @@ public class StaticTools {
                 case "mp4":
                     in.on(false);
                     boolean EOF = false;
-                    String desc = "";
                     do {
-                        byte boxLength[] = readBytes(in, 4);
-                        byte boxDesc[] = readBytes(in, 4);                        
-                        ByteBuffer wrapped = ByteBuffer.wrap(boxLength); // big-endian by default
-                        length = wrapped.getInt() - 8;
+                        length = readEndianValue(in, 4, false) - 8;
+//                        byte boxLength[] = readBytes(in, 4);
+                        String desc = new String(readBytes(in, 4));                        
+//                        ByteBuffer wrapped = ByteBuffer.wrap(boxLength); // big-endian by default
+//                        length = wrapped.getInt() - 8;
                         if (length == -7) {
                             //largesize
-                            byte boxLargesize[]= readBytes(in, 8);
-                            ByteBuffer wrappedLarge = ByteBuffer.wrap(boxLargesize); // big-endian by default
-                            length = wrappedLarge.getLong() - 16;
+                            length = readEndianValue(in, 8, false) - 16;
                         } else if (length == -8) {
                             // until eof
                              EOF = true;
                         } else if (length == in.available()) {
                              EOF = true;
                         }
-                        desc = new String(boxDesc);
                         if (desc.equals("mdat")) {
                             in.on(true);
                             while (buffer.length <= length) {
@@ -706,7 +719,7 @@ public class StaticTools {
                                 if (read == -1) {digest = null; break;}
                                 length -= read;
                             }
-                            break;
+//                            break;
                         } else {
                             if (!skipBytes(in, length)) break;
                         }
@@ -745,6 +758,7 @@ public class StaticTools {
                 case "arw":
                 case "tiff":
                     digest = startOfScanTiff(file);
+                    break;
     // </editor-fold>
                 default:
                     in.on(true);
@@ -812,6 +826,15 @@ public class StaticTools {
         else
             chooser.setInitialDirectory(new File("C:\\"));
         return chooser.showDialog(null);
+    }
+    
+    public static File getFile(File dir) {
+        FileChooser chooser = new FileChooser();
+        if (Files.exists(dir.toPath()))
+            chooser.setInitialDirectory(dir);
+        else
+            chooser.setInitialDirectory(new File("C:\\"));
+        return chooser.showSaveDialog(null);
     }
     
 
