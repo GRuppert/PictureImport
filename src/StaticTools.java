@@ -1,4 +1,15 @@
 
+import com.adobe.xmp.XMPException;
+import com.adobe.xmp.XMPIterator;
+import com.adobe.xmp.XMPMeta;
+import com.adobe.xmp.XMPMetaFactory;
+import com.adobe.xmp.properties.XMPPropertyInfo;
+import com.drew.imaging.ImageMetadataReader;
+import com.drew.imaging.ImageProcessingException;
+import com.drew.metadata.Directory;
+import com.drew.metadata.Metadata;
+import com.drew.metadata.Tag;
+import com.drew.metadata.xmp.XmpDirectory;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import java.awt.Toolkit;
@@ -27,6 +38,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -49,28 +61,41 @@ import org.apache.commons.io.FilenameUtils;
  */
 public class StaticTools {
     
-    public static ArrayList<textMeta> exifToMeta(ArrayList<String> filenames, File dir) {
+    public static meta exifToMeta(File fileMeta) {
+        ArrayList<String> files = new ArrayList<>();
+        files.add(fileMeta.getName());
+        ArrayList<meta> exifToMeta = StaticTools.exifToMeta(files, fileMeta.getParentFile());
+        Iterator<meta> iterator = exifToMeta.iterator();
+        if (iterator.hasNext()) {
+            return iterator.next();
+        }
+        return null;
+    }
+    
+    public static ArrayList<meta> exifToMeta(ArrayList<String> filenames, File dir) {
         String filename = null;
         if (filenames.size() == 1 && filenames.get(0).length() > 5) {filename = dir + "\\" + filenames.get(0);}
         filenames.add(0, "-OriginalDocumentID");
         filenames.add(0, "-DocumentID");
-        filenames.add(0, "-Model");
         filenames.add(0, "-DateTimeOriginal");
+        filenames.add(0, "-xmp:DateTimeOriginal");
+        filenames.add(0, "-Model");
         filenames.add(0, "exiftool");
         ArrayList<String> exifTool = StaticTools.exifTool(filenames.toArray(new String[0]), dir);
         Iterator<String> iterator = exifTool.iterator();
-        ArrayList<textMeta> results = new ArrayList<>();
+        ArrayList<meta> results = new ArrayList<>();
         int i = -1;
         String model = null;
         String note = "";
         String dID = null;
         String odID = null;
         String captureDate = null;
+        Boolean dateFormat = null;
         while (iterator.hasNext()) {
             String line = iterator.next();
             if (line.startsWith("========")) {
                 if (i > -1) {
-                    results.add(new textMeta(filename, model, captureDate, note, dID, odID));
+                    results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
                 }
                 i++;
                 String fileTemp = line.substring(9).replaceAll("./", "").replaceAll("/", "\\");
@@ -80,6 +105,7 @@ public class StaticTools {
                 dID = null;
                 odID = null;
                 note = "";
+                dateFormat = false;
 
             //End of exiftool output
             } else if (line.contains("image files read")){
@@ -92,7 +118,12 @@ public class StaticTools {
                 if (line.length() > 34) tagValue = line.substring(34);
                 switch (line.substring(0, 4)) {
                     case "Date":
-                        captureDate = tagValue;
+                        if (captureDate == null)
+                            captureDate = tagValue;
+                        else {
+                            if (captureDate.length() == 19) dateFormat = true;
+                            captureDate = tagValue;
+                        }
                         break;
                     case "Came":
                         model = tagValue;
@@ -109,7 +140,7 @@ public class StaticTools {
                 }
             }
         }
-        if (filename != null) {results.add(new textMeta(filename, model, captureDate, note, dID, odID));}
+        if (filename != null) {results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));}
         return results;
     }
 
@@ -225,25 +256,23 @@ public class StaticTools {
 //            ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -Model " + fileNames, dir);
             ArrayList<String> files = new ArrayList<>();
             files.add(".");
-            ArrayList<textMeta> exifToMeta = exifToMeta(files, dir);
-            Iterator<textMeta> iterator = exifToMeta.iterator();
+            ArrayList<meta> exifToMeta = exifToMeta(files, dir);
+            Iterator<meta> iterator = exifToMeta.iterator();
             String errors = "";
             while (iterator.hasNext()) {
-                textMeta next = iterator.next();
+                meta next = iterator.next();
                 String model = next.model;
-                ZonedDateTime dateZ = getZonedTimeFromStr(next.date);
-                if (dateZ == null)
-                    dateZ = getTimeFromStr(next.date, zone);
+                ZonedDateTime dateZ = next.date;
                 if (dateZ != null) {
                     date = dateZ.toEpochSecond();
                     if (model == null) {model = "NA";}
-                    Picture picture = new Picture(new File(/*dir + "\\" + */next.filename), date, model);
+                    Picture picture = new Picture(new File(/*dir + "\\" + */next.originalFilename), date, model);
                     if (!stripes.containsKey(model)) {
                         stripes.put(model, new Stripes(model, stripes.size(), tl));
                     }
                     stripes.get(model).add(picture);
                 } else {
-                    errors += "\n" + next.filename;
+                    errors += "\n" + next.originalFilename;
                 }                        
                 
             }
@@ -315,14 +344,15 @@ public class StaticTools {
 
     public static ZonedDateTime getZonedTimeFromStr(String input) {
         ZonedDateTime result = null;
-        try {
-            result = OffsetDateTime.parse(input, PicOrganizes.ExifDateFormatTZ).toZonedDateTime();
-        } catch (DateTimeParseException e) {
+        if (input != null)
             try {
-                result = OffsetDateTime.parse(input, PicOrganizes.XmpDateFormatTZ).toZonedDateTime();
-            } catch (DateTimeParseException e1) {
+                result = OffsetDateTime.parse(input, PicOrganizes.ExifDateFormatTZ).toZonedDateTime();
+            } catch (DateTimeParseException e) {
+                try {
+                    result = OffsetDateTime.parse(input, PicOrganizes.XmpDateFormatTZ).toZonedDateTime();
+                } catch (DateTimeParseException e1) {
+                }
             }
-        }
         return result;
     }
    
@@ -401,7 +431,7 @@ public class StaticTools {
         return result;
     }
 
-    private static byte[] getPointers(ArrayList<ifdField> imageLocationFields, File file, boolean endian) throws FileNotFoundException, IOException {
+    private static byte[] getPointers(ArrayList<ifdField> imageLocationFields, File file, boolean endian) throws IOException {
 /*      RawImageDigest
         Tag 50972 (C71C.H)
         Type BYTE
@@ -455,81 +485,82 @@ public class StaticTools {
             }
         }
         if (pieceByteCountsCount != pieceOffsetsCount) return null;
-        RandomAccessFile fileRand = new RandomAccessFile(file.getAbsolutePath(), "r");
-        MessageDigest md5Digest = null;
-        try {
-            md5Digest = MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException ex) {
-        }
-        if (pieceOffsetsCount == 1) {
-//                System.out.println(file.getName() + " bytes readed: " + pieceByteCounts + " File size " + file.length() + " % " + (100*pieceByteCounts/file.length()));
-                fileRand.seek(pieceOffsets);
-                long readed = 0;
-                int bufferSize = 4096;
-                while (readed + bufferSize < pieceByteCounts) {
-                    byte chunk[] = new byte[bufferSize];
-                    int read = fileRand.read(chunk);
-                    if (read == -1) return null;
-                    readed += read; 
-                    md5Digest.update(chunk);
-                }
-                int residue = (int)(pieceByteCounts - readed);
-                byte chunk[] = new byte[residue];
-                int read = fileRand.read(chunk);
-                if (read == -1) return null;
-                md5Digest.update(chunk);
-        } else {
-            long totalread = 0;
-            for (int j = 0; j < pieceOffsetsCount; j++) {
-                fileRand.seek(pieceByteCounts + j * pieceByteLength);
-                long actualPieceBytes = 0;
-                for(int i=0; i<pieceByteLength; i++) {
-                        long c = fileRand.read();
-                        if (endian) {
-                            c = (long) (c * Math.pow(256, i));
-                        } else {
-                            c = (long) (c * Math.pow(256, pieceByteLength-i));
-                        }
-                        actualPieceBytes += c;
-                }
-    //            System.out.println("Count [" + j + "] =" + actualPieceBytes);
-                fileRand.seek(pieceOffsets + j * pieceOffsetsLength);
-                long actualPieceOffset = 0;
-                for(int i=0; i<pieceOffsetsLength; i++) {
-                        long c = fileRand.read();
-                        if (endian) {
-                            c = (long) (c * Math.pow(256, i));
-                        } else {
-                            c = (long) (c * Math.pow(256, pieceOffsetsLength-i));
-                        }
-                        actualPieceOffset += c;
-                }
-                totalread += actualPieceBytes;
-    //            System.out.println("Offset [" + j + "] =" + actualPieceOffset);
-                fileRand.seek(actualPieceOffset);
-                long readed = 0;
-                int bufferSize = 4096;
-                while (readed + bufferSize < actualPieceBytes) {
-                    byte chunk[] = new byte[bufferSize];
-                    int read = fileRand.read(chunk);
-                    if (read == -1) return null;
-                    readed += read; 
-                    md5Digest.update(chunk);
-                }
-                int residue = (int)(actualPieceBytes - readed);
-                byte chunk[] = new byte[residue];
-                int read = fileRand.read(chunk);
-                if (read == -1) return null;
-                md5Digest.update(chunk);
+        try (RandomAccessFile fileRand = new RandomAccessFile(file.getAbsolutePath(), "r")) {
+            MessageDigest md5Digest = null;
+            try {
+                md5Digest = MessageDigest.getInstance("MD5");
+            } catch (NoSuchAlgorithmException ex) {
+                return null;
             }
-//            System.out.println(file.getName() + " bytes readed: " + totalread + " File size " + file.length() + " % " + (100*totalread/file.length()));
+            if (pieceOffsetsCount == 1) {
+                    System.out.println(file.getName() + " bytes readed: " + pieceByteCounts + " File size " + file.length() + " % " + (100*pieceByteCounts/file.length()));
+                    fileRand.seek(pieceOffsets);
+                    long readed = 0;
+                    int bufferSize = 4096;
+                    while (readed + bufferSize < pieceByteCounts) {
+                        byte chunk[] = new byte[bufferSize];
+                        int read = fileRand.read(chunk);
+                        if (read == -1) return null;
+                        readed += read; 
+                        md5Digest.update(chunk);
+                    }
+                    int residue = (int)(pieceByteCounts - readed);
+                    byte chunk[] = new byte[residue];
+                    int read = fileRand.read(chunk);
+                    if (read == -1) return null;
+                    md5Digest.update(chunk);
+            } else {
+                long totalread = 0;
+                for (int j = 0; j < pieceOffsetsCount; j++) {
+                    fileRand.seek(pieceByteCounts + j * pieceByteLength);
+                    long actualPieceBytes = 0;
+                    for(int i=0; i<pieceByteLength; i++) {
+                            long c = fileRand.read();
+                            if (endian) {
+                                c = (long) (c * Math.pow(256, i));
+                            } else {
+                                c = (long) (c * Math.pow(256, pieceByteLength-i));
+                            }
+                            actualPieceBytes += c;
+                    }
+        //            System.out.println("Count [" + j + "] =" + actualPieceBytes);
+                    fileRand.seek(pieceOffsets + j * pieceOffsetsLength);
+                    long actualPieceOffset = 0;
+                    for(int i=0; i<pieceOffsetsLength; i++) {
+                            long c = fileRand.read();
+                            if (endian) {
+                                c = (long) (c * Math.pow(256, i));
+                            } else {
+                                c = (long) (c * Math.pow(256, pieceOffsetsLength-i));
+                            }
+                            actualPieceOffset += c;
+                    }
+                    totalread += actualPieceBytes;
+        //            System.out.println("Offset [" + j + "] =" + actualPieceOffset);
+                    fileRand.seek(actualPieceOffset);
+                    long readed = 0;
+                    int bufferSize = 4096;
+                    while (readed + bufferSize < actualPieceBytes) {
+                        byte chunk[] = new byte[bufferSize];
+                        int read = fileRand.read(chunk);
+                        if (read == -1) return null;
+                        readed += read; 
+                        md5Digest.update(chunk);
+                    }
+                    int residue = (int)(actualPieceBytes - readed);
+                    byte chunk[] = new byte[residue];
+                    int read = fileRand.read(chunk);
+                    if (read == -1) return null;
+                    md5Digest.update(chunk);
+                }
+                System.out.println(file.getName() + " bytes readed: " + totalread + " File size " + file.length() + " % " + (100*totalread/file.length()));
+            }
+            return md5Digest.digest();
         }
-        return md5Digest.digest();
     }
     
-    private static byte[] readSubIFDirectory(ifdCursor cursor) throws IOException {
-//        System.out.println("*********************************************************");
-        BufferedInputStream in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+    private static byte[] readSubIFDirectory(ifdCursor cursor, BufferedInputStream in) throws IOException {
+        in.reset();
         if (!skipBytes(in, cursor.getPointer())) return null;
         int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
         long subIFDs = 0;
@@ -558,24 +589,24 @@ public class StaticTools {
         if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
         if (subIFDs == 1) {
             cursor.setPointer(subIFDsPointer);
-            byte[] hash = readSubIFDirectory(cursor);
+            byte[] hash = readSubIFDirectory(cursor, in);
             if (hash != null) return hash;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {
-                in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+                in.reset();
+//                    in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
                 if (!skipBytes(in, subIFDsPointer)) return null;
                 if (!skipBytes(in, j * subIFDsPointerLength)) return null;
                 cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
-                byte[] hash = readSubIFDirectory(cursor);
+                byte[] hash = readSubIFDirectory(cursor, in);
                 if (hash != null) return hash;
             }
         }
         return null;
     }
     
-    private static byte[] readIFDirectory(ifdCursor cursor) throws IOException {
-//        System.out.println("-------------------------------------------------------------");
-        BufferedInputStream in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+    private static byte[] readIFDirectory(ifdCursor cursor, BufferedInputStream in) throws IOException {
+        in.reset();
         if (!skipBytes(in, cursor.getPointer())) return null;
         int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
         long subIFDs = 0;
@@ -606,25 +637,26 @@ public class StaticTools {
         if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
         if (subIFDs == 1) {
             cursor.setPointer(subIFDsPointer);
-            byte[] hash = readSubIFDirectory(cursor);
+            byte[] hash = readSubIFDirectory(cursor, in);
             if (hash != null) return hash;
         } else if (subIFDs > 1) {
-            for (int j = 0; j < subIFDs; j++) {
-                in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
+            for (int j = 0; j < subIFDs; j++) {                    
+                in.reset();
+//                    in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
                 if (!skipBytes(in, subIFDsPointer)) return null;
                 if (!skipBytes(in, j * subIFDsPointerLength)) return null;
                 cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
-                byte[] hash = readSubIFDirectory(cursor);
+                byte[] hash = readSubIFDirectory(cursor, in);
                 if (hash != null) return hash;
             }
         }
         cursor.setPointer(nextIFD);
-        return readIFDirectory(cursor);
+        return readIFDirectory(cursor, in);
     }
         
     //returns the pointer to the main image data in tiff based files
-    public static byte[] startOfScanTiff(File file) throws IOException {
-        BufferedInputStream in = new BufferedInputStream(new FileInputStream(file.toString()));
+    public static byte[] startOfScanTiff(File file, BufferedInputStream in) throws IOException {
+        in.mark(0);
         int c;
         long j = 0;
         Boolean endian = null;
@@ -640,7 +672,7 @@ public class StaticTools {
         ifdCursor cursor = new ifdCursor(file, endian, readEndianValue(in, 4, endian));
         if (cursor.getPointer() == -1) {return null;}
         if (cursor.getPointer() == 0) {return null;}
-        return readIFDirectory(cursor);
+        return readIFDirectory(cursor, in);
     }
     
     private static boolean skipBytes(InputStream in, long pointer) throws IOException {
@@ -675,6 +707,70 @@ public class StaticTools {
         return hashes;
     }
     
+    public static String getFullHashPS(File file) throws FileNotFoundException, IOException {
+        String[] parameters = new String[]{"powershell.exe", "Get-ChildItem", "-File", "-Recurse", "|", "Get-FileHash", "-Algorithm", "MD5", ">>", "e:\\ps.md5"};
+        String lines = "";
+        try {
+            Runtime runtime = Runtime.getRuntime();
+            Process p = runtime.exec(parameters, null, file);
+/*            final BufferedReader stdinReader = new BufferedReader(new InputStreamReader(p.getInputStream(), "ISO-8859-1"));
+            final BufferedReader stderrReader = new BufferedReader(new InputStreamReader(p.getErrorStream(), "ISO-8859-1"));
+            new Thread(() -> {
+                try {
+                    String s;
+                    while (( s=stdinReader.readLine()) != null) {
+                        System.out.println(s);
+                    }
+                }
+                catch(IOException e) {
+                }
+            }).start();
+            new Thread(() -> {
+                try {
+                    String s;
+                    while (( s=stderrReader.readLine()) != null) {
+                        System.out.println(s);
+                    }
+                }
+                catch(IOException e) {
+                }
+            }).start();*/
+            int returnVal = p.waitFor();
+        } catch (Exception e) {
+            StaticTools.errorOut("xmp", e);
+        } 
+        return lines;
+
+    }
+    
+    public static String getFullHash(File file) throws FileNotFoundException, IOException {
+        MessageDigest md5Digest = null;
+        try {
+            md5Digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException ex) {
+            return mediaFile.EMPTYHASH;
+        }
+        byte[] digestDef = md5Digest.digest();
+        byte[] digest = null;
+        try (BufferedInputStream fileStream = new BufferedInputStream(new FileInputStream(file.toString())); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {            
+            byte[] buffer = new byte[4096];
+            in.on(true);
+            while (in.read(buffer) != -1) {}
+            digest = md5Digest.digest();
+        }
+        if (digest == null) {
+            return mediaFile.EMPTYHASH;
+        }
+        if (Arrays.equals(digest, digestDef)) {
+            return mediaFile.EMPTYHASH;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < digest.length; ++i) {
+            sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1,3));
+        }
+        return sb.toString();
+    }
+    
     public static String getHash(File file) throws FileNotFoundException, IOException {
         MessageDigest md5Digest = null;
         try {
@@ -684,88 +780,92 @@ public class StaticTools {
         }
         byte[] digestDef = md5Digest.digest();
         byte[] digest = null;
-        try (BufferedInputStream fileStream = new BufferedInputStream(new FileInputStream(file.toString())); DigestInputStream in = new DigestInputStream(fileStream, md5Digest)) {
-            byte[] buffer = new byte[4096];
-            long length;
-            String ext = FilenameUtils.getExtension(file.getName().toLowerCase());
-            switch (ext) {
-    // <editor-fold defaultstate="collapsed" desc="mp4">
-                case "mp4":
-                    in.on(false);
-                    boolean EOF = false;
-                    do {
-                        length = readEndianValue(in, 4, false) - 8;
-//                        byte boxLength[] = readBytes(in, 4);
-                        String desc = new String(readBytes(in, 4));                        
-//                        ByteBuffer wrapped = ByteBuffer.wrap(boxLength); // big-endian by default
-//                        length = wrapped.getInt() - 8;
-                        if (length == -7) {
-                            //largesize
-                            length = readEndianValue(in, 8, false) - 16;
-                        } else if (length == -8) {
-                            // until eof
-                             EOF = true;
-                        } else if (length == in.available()) {
-                             EOF = true;
-                        }
-                        if (desc.equals("mdat")) {
-                            in.on(true);
-                            while (buffer.length <= length) {
-                                int read = in.read(buffer);
-                                length -= read;
-                            }
-                            while (length > 0) {
-                                int read = in.read(buffer, 0, (int)length);
-                                if (read == -1) {digest = null; break;}
-                                length -= read;
-                            }
-//                            break;
-                        } else {
-                            if (!skipBytes(in, length)) break;
-                        }
-                    } while(!EOF);    
-                    digest = md5Digest.digest();
-                    break;
-    // </editor-fold>
-    // <editor-fold defaultstate="collapsed" desc="JPG">
-                case "jpg":
-                case "jpeg":
-                    int scanLength;
-                    int scanLengthOld = 0;
-                    do {
+        String ext = FilenameUtils.getExtension(file.getName().toLowerCase());
+        if (ext.equals("arw") || ext.equals("nef") || ext.equals("dng") || ext.equals("tif") || ext.equals("tiff")) {
+        // <editor-fold defaultstate="collapsed" desc="raw">
+            try (BufferedInputStream rawIn = new BufferedInputStream(new FileInputStream(file.toString()));) {                    
+                digest = startOfScanTiff(file, rawIn);
+            } catch(IOException e) {
+                errorOut("Hash", e);         
+            } 
+        // </editor-fold>            
+        } else {
+            try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {            
+                byte[] buffer = new byte[4096];
+                long length;
+                switch (ext) {
+        // <editor-fold defaultstate="collapsed" desc="mp4">
+                    case "mp4":
                         in.on(false);
-                        md5Digest.reset();
-                        scanLength = 0;
-                        if (startOfScanJPG(fileStream) == -1) break;
-                        in.on(true);
-                        int c = 0;
-                        int oldc;
+                        boolean EOF = false;
                         do {
-                            oldc = c;
-                            c = in.read();
-                            if (c == -1) {
-                                return mediaFile.EMPTYHASH;
+                            length = readEndianValue(in, 4, false) - 8;
+    //                        byte boxLength[] = readBytes(in, 4);
+                            String desc = new String(readBytes(in, 4));                        
+    //                        ByteBuffer wrapped = ByteBuffer.wrap(boxLength); // big-endian by default
+    //                        length = wrapped.getInt() - 8;
+                            if (length == -7) {
+                                //largesize
+                                length = readEndianValue(in, 8, false) - 16;
+                            } else if (length == -8) {
+                                // until eof
+                                 EOF = true;
+                            } else if (length == in.available()) {
+                                 EOF = true;
                             }
-                            scanLength ++;
-                        } while (!(oldc == 0xFF && c == 0xD9/*217*/));
-                        if (scanLength > scanLengthOld) {digest = md5Digest.digest(); scanLengthOld = scanLength;}
-                    } while (scanLengthOld < in.available());
-                    break;
-    // </editor-fold>
-    // <editor-fold defaultstate="collapsed" desc="raw">
-                case "nef":
-                case "dng":
-                case "arw":
-                case "tiff":
-                    digest = startOfScanTiff(file);
-                    break;
-    // </editor-fold>
-                default:
-                    in.on(true);
-                    while (in.read(buffer) != -1) {}
-                    digest = md5Digest.digest();
-                    break;
-            }
+                            if (desc.equals("mdat")) {
+                                in.on(true);
+                                while (buffer.length <= length) {
+                                    int read = in.read(buffer);
+                                    length -= read;
+                                }
+                                while (length > 0) {
+                                    int read = in.read(buffer, 0, (int)length);
+                                    if (read == -1) {digest = null; break;}
+                                    length -= read;
+                                }
+    //                            break;
+                            } else {
+                                if (!skipBytes(in, length)) break;
+                            }
+                        } while(!EOF);    
+                        digest = md5Digest.digest();
+                        break;
+        // </editor-fold>
+        // <editor-fold defaultstate="collapsed" desc="JPG">
+                    case "jpg":
+                    case "jpeg":
+                        int scanLength;
+                        int scanLengthOld = 0;
+                        do {
+                            in.on(false);
+                            md5Digest.reset();
+                            scanLength = 0;
+                            if (startOfScanJPG(fileStream) == -1) break;
+                            in.on(true);
+                            int c = 0;
+                            int oldc;
+                            do {
+                                oldc = c;
+                                c = in.read();
+                                if (c == -1) {
+                                    return mediaFile.EMPTYHASH;
+                                }
+                                scanLength ++;
+                            } while (!(oldc == 0xFF && c == 0xD9/*217*/));
+                            if (scanLength > scanLengthOld) {digest = md5Digest.digest(); scanLengthOld = scanLength;}
+                        } while (scanLengthOld < in.available());
+                        break;
+        // </editor-fold>
+                    default:
+                        in.on(true);
+                        while (in.read(buffer) != -1) {}
+                        digest = md5Digest.digest();
+                        break;
+                }
+            }  catch(IOException e) {
+                errorOut("Hash", e);         
+            } 
         }
         if (digest == null) {
             return mediaFile.EMPTYHASH;
@@ -892,4 +992,57 @@ public class StaticTools {
         }
     }
 
+    public static ArrayList<String[]> readMeta(File file) {
+        Metadata metadata;
+        ArrayList<String[]> tags = new ArrayList();
+        try {
+            Collection<XmpDirectory> xmpDirectories = null;
+            if (FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp")) {
+                XmpDirectory directory = new XmpDirectory();
+                try {
+                    XMPMeta xmpMeta;
+                    // If all xmpBytes are requested, no need to make a new ByteBuffer
+                    xmpMeta = XMPMetaFactory.parse(new FileInputStream(file));
+                    directory.setXMPMeta(xmpMeta);
+                } catch (XMPException e) {
+                    directory.addError("Error processing XMP data: " + e.getMessage());
+                }
+                ArrayList<XmpDirectory> collect = new ArrayList<>();
+                collect.add(directory);
+                xmpDirectories = collect;
+            }   else {
+                metadata = ImageMetadataReader.readMetadata(file);
+                for (Directory directory : metadata.getDirectories()) {
+                    if (!directory.getClass().equals(XmpDirectory.class))
+                        for (Tag tag : directory.getTags()) {
+                            String[] temp = {tag.getTagName(), tag.getDescription()};
+                            String value = tag.getDescription();
+                            if (value != null && !value.replaceAll("\\s+","").equals("")) tags.add(temp);
+                        }
+                }
+                xmpDirectories = metadata.getDirectoriesOfType(XmpDirectory.class);
+            }
+            for (XmpDirectory xmpDirectory : xmpDirectories) {
+                XMPMeta xmpMeta = xmpDirectory.getXMPMeta();
+                XMPIterator iterator;
+                try {
+                    iterator = xmpMeta.iterator();
+                    while (iterator.hasNext()) {
+                        XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
+                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
+                            String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
+                            tags.add(temp);
+                        }
+                    }
+                } catch (XMPException ex) {
+                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }                    
+        } catch (ImageProcessingException | IOException e) {
+            StaticTools.errorOut(file.getName(), e);         
+        }
+        return tags;
+    }
+    
+    
 }

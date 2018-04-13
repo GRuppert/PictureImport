@@ -1,19 +1,5 @@
 
-import com.adobe.xmp.XMPException;
-import com.adobe.xmp.XMPIterator;
-import com.adobe.xmp.XMPMeta;
-import com.adobe.xmp.properties.XMPPropertyInfo;
-import com.drew.imaging.ImageMetadataReader;
-import com.drew.imaging.ImageProcessingException;
-import com.drew.metadata.Directory;
-import com.drew.metadata.Metadata;
-import com.drew.metadata.Tag;
-import com.drew.metadata.xmp.XmpDirectory;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 
@@ -28,150 +14,120 @@ import javafx.beans.property.SimpleStringProperty;
  * @author gabor
  */
 public class duplicate {
-    private final mediaFile first; 
-    private final mediaFile second; 
-    private final boolean sameImage;
-    private final boolean sameSize;
+    private final comparableMediaFile first; 
+    private final comparableMediaFile second; 
     private ArrayList<String[]> conflicts;
+    public ArrayList<String> footprint;
+    private ArrayList<String> unimportant;
+    private ArrayList<String> user;
 
     private SimpleBooleanProperty processing;
     private final SimpleStringProperty firstName;
     private final SimpleStringProperty secondName;
     private final SimpleStringProperty meta;
     
-    
-    public duplicate(mediaFile first, mediaFile second, boolean sameImage, boolean sameSize) {
-        this.first = first;
-        firstName = new SimpleStringProperty(first.getCurrentName());
-        this.second = second;
-        secondName = new SimpleStringProperty(second.getCurrentName());
-        this.sameImage = sameImage;
-        this.sameSize = sameSize;
-        meta = new SimpleStringProperty("Equal");
-        processing = new SimpleBooleanProperty(true);
-        if (sameImage) {if (!sameSize) meta.setValue(compareMeta());}
-        else {
-            if (!sameSize) meta.setValue("Image changed " + compareMeta());
-            else meta.set("Image changed");
-        }
-
-
-        Object test = meta.getValue();
-        System.out.println(test);
-    }
-
-    private String compareMeta() {
-        String warnings = "";
-        String errors = "";
-        Metadata metadata;
-        Metadata metadataBase;
-        ArrayList<String[]> tags = new ArrayList();
-        ArrayList<String[]> tagsBase = new ArrayList();
-        ArrayList<String> unimportant = new ArrayList();
-        ArrayList<String> user = new ArrayList();
+    public duplicate(comparableMediaFile first, comparableMediaFile second, boolean sameImage) {
+        unimportant = new ArrayList();
         unimportant.add("Date/Time");
         unimportant.add("Thumbnail Offset");
         unimportant.add("File Size");
         unimportant.add("File Modified Date");
         unimportant.add("File Name");
         unimportant.add("User Comment");
+        unimportant.add("xmpMM:InstanceID");
+        unimportant.add("Application Record Version");
+        unimportant.add("Padding");
+        unimportant.add("xmp:ModifyDate");
+        unimportant.add("Windows XP Keywords");
+        unimportant.add("Caption Digest");
+        unimportant.add("Coded Character Set");
+        unimportant.add("Enveloped Record Version");
+        unimportant.add("Interoperability Index");
+        unimportant.add("Interoperability Version");
+        unimportant.add("Makernote");
+        unimportant.add("Strip Offsets");
+        unimportant.add("Unique Image ID");
+        unimportant.add("dc:subject[1]");
+        unimportant.add("dc:subject[2]");
+        unimportant.add("MicrosoftPhoto:Rating");
+        unimportant.add("MicrosoftPhoto:LastKeywordIPTC[1]");
+        unimportant.add("MicrosoftPhoto:LastKeywordIPTC[2]");
+        unimportant.add("MicrosoftPhoto:LastKeywordXMP[1]");
+        unimportant.add("MicrosoftPhoto:LastKeywordXMP[2]");
+//        unimportant.add("");
         
-        user.add("GPS");
-        user.add("keyword");
-        user.add("rating");
+        user = new ArrayList();
+        user.add("GPS Version ID");
+        user.add("GPS Altitude Ref");
+        user.add("Keywords");
+        user.add("Rating");
+
+        this.first = first;
+        firstName = new SimpleStringProperty(first.file.getName());
+        this.second = second;
+        secondName = new SimpleStringProperty(second.file.getName());
+        processing = new SimpleBooleanProperty(sameImage);
+        meta = new SimpleStringProperty("Equal");
+//        if (FilenameUtils.getExtension(first.file.getName().toLowerCase()).equals("jpg"))
+/*        try {
+            FileType test = FileTypeDetector.detectFileType(new BufferedInputStream(new FileInputStream("E:\\temp\\ARWproof\\DSC01962.ARW")));
+            System.out.println(test);
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(duplicate.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(duplicate.class.getName()).log(Level.SEVERE, null, ex);
+        }*/
+        meta.setValue(compareMeta());
+    }
+
+    private void addTag(String name, String value1, String value2) {
+        if (!unimportant.contains(name)) {
+            conflicts.add(new String[]{name, value1, value2});
+            if (name.startsWith("Unknown tag (0x")) {if (!footprint.contains("Unknown")) footprint.add("Unknown");} 
+            else if (user.contains(name)) {if (!footprint.contains("Mivótunk")) footprint.add("Mivótunk");}
+            else footprint.add(name);
+        }
+    }
+    
+    private String compareMeta() {
+        ArrayList<String[]> tags;
+        ArrayList<String[]> tagsBase;
         int realConf = 0;
         conflicts = new ArrayList();
-        try {
-            metadata = ImageMetadataReader.readMetadata(first.getFile());
-            metadataBase = ImageMetadataReader.readMetadata(second.getFile());
-            for (Directory directoryBase : metadataBase.getDirectories()) {
-                if (!directoryBase.getClass().equals(XmpDirectory.class))
-                    for (Tag tagBase : directoryBase.getTags()) {
-                        String[] temp = {tagBase.getTagName(), tagBase.getDescription()};
-                        String value = tagBase.getDescription();
-                        if (value != null && !value.replaceAll("\\s+","").equals("")) tagsBase.add(temp);
-/*                        System.out.println(tagBase.getTagName() + " : ");
-                        for (char b : value.toCharArray()) {System.out.print((int)b + " ");}
-                        System.out.print("\n");*/
-                    }
-            }
-            for (Directory directory : metadata.getDirectories()) {
-                if (!directory.getClass().equals(XmpDirectory.class))
-                    for (Tag tag : directory.getTags()) {
-                        String[] temp = {tag.getTagName(), tag.getDescription()};
-                        String value = tag.getDescription();
-                        if (value != null && !value.replaceAll("\\s+","").equals("")) tags.add(temp);
-                    }
-            }
-            Collection<XmpDirectory> xmpDirectories = metadata.getDirectoriesOfType(XmpDirectory.class);
-            for (XmpDirectory xmpDirectory : xmpDirectories) {
-                XMPMeta xmpMeta = xmpDirectory.getXMPMeta();
-                XMPIterator iterator;
-                try {
-                    iterator = xmpMeta.iterator();
-                    while (iterator.hasNext()) {
-                        XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
-                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
-                            String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
-                            tagsBase.add(temp);
-/*                            System.out.print(xmpPropertyInfo.getPath() + " : ");
-                            for (char b : xmpPropertyInfo.getValue().toCharArray()) {System.out.print((int)b + " ");}
-                            System.out.print("\n");*/
-                        }
-                    }
-                } catch (XMPException ex) {
-                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }                    
-            Collection<XmpDirectory> xmpDirectoriesBase = metadata.getDirectoriesOfType(XmpDirectory.class);
-            for (XmpDirectory xmpDirectory : xmpDirectoriesBase) {
-                XMPMeta xmpMeta = xmpDirectory.getXMPMeta();
-                XMPIterator iterator;
-                try {
-                    iterator = xmpMeta.iterator();
-                    while (iterator.hasNext()) {
-                        XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
-                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
-                            String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
-                            tagsBase.add(temp);
-                        }
-                    }
-                } catch (XMPException ex) {
-                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }                    
-
-            outerloop:
-            for (int i = 0; i < tags.size();) {
-                String[] tag = tags.get(i);
-                for (int j = 0; j < tagsBase.size();) {
-                    String[] tagBase = tagsBase.get(j);
-                    if (tag[0].equals(tagBase[0])) {
-                        if (tag[1] != null && !tag[1].equals("")) {
-                            if (!tag[1].equals(tagBase[1])) {
-                                if (!unimportant.contains(tag[0])) {
-                                    conflicts.add(new String[]{tag[0], tag[1], tagBase[1]});
-                                    realConf++;
-                                }
+        footprint = new ArrayList();
+        tags = StaticTools.readMeta(first.file);
+        tagsBase = StaticTools.readMeta(second.file);
+        outerloop:
+        for (int i = 0; i < tags.size();) {
+            String[] tag = tags.get(i);
+            for (int j = 0; j < tagsBase.size();) {
+                String[] tagBase = tagsBase.get(j);
+                if (tag[0].equals(tagBase[0])) {
+                    if (tag[1] != null && !tag[1].equals("")) {
+                        if (!tag[1].equals(tagBase[1])) {
+                            if (tag[0].equals("Sequence Number")) {
+                                footprint = new ArrayList();
+                                footprint.add(tag[0]);
+                                conflicts = new ArrayList();
+                                return "Bracketing";
+                            } else {
+                                addTag(tag[0], tag[1], tagBase[1]);
                             }
-                            tagsBase.remove(tagBase);                                
                         }
-                        tags.remove(tag);
-                        continue outerloop;
+                        tagsBase.remove(tagBase);                                
                     }
-                    j++;
+                    tags.remove(tag);
+                    continue outerloop;
                 }
-                i++;
+                j++;
             }
-            for (String[] tag : tags) {
-                conflicts.add(new String[]{tag[0], tag[1], ""});
-            }
-            for (String[] tag : tagsBase) {
-                conflicts.add(new String[]{tag[0], "", tag[1]});
-            }
-        } catch (ImageProcessingException | IOException e) {
-            StaticTools.errorOut(firstName.getValue(), e);         
-            errors += e.getMessage() + " ";
+            i++;
+        }
+        for (String[] tag : tags) {
+            addTag(tag[0], tag[1], ""); 
+        }
+        for (String[] tag : tagsBase) {
+            addTag(tag[0], "", tag[1]); 
         }
         return Integer.toString(realConf) + " - " + Integer.toString(conflicts.size() - realConf);
     }
@@ -182,17 +138,19 @@ public class duplicate {
 
     public final String getFirstName() {return firstName.get();}
     public final void setFirstName(String proc) {firstName.set(proc);}
-    public SimpleStringProperty processingFirstName() {return firstName;}
+    public SimpleStringProperty firstNameProperty() {return firstName;}
 
     public final String getSecondName() {return secondName.get();}
     public final void setSecondName(String proc) {secondName.set(proc);}
-    public SimpleStringProperty processingSecondName() {return secondName;}
+    public SimpleStringProperty secondNameProperty() {return secondName;}
 
     public final String getMeta() {return meta.get();}
     public final void setMeta(String proc) {meta.set(proc);}
-    public SimpleStringProperty processingMeta() {return meta;}
+    public SimpleStringProperty metaProperty() {return meta;}
 
     public ArrayList<String[]> getConflicts() {
         return conflicts;
     }
+
+    public String getDir() {return first.file.getParent();}
 }

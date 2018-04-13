@@ -14,9 +14,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javax.swing.JOptionPane;
 import org.apache.commons.io.FilenameUtils;
 
 /**
@@ -26,6 +27,30 @@ import org.apache.commons.io.FilenameUtils;
 public class mediaFile {
     
     public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+    public static String Version = "5";
+    /**
+     * @return the iID
+     */
+    public String getiID() {
+        return iID;
+    }
+
+    /**
+     * @param iID the iID to set
+     */
+    public final void setiID() {
+        try {
+            this.iID = StaticTools.getFullHash(file);
+            newName.set(getNewFileName());
+
+        } catch (IOException ex) {
+            Logger.getLogger(mediaFile.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    private String getNewFileName() {
+        return "V" + Version + "_" + dateFormat(date) + getiID() + "-" + getdID() + "-" + originalName;
+    }
 
     /**
      * @return the dID
@@ -62,38 +87,26 @@ public class mediaFile {
         return file;
     }
 
-    private class meta{
-        public String originalFilename;
-        public ZonedDateTime date;
-        public String model;
-        public String odID;
-        public String dID;
-
-        public meta(String originalFilename, ZonedDateTime date, String model, String odID, String dID) {
-            this.originalFilename = originalFilename;
-            this.date = date;
-            this.model = model;
-            this.odID = odID;
-            this.dID = dID;
-        }
-    }
-
     private final SimpleBooleanProperty processing;
     private final SimpleStringProperty currentName;
     private final SimpleStringProperty newName;
     private final SimpleStringProperty note;
     private final SimpleBooleanProperty xmpMissing;
+
     private File file;
     private File fileXmp;
     private String originalName;
     private String targetDirectory;
+
+    private String iID;
     private String dID;
     private String odID;
+    private String model = null;//Filename, Exif, xmp, xml
+    private ZonedDateTime date = null;//Filename, Exif, xmp, xml, mod +TZ
+
     private long fileSize;
     private HashMap<String, String> exifPar = new HashMap<>();
     private ArrayList<String> exifMissing = null;
-    private String model = null;//Filename, Exif, xmp, xml
-    private ZonedDateTime date = null;//Filename, Exif, xmp, xml, mod +TZ
 
 
     public mediaFile(String fileIn) {
@@ -111,19 +124,19 @@ public class mediaFile {
     }
 
     public mediaFile(File fileIn) {
-        this(fileIn, null, null, "", null, null);
+        this(fileIn, null);
     }
     
-    public mediaFile(textMeta meta) {
-        this(new File(meta.filename), meta.model, meta.date, meta.note, meta.dID, meta.odID);
+    public mediaFile(meta metaExif) {
+        this(new File(metaExif.originalFilename), metaExif);
     }
     
-    public mediaFile(File fileIn, String exifModel, String exifDate, String noteIn, String dIDin, String odIDin) {
+    public mediaFile(File fileIn, meta metaExif) {
         this.file = fileIn;
         processing = new SimpleBooleanProperty(true);
-        currentName = new SimpleStringProperty(getFile().getName());
+        currentName = new SimpleStringProperty(fileIn.getName());
         note = new SimpleStringProperty("");
-        if (!noteIn.equals("")) addNote(noteIn);
+        if (metaExif != null && !metaExif.note.equals("")) addNote(metaExif.note, false);
         xmpMissing = new SimpleBooleanProperty(false);
         originalName = file.getName();
         targetDirectory = PicOrganizes.view.getToDir().toString() + "\\" + file.getParentFile().getName();  
@@ -133,96 +146,109 @@ public class mediaFile {
             if (ext.equals("mp4")) {
                 repairMP4();
             }
+
+            if (metaExif == null) {//if it hasn't been batch readed in the caller function
+                metaExif = StaticTools.exifToMeta(file);
+            }
             
             //read data from filename
             meta metaFile;
-            if ((metaFile = getV1()) == null)
-                if ((metaFile = getV2()) == null)
-                    if ((metaFile = getV4()) == null)
-                        metaFile = getV3();
+            metaFile = getV(getFile().getName());
             
             //Set original filename, model, date if possible from filename
             if (metaFile != null && metaFile.originalFilename != null) originalName = metaFile.originalFilename;
             
             //read External sidecars
-            meta metaExif;
-            fileXmp = new File(getFile().toString() + ".xmp");
-            metaExif = readExif(fileXmp);
-            if (metaExif == null) {//XMP must hold all the exif infos!
-                if (exifDate == null) {//if it hasn't been batch readed in the caller function
-                    metaExif = readExif(file);
-                } else {
-                    ZonedDateTime dateZ = StaticTools.getZonedTimeFromStr(exifDate);
-                    if (dateZ == null) {
-                        dateZ = StaticTools.getTimeFromStr(exifDate, PicOrganizes.view.getZone());
-                        if (dateZ != null)
-                            addExif("DateTimeOriginal", dateZ);
-                    }
-                    metaExif = new meta(null, dateZ, exifModel, odIDin, dIDin);
-                }
+            meta metaXmp;
+            if (PicOrganizes.supportedRAWFileType(originalName)) {
+                fileXmp = new File(getFile().toString() + ".xmp");
+                metaXmp = StaticTools.exifToMeta(fileXmp);
+            } else {
+                metaXmp = null;
             }
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
-            compareMeta(metaExif, metaFile);
-
-            newName = new SimpleStringProperty(/*targetDirectory + "\\" + */dateFormat(date) + getOdID() + "-" + getdID() + "-" + originalName);
+            compareMeta(metaExif, metaFile, metaXmp);
+ 
+            newName = new SimpleStringProperty(getNewFileName());
+            if (exifMissing == null) 
+                setiID();
         } else {
             newName = new SimpleStringProperty(/*targetDirectory + "\\" + */originalName);
         }
     }
 
-    private void compareMeta(meta metaExif, meta metaFile) {
-        if (metaExif == null) metaExif = new meta(null, null, null, null, null);
-        if (metaFile == null) metaFile = new meta(null, null, null, null, null);
-
+    private void compareModel(meta metaExif, meta metaFile) {
         if (metaFile.model != null) model = metaFile.model;
         if (metaExif.model != null) {
             if (model != null) {
                 if (!metaExif.model.trim().equals(model.trim())) {
-                    addNote("model has been changed: " + model + " -> " + metaExif.model);
+                    addNote("model has been changed: " + model + " -> " + metaExif.model, true);
                 }
             } else {
                 model = metaExif.model;
             }
         } else {
             if (model == null) {
-                addNote("model missing");
+                addNote("model missing", false);
             } else {
                 addExif("Model", model);
             }
         }
-        
-        
-        try {
-            this.dID = StaticTools.getHash(getFile());
-        } catch (IOException ex) {
-            this.dID = EMPTYHASH;
-        }
-        if (getdID().equals(EMPTYHASH)) {
-            addNote("Error during hashing" + model);
-        }
-
-        if (metaExif.dID != null && !metaExif.dID.equals(this.dID)) addNote("dID has been changed");
-        if (metaFile.dID != null && !metaFile.dID.equals(this.dID)) addNote("dID has been changed");
-        if (metaExif.dID == null) addExif("DocumentID" , getdID());
-        
-        if (metaFile.odID != null) odID = metaFile.odID;
-        if (metaExif.odID != null)
-            if (getOdID() != null) {
-                if (!metaExif.odID.equals(odID)) addNote("odID has been changed");
-            } else {
-                odID = metaFile.odID; addNote("odID already presented");
+    }
+    
+    private void compareHash(meta metaExif, meta metaFile) {
+        if (true) {//version change
+            try {
+                this.dID = StaticTools.getHash(getFile());
+                this.odID = this.dID;
+            } catch (IOException ex) {
+                this.dID = EMPTYHASH;
+                this.odID = this.dID;
             }
-        if (getOdID() == null) {
-            odID = getdID();
+            addExif("DocumentID" , getdID());
             addExif("OriginalDocumentID" , getOdID());
+        } else {
+            try {
+                this.dID = StaticTools.getHash(getFile());
+            } catch (IOException ex) {
+                this.dID = EMPTYHASH;
+            }
+            if (getdID().equals(EMPTYHASH)) {
+                addNote("Error during hashing" + model, true);
+            }
+
+            if (metaExif.dID != null && !metaExif.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID());}
+            if (metaFile.dID != null && !metaFile.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID());}
+            if (metaExif.dID == null) addExif("DocumentID" , getdID());
+
+            if (metaFile.odID != null) odID = metaFile.odID;
+            if (metaExif.odID != null)
+                if (getOdID() != null) {
+                    if (!metaExif.odID.equals(odID)) addNote("odID has been changed", true);
+                } else {
+                    odID = metaFile.odID; addNote("odID already presented", true);
+                }
+            if (getOdID() == null) {
+                odID = getdID();
+                addExif("OriginalDocumentID" , getOdID());
+            }
         }
-                
+    }
+
+    private void compareDate(meta metaExif, meta metaFile) {            
         if (metaFile.date != null) date = metaFile.date;
         if (metaExif.date != null) {
+            if (metaExif.dateFormat == null || !metaExif.dateFormat) addExif(date);
             if (date != null) {
-                if (Math.abs(ChronoUnit.SECONDS.between(date, metaExif.date)) > 180) {
-                    addNote("date has been changed: " + (date.toEpochSecond() - metaExif.date.toEpochSecond()) + "sec");
+                Boolean equal = true;
+                if (PicOrganizes.supportedVideoFileType(originalName)) {
+                    if (Math.abs(ChronoUnit.SECONDS.between(date, metaExif.date)) > 180) {equal = false;}                    
+                } else {
+                    if (Math.abs(ChronoUnit.SECONDS.between(date, metaExif.date)) > 0) {equal = false;}                    
+                }
+                if (!equal) {
+                    addNote("date has been changed: " + (date.toEpochSecond() - metaExif.date.toEpochSecond()) + "sec", true);
                 } else {
                     date = metaExif.date;
                 }
@@ -231,50 +257,33 @@ public class mediaFile {
             }
         } else {
             if (date == null) {
-                addNote("date missing");
+                addNote("date missing", false);
             } else {
-                addExif("DateTimeOriginal" , date);
+                addExif(date);
             }
         }
-
+        if (date != null && date.getZone().equals(PicOrganizes.view.getZone())) {addNote("TZ different", true);}
     }
     
-    private String getMetaDate(meta metaIn) {
-        if (metaIn != null) {
-            if (metaIn.date != null)
-                return metaIn.date.format(PicOrganizes.XmpDateFormatTZ);
-        }
-        return "Null";
+    private void compareXMP(meta metaXmp) {
+        if (metaXmp.date != null && !metaXmp.date.isEqual(date)) addNote("XMP date wrong", false);
+        if (metaXmp.model != null && !metaXmp.model.equals(model)) addNote("XMP model wrong", false);
+        if (metaXmp.dID != null && !metaXmp.dID.equals(dID)) addNote("XMP dID wrong", false);
+        if (metaXmp.odID != null && !metaXmp.odID.equals(odID)) addNote("XMP odID wrong", false);
     }
-
-    private String getMetaAltDate(meta metaIn) {
-        if (metaIn != null) {
-            if (metaIn.date != null)
-                if (!metaIn.date.getOffset().equals(metaIn.date.withZoneSameInstant(PicOrganizes.view.getZone()).getOffset()))
-                return metaIn.date.withZoneSameInstant(PicOrganizes.view.getZone()).format(PicOrganizes.XmpDateFormatTZ);
-        }
-        return "Null";
+    
+    private void compareMeta(meta metaExif, meta metaFile, meta metaXmp) {
+        if (metaExif == null) metaExif = new meta(null, null, null, null, null, null, null);
+        if (metaFile == null) metaFile = new meta(null, null, null, null, null, null, null);
+        if (metaXmp == null) metaXmp = new meta(null, null, null, null, null, null, null);
+        
+        compareModel(metaExif, metaFile);
+        compareHash(metaExif, metaFile);
+        compareDate(metaExif, metaFile);
+        compareXMP(metaXmp);
+                
     }
-
-    private String getMetaModel(meta metaIn) {
-        if (metaIn != null) {
-            if (metaIn.model != null)
-                return metaIn.model;
-        }
-        return "Null";
-    }
-
-    private int question(String text, Object[] options) {
-        return JOptionPane.showOptionDialog(null,
-        text,
-        getFile().toString(),
-        JOptionPane.YES_NO_CANCEL_OPTION,
-        JOptionPane.QUESTION_MESSAGE,
-        null,
-        options,
-        options[0]);                
-    }
-
+ 
     public final String getNewName() {return newName.get();}
     public final void setNewName(String fName) {newName.set(fName);}
     public SimpleStringProperty newNameProperty() {return newName;}
@@ -304,7 +313,6 @@ public class mediaFile {
         return Paths.get(targetDirectory + "\\" + this.getNewName());
     }
 
-    
     private File createXmp() {
         String[] commandAndOptions = {"exiftool", getFile().getName(), "-o", getFile().getName() + ".xmp"};
         ArrayList<String> result = StaticTools.exifTool(commandAndOptions, getFile().getParentFile());
@@ -312,8 +320,9 @@ public class mediaFile {
         return null;
     }
     
-    private void addExif(String field, ZonedDateTime value) {
-        addExif(field, value.format(PicOrganizes.ExifDateFormatTZ));
+    private void addExif(ZonedDateTime value) {
+        addExif("DateTimeOriginal", value.format(PicOrganizes.ExifDateFormat));
+        addExif("xmp:DateTimeOriginal", value.format(PicOrganizes.ExifDateFormatTZ));
     }
     
     private void addExif(String field, String value) {
@@ -321,7 +330,7 @@ public class mediaFile {
             exifMissing = new ArrayList<String>();
             exifMissing.add("exiftool");
             exifMissing.add("-overwrite_original");
-            exifMissing.add("-n");
+//            exifMissing.add("-n");
         }
         exifMissing.add("-" + field + "=" + value);
 //        exifMissing.add("-" + field + "=\"" + value + "\" ");
@@ -329,31 +338,37 @@ public class mediaFile {
     
     private void updateExif() {
         String ext = FilenameUtils.getExtension(getFile().getName().toLowerCase()).toLowerCase();
-        if (ext.equals("arw") || ext.equals("jpg") || ext.equals("mp4")) {
+        if (PicOrganizes.supportedRAWFileType(getFile().getName()) || ext.equals("jpg") || ext.equals("mp4")) {
             String updateFile = getFile().getName();
-            if (ext.equals("arw")) {
-                if (!(fileXmp != null && fileXmp.exists())) {fileXmp = createXmp();}
+            if (PicOrganizes.supportedRAWFileType(getFile().getName())) {
+                if (!(fileXmp != null && fileXmp.exists())) if (createXmp()==null) StaticTools.errorOut("xmp", new Exception("Couldn't create xmp for: " + getFile().getName()));
                 if (fileXmp != null) {
-                    updateFile = fileXmp.getName();
-                } else {
-                    StaticTools.errorOut("xmp", new Exception("Couldn't create xmp for: " + getFile().getName()));
-                    return;
-                }
+                    exifMissing.add(fileXmp.getName());
+                    ArrayList<String> exifTool = StaticTools.exifTool(exifMissing.toArray(new String[0]), getFile().getParentFile());
+                    exifMissing.remove(fileXmp.getName());
+                } 
             }
             if (exifMissing != null) {
                 exifMissing.add(updateFile);
-                StaticTools.exifTool(exifMissing.toArray(new String[0]), getFile().getParentFile());
+                ArrayList<String> exifTool = StaticTools.exifTool(exifMissing.toArray(new String[0]), getFile().getParentFile());
+                setiID();
             }
+        }
+    }
+    
+    private void validPath(Path path) throws IOException {
+        if (Files.notExists(path.getParent())) {
+            validPath(path.getParent());    
+            Files.createDirectory(path.getParent());
         }
     }
     
     public void write() {
         if (processing.get()) {
-            try {                                    
-                if (Files.notExists(this.getNewPath().getParent())) {
-                        Files.createDirectory(this.getNewPath().getParent());
-                }
+            try {        
+                validPath(this.getNewPath());
                 updateExif();
+                if (iID == null && PicOrganizes.supportedMediaFileType(currentName.get())) setiID();
                 if (PicOrganizes.view.getCopyOrMove() == PicOrganizes.COPY) {
                     Files.copy(this.getOldPath(), this.getNewPath());                               
                     if (fileXmp != null && fileXmp.exists())
@@ -363,63 +378,50 @@ public class mediaFile {
                     if (fileXmp != null && fileXmp.exists())
                         Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
                 }
-//                File f = new File(this.getNewPath().toString());
-//                f.setReadOnly();
-
-/*
-                if (xmpMissing.get()) {
-
-                    final String command = "exiftool" + getXmpParam() + " E:\\temp.xmp";
-                    try {
-                      String line;
-                      Process p = Runtime.getRuntime().exec
-                        (command);
-                      BufferedReader input =
-                        new BufferedReader
-                          (new InputStreamReader(p.getInputStream()));
-                      while ((line = input.readLine()) != null) {
-                        System.out.println(line);
-                      }
-                      input.close();
-                    }
-                    catch (Exception e) {
-                      errorOut("xmp", e);
-                    }
-                    Files.move(Paths.get("E:\\temp.xmp"), Paths.get(this.getNewPath() + ".xmp"));                               
-                }
-*/                                                
             } catch (IOException e) {
                 StaticTools.errorOut(this.getNewName(), e);         
             }                      
         }
     }
 
-/*            private ZonedDateTime getDate() {
-        //TODO Visitson, ha nem jó az időzóna
-        if (xmpDate != null) return xmpDate;
-        if (metaDate != null) return metaDate;
-        if (filenameDate != null) return filenameDate;
-        return modDate;
-    }*/
-
-    private void addNote(String addition) {
+    private void addNote(String addition, Boolean critical) {
         note.set(note.get() + addition);
-        processing.set(false);
+        if (critical) processing.set(false);
     }
 
-    private meta getV1() {//20160924_144402_ILCE-5100-DSC00615.JPG
-        if (getFile().getName().length() > 17+4+1) {
+    public static meta getV(String filename) {
+        meta metaFile;
+        if (filename.startsWith("V") && filename.substring(2, 3).equals("_")) {
+            switch (filename.substring(1, 2)) {
+                case "5":
+                    metaFile = getV5(filename);
+                    break;
+                default:
+                    metaFile = null;
+            }
+        } else {
+            if ((metaFile = getV1(filename)) == null)
+                if ((metaFile = getV2(filename)) == null)
+                    if ((metaFile = getV4(filename)) == null)
+                        metaFile = getV3(filename);
+            
+        }
+        return metaFile;
+    }
+    
+    public static meta getV1(String filename) {//20160924_144402_ILCE-5100-DSC00615.JPG
+        if (filename.length() > 17+4+1) {
             try {
-                ZonedDateTime captureDate = LocalDateTime.parse(getFile().getName().substring(0, 15), PicOrganizes.dfV1).atZone(ZoneId.systemDefault());
-                String[] parts = getFile().getName().substring(15 + 1).split("-");
+                ZonedDateTime captureDate = LocalDateTime.parse(filename.substring(0, 15), PicOrganizes.dfV1).atZone(ZoneId.systemDefault());
+                String[] parts = filename.substring(15 + 1).split("-");
                 if (parts.length == 2)
-                    return new meta(parts[1], captureDate, parts[0], null, null);
+                    return new meta(parts[1], captureDate, null, parts[0], null, null, null);
                 if (parts.length > 2)
                     for (String camera : PicOrganizes.CAMERAS)
-                        if (getFile().getName().substring(15 + 1).startsWith(camera)) {
-                            return new meta(getFile().getName().substring(15 + 1 + camera.length() + 1), captureDate, camera, null, null);
+                        if (filename.substring(15 + 1).startsWith(camera)) {
+                            return new meta(filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null);
                         }
-                addNote("Not recognized camera");
+                StaticTools.errorOut("Not recognized camera", new Exception());
             } catch (Exception e) {
                 return null;
             }
@@ -427,11 +429,11 @@ public class mediaFile {
         return null;
     }
 
-    private meta getV2() {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
-        if (getFile().getName().length() > 34+1+4) {
+    public static meta getV2(String filename) {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
+        if (filename.length() > 34+1+4) {
             try {
-                ZonedDateTime captureDate = LocalDateTime.parse(getFile().getName().substring(1, 10) + getFile().getName().substring(11, 17) + getFile().getName().substring(18, 22) + getFile().getName().substring(27, 32), PicOrganizes.dfV2).atZone(ZoneId.systemDefault());
-                return new meta(getFile().getName().substring(34), captureDate, null, null, null);
+                ZonedDateTime captureDate = LocalDateTime.parse(filename.substring(1, 10) + filename.substring(11, 17) + filename.substring(18, 22) + filename.substring(27, 32), PicOrganizes.dfV2).atZone(ZoneId.systemDefault());
+                return new meta(filename.substring(34), captureDate, null, null, null, null, null);
             } catch (Exception e) {
                 return null;
             }
@@ -439,47 +441,47 @@ public class mediaFile {
         return null;
     }
 
-    private meta getV3() {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-
-        if (getFile().getName().length() > 34+1+4) {
-            try {
-                String dateString = 
-                        getFile().getName().substring(1, 5) + 
-                        getFile().getName().substring(6, 8) + 
-                        getFile().getName().substring(9, 10) + 
-                        getFile().getName().substring(11, 12) + 
-                        getFile().getName().substring(13, 15) + 
-                        getFile().getName().substring(16, 17) + 
-                        getFile().getName().substring(18, 19) +
-                        getFile().getName().substring(20, 22)
-                ;
-                ZonedDateTime captureDate = LocalDateTime.parse(dateString, PicOrganizes.dfV3).atZone(ZoneOffset.UTC);
-                captureDate = captureDate.withZoneSameInstant(ZoneId.of(getFile().getName().substring(23, 28)));
-                return new meta(getFile().getName().substring(35), captureDate, null, null, null);
-            } catch (Exception e) {
-                return null;
-            }
-        }
-        return null;
-    }
-
-    private meta getV4() {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
-        if (getFile().getName().length() > 34+1+4+32+32) {
+    public static meta getV3(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-
+        if (filename.length() > 34+1+4) {
             try {
                 String dateString = 
-                        getFile().getName().substring(1, 5) + 
-                        getFile().getName().substring(6, 8) + 
-                        getFile().getName().substring(9, 10) + 
-                        getFile().getName().substring(11, 12) + 
-                        getFile().getName().substring(13, 15) + 
-                        getFile().getName().substring(16, 17) + 
-                        getFile().getName().substring(18, 19) +
-                        getFile().getName().substring(20, 22)
+                        filename.substring(1, 5) + 
+                        filename.substring(6, 8) + 
+                        filename.substring(9, 10) + 
+                        filename.substring(11, 12) + 
+                        filename.substring(13, 15) + 
+                        filename.substring(16, 17) + 
+                        filename.substring(18, 19) +
+                        filename.substring(20, 22)
                 ;
                 ZonedDateTime captureDate = LocalDateTime.parse(dateString, PicOrganizes.dfV3).atZone(ZoneOffset.UTC);
-                captureDate = captureDate.withZoneSameInstant(ZoneId.of(getFile().getName().substring(23, 28)));
+                captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
+                return new meta(filename.substring(35), captureDate, null, null, null, null, null);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    public static meta getV4(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
+        if (filename.length() > 34+1+4+32+32) {
+            try {
+                String dateString = 
+                        filename.substring(1, 5) + 
+                        filename.substring(6, 8) + 
+                        filename.substring(9, 10) + 
+                        filename.substring(11, 12) + 
+                        filename.substring(13, 15) + 
+                        filename.substring(16, 17) + 
+                        filename.substring(18, 19) +
+                        filename.substring(20, 22)
+                ;
+                ZonedDateTime captureDate = LocalDateTime.parse(dateString, PicOrganizes.dfV3).atZone(ZoneOffset.UTC);
+                captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
                 
-                if (getFile().getName().substring(34, 35).equals("-") && getFile().getName().substring(67, 68).equals("-")) {
-                    return new meta(getFile().getName().substring(101), captureDate, null, getFile().getName().substring(35, 67), getFile().getName().substring(68, 100));
+                if (filename.substring(34, 35).equals("-") && filename.substring(67, 68).equals("-")) {
+                    return new meta(filename.substring(101), captureDate, null, null, null, filename.substring(35, 67), filename.substring(68, 100));
                     
                 }
             } catch (Exception e) {
@@ -489,62 +491,30 @@ public class mediaFile {
         return null;
     }
 
-    private meta readExif(File fileMeta) {//TODO merge with the one in PicOrganizes
-        if (fileMeta.exists()) {
-            ArrayList<String> files = new ArrayList<>();
-            files.add(fileMeta.getName());
-            ArrayList<textMeta> exifToMeta = StaticTools.exifToMeta(files, fileMeta.getParentFile());
-            Iterator<textMeta> iterator = exifToMeta.iterator();
-            if (iterator.hasNext()) {
-                textMeta next = iterator.next();
-                        String dateString = next.date;
-                        ZonedDateTime captureDate = null;
-                        if (dateString != null) {
-                            captureDate = StaticTools.getZonedTimeFromStr(dateString);
-                            if (captureDate == null) {
-                                captureDate = StaticTools.getTimeFromStr(dateString, PicOrganizes.view.getZone());
-                                if (captureDate != null)
-                                    addExif("DateTimeOriginal", captureDate);
-                            }
-                        }
-                      if (!next.note.equals("")) {StaticTools.errorOut("xmp", new Exception(next.note));}
-                    return new meta(null, captureDate, next.model, next.odID, next.dID);
+    public static meta getV5(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
+        int offsetV5 = 3;
+        if (filename.length() > offsetV5+34+1+4+32+32) {
+            try {
+                String dateString = 
+                        filename.substring(1 + offsetV5, 5 + offsetV5) + 
+                        filename.substring(6 + offsetV5, 8 + offsetV5) + 
+                        filename.substring(9 + offsetV5, 10 + offsetV5) + 
+                        filename.substring(11 + offsetV5, 12 + offsetV5) + 
+                        filename.substring(13 + offsetV5, 15 + offsetV5) + 
+                        filename.substring(16 + offsetV5, 17 + offsetV5) + 
+                        filename.substring(18 + offsetV5, 19 + offsetV5) +
+                        filename.substring(20 + offsetV5, 22 + offsetV5)
+                ;
+                ZonedDateTime captureDate = LocalDateTime.parse(dateString, PicOrganizes.dfV3).atZone(ZoneOffset.UTC);
+                captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV5, 28 + offsetV5)));
                 
-            }
-/*            ArrayList<String> exifTool = StaticTools.exifTool(" -DateTimeOriginal -Model  -DocumentID -OriginalDocumentID \"" + fileMeta.getName() + "\"", fileMeta.getParentFile());
-            Iterator<String> iterator = exifTool.iterator();
-            String model = null;
-            ZonedDateTime captureDate = null;
-            String dID = null;
-            String odID = null;
-            while (iterator.hasNext()) {
-                String line = iterator.next();
-                String tagValue = line.substring(34);
-                switch (line.substring(0, 4)) {
-                    case "Date":
-                        String dateString = tagValue.length()>25 ? tagValue.substring(0, 25) : tagValue; //2016:11:03 07:50:24
-                        captureDate = StaticTools.getZonedTimeFromStr(dateString);
-                        if (captureDate == null) {
-                            captureDate = StaticTools.getTimeFromStr(dateString, view.getZone());
-                            if (captureDate != null)
-                                addExif("DateTimeOriginal", captureDate);
-                        }
-                      break;
-                    case "Came":
-                        model = tagValue;
-                      break;
-                    case "Orig":
-                        odID = tagValue;
-                        break;
-                    case "Docu":
-                        dID = tagValue;
-                        break;
-                    case "Warn":
-                        StaticTools.errorOut("xmp", new Exception(line));
-                      break;
+                if (filename.substring(34 + offsetV5, 35 + offsetV5).equals("-") && filename.substring(67 + offsetV5, 68 + offsetV5).equals("-")) {
+                    return new meta(filename.substring(101 + offsetV5), captureDate, null, null, filename.substring(35 + offsetV5, 67 + offsetV5), filename.substring(68 + offsetV5, 100 + offsetV5), null);
+                    
                 }
+            } catch (Exception e) {
+                return null;
             }
-            return new meta(null, captureDate, model, odID, dID);*/
         }
         return null;
     }
@@ -590,72 +560,6 @@ public class mediaFile {
         dateS = dateS.substring(0, 9) + "_" + dateS.substring(9, 15) + "_" + dateS.substring(15) + "(" + offsetSign + offsetH + offsetM + ")" + "(" + zoned.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.US) + ")" + "-";
         return PicOrganizes.view.getPictureSet() + dateS;
     }// "K2016-11-0_3@07-5_0-24(+0100)(Thu)-"
-
-    //Unused code, meant to extract information from sony xml, but those are already presented in the mp4 file embedded
-/*
-//                    readXML(new File(file.toString().substring(0, file.toString().length()-4) + "M01.xml"));
-
-    private void readXML(File inputFile) {
-        if (inputFile.exists()) {
-            try {	
-                DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder dBuilder = dbFactory.newDocumentBuilder();
-                Document doc = dBuilder.parse(inputFile);                        
-                readNode(doc, "Device");
-                readNode(doc, "CreationDate");
-                readNode(doc, "LtcChangeTable");
-                readNode(doc, "Duration");
-                xmpMissing.set(true);
-                String get = exifPar.get("CreationDate value");
-                if (get != null) 
-                    //2005:10:23 20:06:34.33-05:00
-                    metaDate = getTimeFromStr(get);
-                get = exifPar.get("Device modelName");
-                if (get != null) {
-                    model = get;
-                    if (!model.equals(get)) 
-                        addNote("Meta(" + get + ") and (" + model + ") Model mismatch ");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }                
-        }
-    }
-
-    private void readNode(Document doc, String nodeName) {
-        NodeList childNodes = doc.getElementsByTagName(nodeName);
-        for (int i = 0; i < childNodes.getLength(); i++) {
-            Node child = childNodes.item(i);
-            NamedNodeMap attributes = child.getAttributes();
-            for (int j = 0; j < attributes.getLength(); j++) {
-                exifPar.put(child.getNodeName()+ " " + attributes.item(j).getNodeName(), attributes.item(j).getNodeValue());
-            }  
-        }
-    }
-
-    private String getXmpParam() {//, , LtcChangeTable halfStep, LtcChangeTable tcFps, 
-        if (!xmpMissing.get()) return "";
-        String param = "";
-        String get = exifPar.get("CreationDate value");
-        if (get != null) param += " -xmp:dateTimeOriginal=\"" + get + "\"";//2005:10:23 20:06:34.33-05:00
-        get = exifPar.get("Device manufacturer");
-        if (get != null) param += " -make=\"" + get + "\"";
-        get = exifPar.get("Device modelName");
-        if (get != null) param += " -model=\"" + get + "\"";
-        get = exifPar.get("Device serialNo");
-        if (get != null) param += " -SerialNumber=\"" + get + "\"";
-        get = exifPar.get("Duration value");
-        if (get != null) param += " -Duration={Scale=1.0,Value=" + get + "}";
-        get = exifPar.get("LtcChangeTable tcFps");
-        if (get != null) {
-            int fps = Integer.parseInt(get);
-            String dub = exifPar.get("LtcChangeTable halfStep");
-            if (dub != null && dub.equals("true")) fps = fps * 2;
-            param += " -VideoFrameRate=\"" + fps + "\"";
-        }
-        return param;
-    }
-*/            
 }
 
 
