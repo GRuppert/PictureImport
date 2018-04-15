@@ -1,3 +1,5 @@
+package TimeShift;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -18,7 +20,7 @@ import org.apache.commons.io.FilenameUtils;
  *
  * @author gabor
  */
-class Picture {
+public class Picture {
     private File file;
     private Image img;
     private long date;

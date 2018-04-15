@@ -1,4 +1,7 @@
+package Rename;
 
+
+import Main.PicOrganizes;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -28,6 +31,27 @@ public class mediaFile {
     
     public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
     public static String Version = "5";
+    
+    private final SimpleBooleanProperty processing;
+    private final SimpleStringProperty currentName;
+    private final SimpleStringProperty newName;
+    private final SimpleStringProperty note;
+    private final SimpleBooleanProperty xmpMissing;
+
+    private File file;
+    private File fileXmp;
+    private String originalName;
+    private String targetDirectory;
+
+    private String iID;
+    private String dID;
+    private String odID;
+    private String model = null;//Filename, Exif, xmp, xml
+    private ZonedDateTime date = null;//Filename, Exif, xmp, xml, mod +TZ
+
+    private HashMap<String, String> exifPar = new HashMap<>();
+    private ArrayList<String> exifMissing = new ArrayList<String>();
+
     /**
      * @return the iID
      */
@@ -67,55 +91,15 @@ public class mediaFile {
     }
 
     /**
-     * @return the fileSize
-     */
-    public long getFileSize() {
-        return fileSize;
-    }
-
-    /**
-     * @param fileSize the fileSize to set
-     */
-    public void setFileSize(long fileSize) {
-        this.fileSize = fileSize;
-    }
-
-    /**
      * @return the file
      */
     public File getFile() {
         return file;
     }
 
-    private final SimpleBooleanProperty processing;
-    private final SimpleStringProperty currentName;
-    private final SimpleStringProperty newName;
-    private final SimpleStringProperty note;
-    private final SimpleBooleanProperty xmpMissing;
-
-    private File file;
-    private File fileXmp;
-    private String originalName;
-    private String targetDirectory;
-
-    private String iID;
-    private String dID;
-    private String odID;
-    private String model = null;//Filename, Exif, xmp, xml
-    private ZonedDateTime date = null;//Filename, Exif, xmp, xml, mod +TZ
-
-    private long fileSize;
-    private HashMap<String, String> exifPar = new HashMap<>();
-    private ArrayList<String> exifMissing = null;
-
 
     public mediaFile(String fileIn) {
         this(new File(fileIn));
-    }
-
-    public mediaFile(String fileIn, long size) {        
-        this(new File(fileIn));
-        fileSize = size;
     }
 
     public mediaFile(String fileIn, String targetDir) {
@@ -171,7 +155,7 @@ public class mediaFile {
             compareMeta(metaExif, metaFile, metaXmp);
  
             newName = new SimpleStringProperty(getNewFileName());
-            if (exifMissing == null) 
+            if (exifMissing.isEmpty()) 
                 setiID();
         } else {
             newName = new SimpleStringProperty(/*targetDirectory + "\\" + */originalName);
@@ -273,9 +257,9 @@ public class mediaFile {
     }
     
     private void compareMeta(meta metaExif, meta metaFile, meta metaXmp) {
-        if (metaExif == null) metaExif = new meta(null, null, null, null, null, null, null);
-        if (metaFile == null) metaFile = new meta(null, null, null, null, null, null, null);
-        if (metaXmp == null) metaXmp = new meta(null, null, null, null, null, null, null);
+        if (metaExif == null) metaExif = new meta(null, null, null, null, null, null, null, null);
+        if (metaFile == null) metaFile = new meta(null, null, null, null, null, null, null, null);
+        if (metaXmp == null) metaXmp = new meta(null, null, null, null, null, null, null, null);
         
         compareModel(metaExif, metaFile);
         compareHash(metaExif, metaFile);
@@ -313,27 +297,13 @@ public class mediaFile {
         return Paths.get(targetDirectory + "\\" + this.getNewName());
     }
 
-    private File createXmp() {
-        String[] commandAndOptions = {"exiftool", getFile().getName(), "-o", getFile().getName() + ".xmp"};
-        ArrayList<String> result = StaticTools.exifTool(commandAndOptions, getFile().getParentFile());
-        if (result.get(0).endsWith("files created")) return new File(getFile().getAbsolutePath() + ".xmp"); 
-        return null;
-    }
-    
     private void addExif(ZonedDateTime value) {
         addExif("DateTimeOriginal", value.format(PicOrganizes.ExifDateFormat));
         addExif("xmp:DateTimeOriginal", value.format(PicOrganizes.ExifDateFormatTZ));
     }
     
     private void addExif(String field, String value) {
-        if (exifMissing == null) {
-            exifMissing = new ArrayList<String>();
-            exifMissing.add("exiftool");
-            exifMissing.add("-overwrite_original");
-//            exifMissing.add("-n");
-        }
         exifMissing.add("-" + field + "=" + value);
-//        exifMissing.add("-" + field + "=\"" + value + "\" ");
     }
     
     private void updateExif() {
@@ -341,16 +311,16 @@ public class mediaFile {
         if (PicOrganizes.supportedRAWFileType(getFile().getName()) || ext.equals("jpg") || ext.equals("mp4")) {
             String updateFile = getFile().getName();
             if (PicOrganizes.supportedRAWFileType(getFile().getName())) {
-                if (!(fileXmp != null && fileXmp.exists())) if (createXmp()==null) StaticTools.errorOut("xmp", new Exception("Couldn't create xmp for: " + getFile().getName()));
+                if (!(fileXmp != null && fileXmp.exists())) if (StaticTools.createXmp(getFile())==null) StaticTools.errorOut("xmp", new Exception("Couldn't create xmp for: " + getFile().getName()));
                 if (fileXmp != null) {
                     exifMissing.add(fileXmp.getName());
-                    ArrayList<String> exifTool = StaticTools.exifTool(exifMissing.toArray(new String[0]), getFile().getParentFile());
+                    StaticTools.updateExif(exifMissing, getFile().getParentFile());
                     exifMissing.remove(fileXmp.getName());
                 } 
             }
-            if (exifMissing != null) {
+            if (!exifMissing.isEmpty()) {
                 exifMissing.add(updateFile);
-                ArrayList<String> exifTool = StaticTools.exifTool(exifMissing.toArray(new String[0]), getFile().getParentFile());
+                    StaticTools.updateExif(exifMissing, getFile().getParentFile());
                 setiID();
             }
         }
@@ -415,11 +385,11 @@ public class mediaFile {
                 ZonedDateTime captureDate = LocalDateTime.parse(filename.substring(0, 15), PicOrganizes.dfV1).atZone(ZoneId.systemDefault());
                 String[] parts = filename.substring(15 + 1).split("-");
                 if (parts.length == 2)
-                    return new meta(parts[1], captureDate, null, parts[0], null, null, null);
+                    return new meta(parts[1], captureDate, null, parts[0], null, null, null, null);
                 if (parts.length > 2)
                     for (String camera : PicOrganizes.CAMERAS)
                         if (filename.substring(15 + 1).startsWith(camera)) {
-                            return new meta(filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null);
+                            return new meta(filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null, null);
                         }
                 StaticTools.errorOut("Not recognized camera", new Exception());
             } catch (Exception e) {
@@ -433,7 +403,7 @@ public class mediaFile {
         if (filename.length() > 34+1+4) {
             try {
                 ZonedDateTime captureDate = LocalDateTime.parse(filename.substring(1, 10) + filename.substring(11, 17) + filename.substring(18, 22) + filename.substring(27, 32), PicOrganizes.dfV2).atZone(ZoneId.systemDefault());
-                return new meta(filename.substring(34), captureDate, null, null, null, null, null);
+                return new meta(filename.substring(34), captureDate, null, null, null, null, null, null);
             } catch (Exception e) {
                 return null;
             }
@@ -456,7 +426,7 @@ public class mediaFile {
                 ;
                 ZonedDateTime captureDate = LocalDateTime.parse(dateString, PicOrganizes.dfV3).atZone(ZoneOffset.UTC);
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
-                return new meta(filename.substring(35), captureDate, null, null, null, null, null);
+                return new meta(filename.substring(35), captureDate, null, null, null, null, null, null);
             } catch (Exception e) {
                 return null;
             }
@@ -481,7 +451,7 @@ public class mediaFile {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
                 
                 if (filename.substring(34, 35).equals("-") && filename.substring(67, 68).equals("-")) {
-                    return new meta(filename.substring(101), captureDate, null, null, null, filename.substring(35, 67), filename.substring(68, 100));
+                    return new meta(filename.substring(101), captureDate, null, null, null, filename.substring(35, 67), filename.substring(68, 100), null);
                     
                 }
             } catch (Exception e) {
@@ -509,7 +479,7 @@ public class mediaFile {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV5, 28 + offsetV5)));
                 
                 if (filename.substring(34 + offsetV5, 35 + offsetV5).equals("-") && filename.substring(67 + offsetV5, 68 + offsetV5).equals("-")) {
-                    return new meta(filename.substring(101 + offsetV5), captureDate, null, null, filename.substring(35 + offsetV5, 67 + offsetV5), filename.substring(68 + offsetV5, 100 + offsetV5), null);
+                    return new meta(filename.substring(101 + offsetV5), captureDate, null, null, filename.substring(35 + offsetV5, 67 + offsetV5), filename.substring(68 + offsetV5, 100 + offsetV5), null, null);
                     
                 }
             } catch (Exception e) {
@@ -520,9 +490,8 @@ public class mediaFile {
     }
 
     private void repairMP4() {
-        String[] commandAndOptions = {"exiftool", "-DateTimeOriginal", "-CreationDateValue", getFile().getName()};
-        ArrayList<String> exifTool = StaticTools.exifTool(commandAndOptions, getFile().getParentFile());
-        Iterator<String> iterator = exifTool.iterator();
+        ArrayList<String> meta = StaticTools.getExif(new String[]{"-DateTimeOriginal", "-CreationDateValue", "", "", "", ""}, getFile());
+        Iterator<String> iterator = meta.iterator();
         String dto = null;
         String cdv = null;
         while (iterator.hasNext()) {

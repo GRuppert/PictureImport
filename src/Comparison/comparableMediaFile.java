@@ -1,4 +1,7 @@
+package Comparison;
 
+
+import Rename.meta;
 import java.io.File;
 
 /*
@@ -12,10 +15,10 @@ import java.io.File;
  * @author gabor
  */
 public class comparableMediaFile{
-    File file;
-    meta meta;
+    public File file;
+    public meta meta;
 
-    comparableMediaFile(File fileIn, meta metaIn) {
+    public comparableMediaFile(File fileIn, meta metaIn) {
         this.file = fileIn;
         this.meta = metaIn;
     }

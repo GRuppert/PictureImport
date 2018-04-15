@@ -1,4 +1,8 @@
+package Rename;
 
+
+import Main.PicOrganizes;
+import Rename.meta;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 

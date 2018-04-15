@@ -1,4 +1,8 @@
+package Comparison;
 
+
+import Rename.StaticTools;
+import Main.PicOrganizes;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;

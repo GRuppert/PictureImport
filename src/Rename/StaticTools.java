@@ -1,4 +1,14 @@
+package Rename;
 
+
+import Main.PicOrganizes;
+import Rename.ifdField;
+import Rename.ifdCursor;
+import Rename.meta;
+import Rename.mediaFile;
+import TimeShift.TimeLine;
+import TimeShift.Stripes;
+import TimeShift.Picture;
 import com.adobe.xmp.XMPException;
 import com.adobe.xmp.XMPIterator;
 import com.adobe.xmp.XMPMeta;
@@ -64,7 +74,7 @@ public class StaticTools {
     public static meta exifToMeta(File fileMeta) {
         ArrayList<String> files = new ArrayList<>();
         files.add(fileMeta.getName());
-        ArrayList<meta> exifToMeta = StaticTools.exifToMeta(files, fileMeta.getParentFile());
+        List<meta> exifToMeta = StaticTools.exifToMeta(files, fileMeta.getParentFile());
         Iterator<meta> iterator = exifToMeta.iterator();
         if (iterator.hasNext()) {
             return iterator.next();
@@ -72,11 +82,84 @@ public class StaticTools {
         return null;
     }
     
-    public static ArrayList<meta> exifToMeta(ArrayList<String> filenames, File dir) {
+    /**
+     * Reads the standard metadata from the specified files in the given directory
+     * @param filenames String list of the representation of the file names
+     * @param dir the directory where the files are
+     * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
+     */
+    public static List<meta> exifToMeta(ArrayList<String> filenames, File dir) {
+/*        long startTime = System.nanoTime();
+        exifToMetaIMR(filenames, dir);
+        System.out.println("IMR:" + (System.nanoTime() - startTime)/1000000);
+        startTime = System.nanoTime();
+        List<meta> exifToMetaET = exifToMetaET(filenames, dir);
+        System.out.println("ET:" + (System.nanoTime() - startTime)/1000000);
+        return exifToMetaET;*/
+        return exifToMetaIMR(filenames, dir);
+    }
+    
+    private static List<meta> exifToMetaIMR(ArrayList<String> filenames, File dir) {
+        List<meta> results = new ArrayList<>();      
+        for (String filename : filenames) {
+            ArrayList<String[]> tags;
+            String model = null;
+            String note = "";
+            String iID = null;
+            String dID = null;
+            String odID = null;
+            String captureDate = null;
+            Boolean dateFormat = false;
+            try {
+                tags = readMeta(new File(dir + "\\" + filename));
+            } catch (ImageProcessingException | IOException ex) {
+                meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString());
+                System.out.println(meta);
+                results.add(meta);
+                continue;
+            }
+            for (String[] tag : tags) {
+//                System.out.println(tag[0]);
+                switch (tag[0]) {
+                    case "Model":
+                        model = tag[1];
+                        break;
+                    case "xmpMM:InstanceID":
+                        iID = tag[1];
+                        break;
+                    case "xmpMM:DocumentID":
+                        dID = tag[1];
+                        break;
+                    case "xmpMM:OriginalDocumentID":
+                        odID = tag[1];
+                        break;
+                    case "Date/Time Original":
+                        captureDate = tag[1];
+                        break;
+                    case "exif:DateTimeOriginal":
+                        try {
+                            ZonedDateTime wTZ = ZonedDateTime.parse(tag[1], PicOrganizes.XmpDateFormatTZ);
+                            if (LocalDateTime.parse(captureDate, PicOrganizes.ExifDateFormat).equals(wTZ.toLocalDateTime()))
+                                dateFormat = true;
+                        }
+                        catch (DateTimeParseException exc) {
+                        }  
+                        break;
+                }
+            }
+            meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+            System.out.println(meta);
+            results.add(meta);
+        }
+        return results;
+    }
+    
+    private static List<meta> exifToMetaET(ArrayList<String> filenames, File dir) {
         String filename = null;
         if (filenames.size() == 1 && filenames.get(0).length() > 5) {filename = dir + "\\" + filenames.get(0);}
         filenames.add(0, "-OriginalDocumentID");
         filenames.add(0, "-DocumentID");
+        filenames.add(0, "-InstanceID");
         filenames.add(0, "-DateTimeOriginal");
         filenames.add(0, "-xmp:DateTimeOriginal");
         filenames.add(0, "-Model");
@@ -87,6 +170,7 @@ public class StaticTools {
         int i = -1;
         String model = null;
         String note = "";
+        String iID = null;
         String dID = null;
         String odID = null;
         String captureDate = null;
@@ -95,7 +179,9 @@ public class StaticTools {
             String line = iterator.next();
             if (line.startsWith("========")) {
                 if (i > -1) {
-                    results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
+                    meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+                    System.out.println(meta);
+                    results.add(meta);
                 }
                 i++;
                 String fileTemp = line.substring(9).replaceAll("./", "").replaceAll("/", "\\");
@@ -121,7 +207,7 @@ public class StaticTools {
                         if (captureDate == null)
                             captureDate = tagValue;
                         else {
-                            if (captureDate.length() == 19) dateFormat = true;
+                            if (Math.abs(captureDate.length()-tagValue.length()) == 6) dateFormat = true;
                             captureDate = tagValue;
                         }
                         break;
@@ -134,21 +220,53 @@ public class StaticTools {
                     case "Docu":
                         dID = tagValue;
                         break;
+                    case "Inst":
+                        iID = tagValue;
+                        break;
                     case "Warn":
                         note = line;
                         break;
                 }
             }
         }
-        if (filename != null) {results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));}
+        if (filename != null) {
+            meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+            System.out.println(meta);
+            results.add(meta);
+//            results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
+        }
         return results;
     }
 
-    public static ArrayList<String> exifTool(String[] parameters, File directory) {
-        return exifTool_exec(parameters, directory);
+    public static File createXmp(File file) {
+        String[] commandAndOptions = {"exiftool", file.getName(), "-o", file.getName() + ".xmp"};
+        ArrayList<String> result = StaticTools.exifTool(commandAndOptions, file.getParentFile());
+        if (result.get(0).endsWith("files created")) return new File(file.getAbsolutePath() + ".xmp"); 
+        return null;
     }
 
-    private static ArrayList<String> exifTool_exec(String[] parameters, File directory) {
+    public static ArrayList<String> getExif(String[] values, File file) {
+        return getExifET(values, file);
+    }
+    
+    private static ArrayList<String> getExifET(String[] values, File file) {
+        List<String> command = new ArrayList<>(Arrays.asList(values));
+        command.add(0, "exiftool");
+        command.add(file.getName());
+        return StaticTools.exifTool(command, file.getParentFile());
+    }
+    
+    public static void updateExif(List<String> valuePairs, File directory) {
+        valuePairs.add(0, "-overwrite_original");
+        valuePairs.add(0, "exiftool");
+        StaticTools.exifTool(valuePairs, directory);
+    }
+
+    private static ArrayList<String> exifTool(List<String> parameters, File directory) {
+        return exifTool(parameters.toArray(new String[0]), directory);
+    }
+    
+    public static ArrayList<String> exifTool(String[] parameters, File directory) {
 //        final String command[] = "exiftool " + parameters;
         ArrayList<String> lines = new ArrayList<>();
         try {
@@ -230,10 +348,16 @@ public class StaticTools {
         return lines;
     }
 
+    /**
+     * Open up a <code> JOptionPane </code> with the given parameters
+     * @param source description where the Exception is coming from, used as the header of the Pane
+     * @param e the Exception which was thrown, will be prompted as the text of the Pane
+     */
     public static void errorOut(String source, Exception e) {
         JOptionPane.showMessageDialog(null, "From :" + source + "\nMessage: " + e.toString(), "Error", JOptionPane.ERROR_MESSAGE);
     }
 
+    /** Generates a windows beep */
     public static void beep() {
         final Runnable runnable = (Runnable) Toolkit.getDefaultToolkit().getDesktopProperty("win.sound.exclamation");
         if (runnable != null) runnable.run();
@@ -256,7 +380,7 @@ public class StaticTools {
 //            ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -Model " + fileNames, dir);
             ArrayList<String> files = new ArrayList<>();
             files.add(".");
-            ArrayList<meta> exifToMeta = exifToMeta(files, dir);
+            List<meta> exifToMeta = exifToMeta(files, dir);
             Iterator<meta> iterator = exifToMeta.iterator();
             String errors = "";
             while (iterator.hasNext()) {
@@ -885,6 +1009,13 @@ public class StaticTools {
         return hash.substring(0, 8) + "-" + hash.substring(8, 12) + "-" + hash.substring(12, 16) + "-" + hash.substring(16, 20) + "-" + hash.substring(20, 32);
     }
 
+    /** 
+     * Copy the source to two locations
+     * @param source the original file
+     * @param dest the primary output file
+     * @param backup the secondary output file
+     * @returns true if no Exception was raised
+     */
     public static boolean copyAndBackup(File source, File dest, File backup) {
         FileInputStream input = null;
         FileOutputStream output = null;
@@ -919,6 +1050,11 @@ public class StaticTools {
         return true;
     }
     
+    /**
+     * Opens up a <code> DirectoryChooser </code>
+     * @param dir set the home directory if it's not valid "C:\" will be used
+     * @return a <code> File </code> object of the chosen path
+     */
     public static File getDir(File dir) {
         DirectoryChooser chooser = new DirectoryChooser();
         if (Files.exists(dir.toPath()))
@@ -963,6 +1099,7 @@ public class StaticTools {
 
     }
 
+    /** Reads and compares two csv files and reports the result to standard output */
     private static void compareCSV() {
         CsvParserSettings csvParserSettings = new CsvParserSettings();
         CsvParser parser = new CsvParser(new CsvParserSettings());
@@ -992,55 +1129,51 @@ public class StaticTools {
         }
     }
 
-    public static ArrayList<String[]> readMeta(File file) {
+    public static ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException {
         Metadata metadata;
         ArrayList<String[]> tags = new ArrayList();
-        try {
-            Collection<XmpDirectory> xmpDirectories = null;
-            if (FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp")) {
-                XmpDirectory directory = new XmpDirectory();
-                try {
-                    XMPMeta xmpMeta;
-                    // If all xmpBytes are requested, no need to make a new ByteBuffer
-                    xmpMeta = XMPMetaFactory.parse(new FileInputStream(file));
-                    directory.setXMPMeta(xmpMeta);
-                } catch (XMPException e) {
-                    directory.addError("Error processing XMP data: " + e.getMessage());
-                }
-                ArrayList<XmpDirectory> collect = new ArrayList<>();
-                collect.add(directory);
-                xmpDirectories = collect;
-            }   else {
-                metadata = ImageMetadataReader.readMetadata(file);
-                for (Directory directory : metadata.getDirectories()) {
-                    if (!directory.getClass().equals(XmpDirectory.class))
-                        for (Tag tag : directory.getTags()) {
-                            String[] temp = {tag.getTagName(), tag.getDescription()};
-                            String value = tag.getDescription();
-                            if (value != null && !value.replaceAll("\\s+","").equals("")) tags.add(temp);
-                        }
-                }
-                xmpDirectories = metadata.getDirectoriesOfType(XmpDirectory.class);
+        Collection<XmpDirectory> xmpDirectories = null;
+        if (FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp")) {
+            XmpDirectory directory = new XmpDirectory();
+            try {
+                XMPMeta xmpMeta;
+                // If all xmpBytes are requested, no need to make a new ByteBuffer
+                xmpMeta = XMPMetaFactory.parse(new FileInputStream(file));
+                directory.setXMPMeta(xmpMeta);
+            } catch (XMPException e) {
+                directory.addError("Error processing XMP data: " + e.getMessage());
             }
-            for (XmpDirectory xmpDirectory : xmpDirectories) {
-                XMPMeta xmpMeta = xmpDirectory.getXMPMeta();
-                XMPIterator iterator;
-                try {
-                    iterator = xmpMeta.iterator();
-                    while (iterator.hasNext()) {
-                        XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
-                        if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
-                            String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
-                            tags.add(temp);
-                        }
+            ArrayList<XmpDirectory> collect = new ArrayList<>();
+            collect.add(directory);
+            xmpDirectories = collect;
+        }   else {
+            metadata = ImageMetadataReader.readMetadata(file);
+            for (Directory directory : metadata.getDirectories()) {
+                if (!directory.getClass().equals(XmpDirectory.class))
+                    for (Tag tag : directory.getTags()) {
+                        String[] temp = {tag.getTagName(), tag.getDescription()};
+                        String value = tag.getDescription();
+                        if (value != null && !value.replaceAll("\\s+","").equals("")) tags.add(temp);
                     }
-                } catch (XMPException ex) {
-                    Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }                    
-        } catch (ImageProcessingException | IOException e) {
-            StaticTools.errorOut(file.getName(), e);         
+            }
+            xmpDirectories = metadata.getDirectoriesOfType(XmpDirectory.class);
         }
+        for (XmpDirectory xmpDirectory : xmpDirectories) {
+            XMPMeta xmpMeta = xmpDirectory.getXMPMeta();
+            XMPIterator iterator;
+            try {
+                iterator = xmpMeta.iterator();
+                while (iterator.hasNext()) {
+                    XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
+                    if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
+                        String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
+                        tags.add(temp);
+                    }
+                }
+            } catch (XMPException ex) {
+                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }                    
         return tags;
     }
     

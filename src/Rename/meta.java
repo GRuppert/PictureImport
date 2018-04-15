@@ -1,5 +1,6 @@
+package Rename;
 
-import java.io.File;
+
 import java.time.ZonedDateTime;
 
 /*
@@ -22,7 +23,7 @@ public class meta{
     public String note = "";
     public Boolean dateFormat;
 
-    public meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID) {
+    public meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note) {
         this.originalFilename = originalFilename;
         this.date = date;
         this.dateFormat = dateFormat;
@@ -30,6 +31,27 @@ public class meta{
         this.odID = odID;
         this.dID = dID;
         this.iID = iID;
+    }
+    
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(originalFilename)
+            .append(" ")
+            .append(date)
+            .append(" ")
+            .append(dateFormat)
+            .append(" ")
+            .append(model)
+            .append(" ")
+            .append(odID)
+            .append(" ")
+            .append(dID)
+            .append(" ")
+            .append(iID)
+            .append(" ")
+            .append(note)
+            ;
+        return sb.toString();
     }
 
 /*    public meta(String originalFilename, String date, String model, String iID, String dID, String odID) {

@@ -1,3 +1,14 @@
+package Main;
+
+import Rename.StaticTools;
+import Rename.metaProp;
+import Rename.meta;
+import Rename.mediaFile;
+import Comparison.metaChanges;
+import Comparison.Listing;
+import Comparison.comparableMediaFile;
+import Comparison.duplicate;
+import TimeShift.TimeLine;
 import java.util.ArrayList;
 import java.util.Iterator;
 
@@ -5,11 +16,9 @@ import java.util.Iterator;
 import java.awt.Dialog;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.nio.charset.Charset;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -19,6 +28,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -50,7 +60,6 @@ import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxTableCell;
@@ -77,7 +86,7 @@ public class PicOrganizes extends Application {
     // <editor-fold defaultstate="collapsed" desc="User variables">
     private String pictureSet = "K";
     private Path toDir = Paths.get("G:\\Pictures\\Photos\\V5\\Dupla\\KözösÚj");
-    private File fromDir = new File("G:\\Pictures\\Photos\\V5\\Dupla\\KépekÚj");
+    private File fromDir = new File("E:\\Képek\\Dev\\exifread");
 //    private Path toDir = Paths.get("E:\\temp\\compare\\1");
 //    private File fromDir = new File("E:\\temp\\compare\\2");
 //    private Path toDir = Paths.get("G:\\Pictures\\Photos\\V5\\Közös");
@@ -88,7 +97,7 @@ public class PicOrganizes extends Application {
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Static variables">
-    static String[] CAMERAS = {
+    public static String[] CAMERAS = {
         "NA",
         "ILCE-5100",
         "ILCE-6000",
@@ -134,17 +143,17 @@ public class PicOrganizes extends Application {
         "xls",
         "xlsx"
     };
-    static DateTimeFormatter ExifDateFormat = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");//2016:11:24 20:05:46
-    static DateTimeFormatter ExifDateFormatTZ = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ssXXX");//2016:11:24 20:05:46+02:00
-    static DateTimeFormatter XmpDateFormat = DateTimeFormatter.ISO_DATE_TIME;//2016-11-24T20:05:46
-    static DateTimeFormatter XmpDateFormatTZ = DateTimeFormatter.ISO_OFFSET_DATE_TIME;//2016-11-24T20:05:46+02:00
-    static DateTimeFormatter outputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ss");//2016-11-24@20-05-46
-    static DateTimeFormatter dfV1 = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");//20161124_200546
-    static DateTimeFormatter dfV2 = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ssZ");//2016-11-24@20-05-46+0200
-    static DateTimeFormatter dfV3 = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");//20161124200546
+    public static DateTimeFormatter ExifDateFormat = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");//2016:11:24 20:05:46
+    public static DateTimeFormatter ExifDateFormatTZ = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ssXXX");//2016:11:24 20:05:46+02:00
+    public static DateTimeFormatter XmpDateFormat = DateTimeFormatter.ISO_DATE_TIME;//2016-11-24T20:05:46
+    public static DateTimeFormatter XmpDateFormatTZ = DateTimeFormatter.ISO_OFFSET_DATE_TIME;//2016-11-24T20:05:46+02:00
+    public static DateTimeFormatter outputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ss");//2016-11-24@20-05-46
+    public static DateTimeFormatter dfV1 = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");//20161124_200546
+    public static DateTimeFormatter dfV2 = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ssZ");//2016-11-24@20-05-46+0200
+    public static DateTimeFormatter dfV3 = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");//20161124200546
 
-    static int MOVE = 1;
-    static int COPY = 0;
+    public static int MOVE = 1;
+    public static int COPY = 0;
     // </editor-fold>
 
     /**
@@ -160,10 +169,12 @@ public class PicOrganizes extends Application {
     private long fileCount = 0;
     private Stage primaryStage;
     private BorderPane root;
-    private Tab tab1 = new Tab();
-    private Tab tab2 = new Tab();
-    private Tab tab3 = new Tab();
-    private Tab tab4 = new Tab();
+    private final Tab tab1 = new Tab();
+    private final Tab tab2 = new Tab();
+    private final Tab tab3 = new Tab();
+    private final Tab tab4 = new Tab();
+    private final Button btnGo = new Button("Go");
+
     private int maxWidth, maxHeight;
     private Task currentTask;
     private Label statusLabel;
@@ -211,7 +222,12 @@ public class PicOrganizes extends Application {
 
     }
 
-    private ArrayList<String> chooseDirectories() {
+    
+    /**
+     * Creates a List with the predefined standard directories on recognized volumes
+     * @return a List of String which are the default on the recognized media
+     */
+    private List<String> defaultImportDirectories() {
             ArrayList<File> drives = new ArrayList<>();
             ArrayList<String> list = new ArrayList<>();
             File[] paths;
@@ -252,8 +268,12 @@ public class PicOrganizes extends Application {
             return list;		
     }
 
-    //Creates a mediaFile object for each media file in the directories
-    private ArrayList<mediaFile> fileRenameList(ArrayList<String> directories, Path target) {
+    /**
+     * Creates a mediaFile object for each media file in the directories non-recursive
+     * @param directories list of the directories to process
+     * @return the list of the <code> mediaFile </code> objects
+     */
+    private List<mediaFile> fileRenameList(List<String> directories) {
         Iterator<String> iter = directories.iterator();
         ArrayList<mediaFile> files = new ArrayList<>();
         while(iter.hasNext()) {
@@ -268,7 +288,7 @@ public class PicOrganizes extends Application {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         fileList.add(content[j*chunkSize + f].getName());
                     }
-                    ArrayList<meta> exifToMeta = StaticTools.exifToMeta(fileList, dir1);
+                    List<meta> exifToMeta = StaticTools.exifToMeta(fileList, dir1);
                     Iterator<meta> iterator = exifToMeta.iterator();
                     int i = 0;
                     while (iterator.hasNext()) {
@@ -581,12 +601,12 @@ public class PicOrganizes extends Application {
         for(File path:paths)
         {
             String desc = fsv.getSystemDisplayName(path);
-            if (desc.startsWith("SP PHD U3")) return path.toPath();
+            if (desc.startsWith("test")) return path.toPath();
         }
         return null;
     }
 
-    private void importFiles(ArrayList<String> directories, Path backupdrive) {
+    private void importFiles(List<String> directories, Path backupdrive) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -599,7 +619,7 @@ public class PicOrganizes extends Application {
         StaticTools.beep();
     }
 
-    private TableView createMediafileTable(ArrayList<mediaFile> newData) {
+    private TableView createMediafileTable(List<mediaFile> newData) {
         data.removeAll(data);
         newData.stream().forEach((obj) -> {data.add(obj);});
         TableView<mediaFile> table = new TableView<>();
@@ -775,6 +795,30 @@ public class PicOrganizes extends Application {
     }
     
     
+    private void setGoAction(String action) {
+        switch (action) {
+            default:
+                btnGo.setOnAction(new EventHandler<ActionEvent>(){
+                    @Override
+                    public void handle(ActionEvent event) {
+                        int i = 0;
+
+                        JProgressBar progressBar = new JProgressBar(0, data.size());
+                        JDialog progressDialog = progressDiag(progressBar);                           
+                        for (mediaFile record : data) {
+                            record.write();
+                            progressBar.setValue(i);
+                            progressIndicator.setProgress(i/data.size());
+                            i++;
+                        }
+                        data.removeAll(data);                        
+                        progressDialog.dispose();
+                        StaticTools.beep();
+                    }
+                });
+        }
+    }
+    
     // <editor-fold defaultstate="collapsed" desc="Sets the whole look and function for the GUI">
     private HBox createFunctionButtons() {
         //Definition of the function buttons
@@ -782,12 +826,15 @@ public class PicOrganizes extends Application {
         btnImport.setOnAction(new EventHandler<ActionEvent>(){
             @Override
             public void handle(ActionEvent event) {
-                ArrayList<String> directories = chooseDirectories();
+                List<String> directories = defaultImportDirectories();
                 Path backupdrive = null;
-                while((backupdrive = backupMounted()) == null) {
+                if ((backupdrive = backupMounted()) == null) {
                     StaticTools.errorOut("No backup Drive", new Exception("Attach a backup drive!"));
+                    if ((backupdrive = backupMounted()) == null) {
+                        return;
+                    }
                 }
-                importFiles(directories, backupdrive);
+                listOnScreen(createMediafileTable(fileRenameList(directories))); 
             }
         });
 
@@ -822,10 +869,9 @@ public class PicOrganizes extends Application {
             public void handle(ActionEvent event) {
                 File file = StaticTools.getDir(getFromDir());
                 if(file != null) {
-                    ArrayList<String> directories = new ArrayList<String>();
+                    List<String> directories = new ArrayList<>();
                     directories.add(file.toString());
-                    Path tempDir = Paths.get(getToDir().toString() + "\\" + file.getName());
-                    listOnScreen(createMediafileTable(fileRenameList(directories, tempDir))); 
+                    listOnScreen(createMediafileTable(fileRenameList(directories))); 
                 }                    
             }
         });
@@ -1022,25 +1068,7 @@ public class PicOrganizes extends Application {
     }
     
     private HBox createFooter() {
-        Button btnGo = new Button("Go");
-        btnGo.setOnAction(new EventHandler<ActionEvent>(){
-            @Override
-            public void handle(ActionEvent event) {
-                int i = 0;
-
-                JProgressBar progressBar = new JProgressBar(0, data.size());
-                JDialog progressDialog = progressDiag(progressBar);                           
-                for (mediaFile record : data) {
-                    record.write();
-                    progressBar.setValue(i);
-                    progressIndicator.setProgress(i/data.size());
-                    i++;
-                }
-                data.removeAll(data);                        
-                progressDialog.dispose();
-                StaticTools.beep();
-            }
-        });
+        setGoAction("");
 
         Button btnClr = new Button("Abort");
         btnClr.setOnAction(new EventHandler<ActionEvent>(){
@@ -1143,7 +1171,7 @@ public class PicOrganizes extends Application {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         files.add(content[j*chunkSize + f].getName());
                     }
-                    ArrayList<meta> exifToMeta = StaticTools.exifToMeta(files, dir1);
+                    List<meta> exifToMeta = StaticTools.exifToMeta(files, dir1);
                     Iterator<meta> iterator = exifToMeta.iterator();
                     int i = 0;
                     while (iterator.hasNext()) {
@@ -1260,6 +1288,9 @@ public class PicOrganizes extends Application {
         writer.close();
         }
          */ 
+//            readMetaDataTest(new File("e:\\DSC07914.ARW"));
+//            removeFiles();
+//            compare();
 
     }
     
@@ -1287,9 +1318,6 @@ public class PicOrganizes extends Application {
 
     public static void main(String[] args) {
         launch(args);
-//            readMetaDataTest(new File("e:\\DSC07914.ARW"));
-//            removeFiles();
-//            compare();
     }
 
     // <editor-fold defaultstate="collapsed" desc="Getter-Setter section">

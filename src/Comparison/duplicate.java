@@ -1,5 +1,12 @@
+package Comparison;
 
+
+import Rename.StaticTools;
+import com.drew.imaging.ImageProcessingException;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 
@@ -95,8 +102,12 @@ public class duplicate {
         int realConf = 0;
         conflicts = new ArrayList();
         footprint = new ArrayList();
-        tags = StaticTools.readMeta(first.file);
-        tagsBase = StaticTools.readMeta(second.file);
+        try {
+            tags = StaticTools.readMeta(first.file);
+            tagsBase = StaticTools.readMeta(second.file);
+        } catch (ImageProcessingException | IOException ex) {
+            return ex.getMessage();
+        }
         outerloop:
         for (int i = 0; i < tags.size();) {
             String[] tag = tags.get(i);

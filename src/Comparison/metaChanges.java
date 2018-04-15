@@ -1,3 +1,5 @@
+package Comparison;
+
 
 import java.util.ArrayList;
 
@@ -11,7 +13,7 @@ import java.util.ArrayList;
  *
  * @author gabor
  */
-class metaChanges {
+public class metaChanges {
     private ArrayList<String> diffs;
     private int count;
     private ArrayList<String> dirs;

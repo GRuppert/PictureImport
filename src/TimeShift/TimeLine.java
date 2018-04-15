@@ -1,3 +1,5 @@
+package TimeShift;
+
 /*
  * To change this license header, choose License Headers in Project Properties.
  * To change this template file, choose Tools | Templates
@@ -5,6 +7,9 @@
  */
 
 
+import Rename.StaticTools;
+import Main.PicOrganizes;
+import TimeShift.Stripes;
 import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
