@@ -1,12 +1,10 @@
 package Comparison;
 
 
-import Rename.StaticTools;
+import static ExifUtils.ExifReadWrite.readMeta;
 import com.drew.imaging.ImageProcessingException;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 
@@ -103,8 +101,8 @@ public class duplicate {
         conflicts = new ArrayList();
         footprint = new ArrayList();
         try {
-            tags = StaticTools.readMeta(first.file);
-            tagsBase = StaticTools.readMeta(second.file);
+            tags = readMeta(first.file);
+            tagsBase = readMeta(second.file);
         } catch (ImageProcessingException | IOException ex) {
             return ex.getMessage();
         }

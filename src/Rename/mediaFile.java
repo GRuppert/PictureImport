@@ -29,7 +29,6 @@ import org.apache.commons.io.FilenameUtils;
  */
 public class mediaFile {
     
-    public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
     public static String Version = "5";
     
     private final SimpleBooleanProperty processing;
@@ -64,7 +63,7 @@ public class mediaFile {
      */
     public final void setiID() {
         try {
-            this.iID = StaticTools.getFullHash(file);
+            this.iID = getFullHash(file);
             newName.set(getNewFileName());
 
         } catch (IOException ex) {
@@ -132,7 +131,7 @@ public class mediaFile {
             }
 
             if (metaExif == null) {//if it hasn't been batch readed in the caller function
-                metaExif = StaticTools.exifToMeta(file);
+                metaExif = exifToMeta(file);
             }
             
             //read data from filename
@@ -146,7 +145,7 @@ public class mediaFile {
             meta metaXmp;
             if (PicOrganizes.supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
-                metaXmp = StaticTools.exifToMeta(fileXmp);
+                metaXmp = exifToMeta(fileXmp);
             } else {
                 metaXmp = null;
             }
@@ -314,13 +313,13 @@ public class mediaFile {
                 if (!(fileXmp != null && fileXmp.exists())) if (StaticTools.createXmp(getFile())==null) StaticTools.errorOut("xmp", new Exception("Couldn't create xmp for: " + getFile().getName()));
                 if (fileXmp != null) {
                     exifMissing.add(fileXmp.getName());
-                    StaticTools.updateExif(exifMissing, getFile().getParentFile());
+                    updateExif(exifMissing, getFile().getParentFile());
                     exifMissing.remove(fileXmp.getName());
                 } 
             }
             if (!exifMissing.isEmpty()) {
                 exifMissing.add(updateFile);
-                    StaticTools.updateExif(exifMissing, getFile().getParentFile());
+                    updateExif(exifMissing, getFile().getParentFile());
                 setiID();
             }
         }
@@ -349,7 +348,7 @@ public class mediaFile {
                         Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
                 }
             } catch (IOException e) {
-                StaticTools.errorOut(this.getNewName(), e);         
+                errorOut(this.getNewName(), e);         
             }                      
         }
     }
@@ -490,7 +489,7 @@ public class mediaFile {
     }
 
     private void repairMP4() {
-        ArrayList<String> meta = StaticTools.getExif(new String[]{"-DateTimeOriginal", "-CreationDateValue", "", "", "", ""}, getFile());
+        ArrayList<String> meta = getExif(new String[]{"-DateTimeOriginal", "-CreationDateValue", "", "", "", ""}, getFile());
         Iterator<String> iterator = meta.iterator();
         String dto = null;
         String cdv = null;

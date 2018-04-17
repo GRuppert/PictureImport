@@ -1,4 +1,4 @@
-package Rename;
+package Hash;
 
 
 import java.io.File;

@@ -1,8 +1,9 @@
 package Comparison;
 
 
-import Rename.StaticTools;
+import static Hash.Hash.getHash;
 import Main.PicOrganizes;
+import Main.StaticTools;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -12,7 +13,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.concurrent.TimeUnit;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.chart.XYChart;
@@ -116,7 +116,7 @@ public class Listing extends Task implements FileVisitor<Path>
             return FileVisitResult.TERMINATE;
         }
         if (!attrs.isDirectory() && attrs.isRegularFile() && PicOrganizes.supportedFileType(file.getFileName().toString())) {
-            String hash = StaticTools.getHash(file.toFile());
+            String hash = getHash(file.toFile());
 //            String hash = "Test";
             sb.append(start + fileCount).append(delimiter);
             sb.append(hash).append(delimiter);

@@ -7,23 +7,18 @@ package TimeShift;
  */
 
 
-import Rename.StaticTools;
 import Main.PicOrganizes;
-import TimeShift.Stripes;
+import static TimeShift.StaticTools.readFiles;
 import java.io.File;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 import javafx.animation.TranslateTransition;
-import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.scene.Group;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
-import javafx.stage.Stage;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
@@ -32,7 +27,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.TilePane;
 import javafx.scene.layout.VBox;
-import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
 
@@ -57,7 +51,7 @@ public class TimeLine {
     public TimeLine(File dir, PicOrganizes view) {
         this.view = view;
         stripeBox = new VBox();
-        stripes = StaticTools.readFiles(dir, this, view.getZone());
+        stripes = readFiles(dir, this, view.getZone());
         Iterator<String> iterator = stripes.keySet().iterator();
         resetLimits();
         while(iterator.hasNext()) {
