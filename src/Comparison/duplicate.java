@@ -23,8 +23,8 @@ public class duplicate {
     private final comparableMediaFile second; 
     private ArrayList<String[]> conflicts;
     public ArrayList<String> footprint;
-    private ArrayList<String> unimportant;
-    private ArrayList<String> user;
+    private final ArrayList<String> unimportant;
+    private final ArrayList<String> user;
 
     private SimpleBooleanProperty processing;
     private final SimpleStringProperty firstName;

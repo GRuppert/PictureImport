@@ -7,7 +7,6 @@ package TimeShift;
  */
 
 
-import TimeShift.Picture;
 import javafx.scene.Node;
 
 /**

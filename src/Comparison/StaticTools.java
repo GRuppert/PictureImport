@@ -5,15 +5,12 @@
  */
 package Comparison;
 
-import Main.PicOrganizes;
 import com.univocity.parsers.csv.CsvParser;
 import com.univocity.parsers.csv.CsvParserSettings;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  *
@@ -46,7 +43,6 @@ public class StaticTools {
             System.out.println("Ennyi: " + sizeMismatch.size() + "/" + wrong.size() + "/" + backupData.size());
 
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
     

@@ -1,5 +1,16 @@
 package Main;
 
+import Comparison.Listing;
+import Comparison.comparableMediaFile;
+import Rename.mediaFile;
+import Rename.metaProp;
+import Comparison.duplicate;
+import Comparison.metaChanges;
+import static ExifUtils.ExifReadWrite.exifToMeta;
+import static Hash.Hash.getHash;
+import static Main.StaticTools.errorOut;
+import Rename.meta;
+import TimeShift.TimeLine;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.awt.Dialog;
@@ -475,7 +486,7 @@ public class PicOrganizes extends Application {
             FileUtils.writeStringToFile(new File("e:\\pairTo.txt"), pairTo.toString(), "ISO-8859-1");
             FileUtils.writeStringToFile(new File("e:\\pairFrom.txt"), pairFrom.toString(), "ISO-8859-1");
         } catch (IOException ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
+            errorOut("Write to file", ex);
         }
 
         StaticTools.beep();
@@ -655,7 +666,7 @@ public class PicOrganizes extends Application {
    
     //Sets the center view to pic stripes
     private void stripesOnScreen(File dir){
-        TimeLine timeLine = new TimeLine(dir, this);
+        TimeLine timeLine = new TimeLine(dir);
         root.setCenter(timeLine.getStripeBox());
         timeLine.resetView();
     }
@@ -675,12 +686,11 @@ public class PicOrganizes extends Application {
                         return supportedMediaFileType(name);
                     }});
                 for(int i = 0; i < content.length; i++) {
-                    String hash = StaticTools.getHash(content[i]);
+                    String hash = getHash(content[i]);
                     str.append(hash + "\t" + content[i] + "\n");
                     content[i].renameTo(new File(content[i].getParentFile() + "\\" + hash + content[i].getName()));
                 } 
             } catch (IOException ex) {
-                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
             } 
         }       
         return str;
@@ -730,7 +740,7 @@ public class PicOrganizes extends Application {
                 visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                         if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
                             StringBuilder sb = new StringBuilder();
-                            String hash = StaticTools.getHash(file.toFile());
+                            String hash = getHash(file.toFile());
                             sb.append(start + fileCount).append(delimiter);
                             sb.append(hash).append(delimiter);
                             sb.append(hash).append(delimiter);

@@ -2,8 +2,8 @@ package Comparison;
 
 
 import static Hash.Hash.getHash;
+import static Main.StaticTools.errorOut;
 import Main.PicOrganizes;
-import Main.StaticTools;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -72,7 +72,7 @@ public class Listing extends Task implements FileVisitor<Path>
 
                   @Override public FileVisitResult 
                 visitFileFailed(Path file, IOException exc) {
-                        StaticTools.errorOut(file.toString(), exc);
+                        errorOut(file.toString(), exc);
                         // Skip folders that can't be traversed
                         return FileVisitResult.CONTINUE;
                     }
@@ -80,7 +80,7 @@ public class Listing extends Task implements FileVisitor<Path>
                   @Override public FileVisitResult
                 postVisitDirectory (Path dir, IOException exc) {
                         if (exc != null)
-                        StaticTools.errorOut(dir.toString(), exc);
+                        errorOut(dir.toString(), exc);
                         // Ignore errors traversing a folder
                         return FileVisitResult.CONTINUE;
                     }

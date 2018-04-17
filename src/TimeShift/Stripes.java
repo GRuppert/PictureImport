@@ -7,7 +7,6 @@ package TimeShift;
  */
 
 
-import TimeShift.Picture;
 import java.util.ArrayList;
 import java.util.Iterator;
 import javafx.event.ActionEvent;

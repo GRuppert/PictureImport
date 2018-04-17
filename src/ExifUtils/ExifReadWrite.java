@@ -5,8 +5,10 @@
  */
 package ExifUtils;
 
-import Main.PicOrganizes;
-import Main.StaticTools;
+import static Main.PicOrganizes.ExifDateFormat;
+import static Main.PicOrganizes.XmpDateFormatTZ;
+import static Main.StaticTools.errorOut;
+import static Main.StaticTools.getZonedTimeFromStr;
 import Rename.meta;
 import com.adobe.xmp.XMPException;
 import com.adobe.xmp.XMPIterator;
@@ -83,7 +85,7 @@ public class ExifReadWrite {
             try {
                 tags = readMeta(new File(dir + "\\" + filename));
             } catch (ImageProcessingException | IOException ex) {
-                meta meta = new meta(dir + "\\" + filename, StaticTools.getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString());
+                meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString());
                 System.out.println(meta);
                 results.add(meta);
                 continue;
@@ -108,8 +110,8 @@ public class ExifReadWrite {
                         break;
                     case "exif:DateTimeOriginal":
                         try {
-                            ZonedDateTime wTZ = ZonedDateTime.parse(tag[1], PicOrganizes.XmpDateFormatTZ);
-                            if (LocalDateTime.parse(captureDate, PicOrganizes.ExifDateFormat).equals(wTZ.toLocalDateTime()))
+                            ZonedDateTime wTZ = ZonedDateTime.parse(tag[1], XmpDateFormatTZ);
+                            if (LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
                                 dateFormat = true;
                         }
                         catch (DateTimeParseException exc) {
@@ -117,7 +119,7 @@ public class ExifReadWrite {
                         break;
                 }
             }
-            meta meta = new meta(dir + "\\" + filename, StaticTools.getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+            meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
             System.out.println(meta);
             results.add(meta);
         }
@@ -149,7 +151,7 @@ public class ExifReadWrite {
             String line = iterator.next();
             if (line.startsWith("========")) {
                 if (i > -1) {
-                    meta meta = new meta(filename, StaticTools.getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+                    meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
                     System.out.println(meta);
                     results.add(meta);
                 }
@@ -200,7 +202,7 @@ public class ExifReadWrite {
             }
         }
         if (filename != null) {
-            meta meta = new meta(filename, StaticTools.getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+            meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
             System.out.println(meta);
             results.add(meta);
 //            results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
@@ -272,7 +274,7 @@ public class ExifReadWrite {
             }).start();
             int returnVal = p.waitFor();
         } catch (Exception e) {
-            StaticTools.errorOut("xmp", e);
+            errorOut("xmp", e);
         } 
         return lines;
     }
@@ -313,7 +315,7 @@ public class ExifReadWrite {
             }).start();
             int returnVal = p.waitFor();
         } catch (Exception e) {
-            StaticTools.errorOut("xmp", e);
+            errorOut("xmp", e);
         } 
         return lines;
     }
@@ -360,7 +362,6 @@ public class ExifReadWrite {
                     }
                 }
             } catch (XMPException ex) {
-                Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
             }
         }                    
         return tags;

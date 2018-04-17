@@ -14,8 +14,8 @@ import java.io.File;
  * @author gabor
  */
 public class ifdCursor {
-    private File file;
-    private Boolean endian;
+    private final File file;
+    private final Boolean endian;
     private long pointer;
     
     public ifdCursor(File file, Boolean endian, long pointer) {

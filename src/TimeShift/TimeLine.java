@@ -7,7 +7,7 @@ package TimeShift;
  */
 
 
-import Main.PicOrganizes;
+import static Main.PicOrganizes.view;
 import static TimeShift.StaticTools.readFiles;
 import java.io.File;
 import java.time.Instant;
@@ -46,10 +46,8 @@ public class TimeLine {
     private VBox stripeBox;
     private BorderPane controls = new BorderPane();
     private int zoomAmount = 25;
-    private PicOrganizes view;
 
-    public TimeLine(File dir, PicOrganizes view) {
-        this.view = view;
+    public TimeLine(File dir) {
         stripeBox = new VBox();
         stripes = readFiles(dir, this, view.getZone());
         Iterator<String> iterator = stripes.keySet().iterator();

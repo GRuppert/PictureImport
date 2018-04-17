@@ -1,8 +1,7 @@
 package Rename;
 
 
-import Main.PicOrganizes;
-import Rename.meta;
+import static Main.PicOrganizes.ExifDateFormatTZ;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 
@@ -25,7 +24,7 @@ public class metaProp {
     
     public metaProp(meta metaIn) {
         originalFilename = new SimpleStringProperty(metaIn.originalFilename == null ? "" : metaIn.originalFilename);
-        date = new SimpleStringProperty(metaIn.date == null ? "" : metaIn.date.format(PicOrganizes.ExifDateFormatTZ));
+        date = new SimpleStringProperty(metaIn.date == null ? "" : metaIn.date.format(ExifDateFormatTZ));
         dateFormat = new SimpleBooleanProperty(metaIn.dateFormat == null ? false : metaIn.dateFormat);
         model = new SimpleStringProperty(metaIn.model == null ? "" : metaIn.model);
     }

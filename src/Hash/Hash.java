@@ -5,7 +5,7 @@
  */
 package Hash;
 
-import Main.StaticTools;
+import static Main.StaticTools.errorOut;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -13,7 +13,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.RandomAccessFile;
-import java.nio.file.Path;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -29,7 +28,7 @@ import org.apache.commons.io.FilenameUtils;
 public class Hash {
     public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
     
-    public static long startOfImageJPG(BufferedInputStream in) throws IOException {
+    private static long startOfImageJPG(BufferedInputStream in) throws IOException {
         int c;
         long j = 0;
         OUTER:
@@ -49,7 +48,7 @@ public class Hash {
         return j;
     }
     
-    public static long startOfScanJPG(BufferedInputStream in) throws IOException {
+    private static long startOfScanJPG(BufferedInputStream in) throws IOException {
         int c;
         long j = startOfImageJPG(in);
         if (j == -1) return -1;
@@ -328,7 +327,7 @@ public class Hash {
     }
         
     //returns the pointer to the main image data in tiff based files
-    public static byte[] startOfScanTiff(File file, BufferedInputStream in) throws IOException {
+    private static byte[] startOfScanTiff(File file, BufferedInputStream in) throws IOException {
         in.mark(0);
         int c;
         long j = 0;
@@ -357,7 +356,7 @@ public class Hash {
         return true;
     }
     
-    public static byte[] readBytes(InputStream in, int size) throws IOException {
+    private static byte[] readBytes(InputStream in, int size) throws IOException {
         byte result[] = new byte[size];
         for (int i = 0; i < size; i++) {
             result[i] = (byte)in.read();
@@ -380,7 +379,7 @@ public class Hash {
         return hashes;
     }*/
     
-    public static String getFullHashPS(File file) throws FileNotFoundException, IOException {
+    private static String getFullHashPS(File file) throws FileNotFoundException, IOException {
         String[] parameters = new String[]{"powershell.exe", "Get-ChildItem", "-File", "-Recurse", "|", "Get-FileHash", "-Algorithm", "MD5", ">>", "e:\\ps.md5"};
         String lines = "";
         try {
@@ -410,7 +409,7 @@ public class Hash {
             }).start();*/
             int returnVal = p.waitFor();
         } catch (Exception e) {
-            StaticTools.errorOut("xmp", e);
+            errorOut("xmp", e);
         } 
         return lines;
 
@@ -459,7 +458,7 @@ public class Hash {
             try (BufferedInputStream rawIn = new BufferedInputStream(new FileInputStream(file.toString()));) {                    
                 digest = startOfScanTiff(file, rawIn);
             } catch(IOException e) {
-                StaticTools.errorOut("Hash", e);         
+                errorOut("Hash", e);         
             } 
         // </editor-fold>            
         } else {
@@ -537,7 +536,7 @@ public class Hash {
                         break;
                 }
             }  catch(IOException e) {
-                StaticTools.errorOut("Hash", e);         
+                errorOut("Hash", e);         
             } 
         }
         if (digest == null) {
