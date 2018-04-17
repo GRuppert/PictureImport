@@ -2,10 +2,7 @@ package Main;
 
 import java.util.ArrayList;
 import java.util.Iterator;
-
-
 import java.awt.Dialog;
-
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -21,9 +18,6 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
@@ -64,7 +58,6 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
-
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.filechooser.FileSystemView;
