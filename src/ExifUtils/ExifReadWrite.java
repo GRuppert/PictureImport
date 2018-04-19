@@ -5,8 +5,8 @@
  */
 package ExifUtils;
 
-import static Main.PicOrganizes.ExifDateFormat;
-import static Main.PicOrganizes.XmpDateFormatTZ;
+import static Main.StaticTools.ExifDateFormat;
+import static Main.StaticTools.XmpDateFormatTZ;
 import static Main.StaticTools.errorOut;
 import static Main.StaticTools.getZonedTimeFromStr;
 import Rename.meta;
@@ -34,8 +34,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.io.FilenameUtils;
 
 /**

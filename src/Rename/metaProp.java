@@ -1,7 +1,7 @@
 package Rename;
 
 
-import static Main.PicOrganizes.ExifDateFormatTZ;
+import static Main.StaticTools.ExifDateFormatTZ;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 

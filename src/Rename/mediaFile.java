@@ -7,21 +7,16 @@ import static ExifUtils.ExifReadWrite.getExif;
 import static Hash.Hash.EMPTYHASH;
 import static Hash.Hash.getHash;
 import static Hash.Hash.getFullHash;
-import static Main.PicOrganizes.CAMERAS;
 import static Main.PicOrganizes.COPY;
-import static Main.PicOrganizes.ExifDateFormat;
-import static Main.PicOrganizes.ExifDateFormatTZ;
 import static Main.PicOrganizes.MOVE;
-import static Main.PicOrganizes.dfV1;
-import static Main.PicOrganizes.dfV2;
-import static Main.PicOrganizes.dfV3;
-import static Main.PicOrganizes.outputFormat;
-import static Main.PicOrganizes.supportedMediaFileType;
-import static Main.PicOrganizes.supportedRAWFileType;
-import static Main.PicOrganizes.supportedVideoFileType;
 import static Main.PicOrganizes.view;
+import static Main.StaticTools.ExifDateFormat;
+import static Main.StaticTools.ExifDateFormatTZ;
 import static Main.StaticTools.errorOut;
 import static Main.StaticTools.getZonedTimeFromStr;
+import static Main.StaticTools.supportedMediaFileType;
+import static Main.StaticTools.supportedRAWFileType;
+import static Main.StaticTools.supportedVideoFileType;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,6 +26,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -48,6 +44,24 @@ import org.apache.commons.io.FilenameUtils;
  * @author gabor
  */
 public class mediaFile {
+    public static String[] CAMERAS = {
+        "NA",
+        "ILCE-5100",
+        "ILCE-6000",
+        "GT-I9192",
+        "GT-I9195I",
+        "Lumia 1020",
+        "FinePix S5800 S800",
+        "TG-3            ",
+        "ST25i",
+        "GT-I8190N",
+        "E52-1"
+    };
+    
+    public static DateTimeFormatter dfV1 = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");//20161124_200546
+    public static DateTimeFormatter dfV2 = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ssZ");//2016-11-24@20-05-46+0200
+    public static DateTimeFormatter dfV3 = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");//20161124200546
+    public static DateTimeFormatter outputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ss");//2016-11-24@20-05-46
     
     public static String Version = "5";
     

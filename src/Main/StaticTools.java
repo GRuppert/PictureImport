@@ -15,16 +15,96 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javax.swing.JOptionPane;
+import org.apache.commons.io.FilenameUtils;
 
 /**
  *
  * @author gabor
  */
 public class StaticTools {
+    public static DateTimeFormatter ExifDateFormat = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");//2016:11:24 20:05:46
+    public static DateTimeFormatter ExifDateFormatTZ = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ssXXX");//2016:11:24 20:05:46+02:00
+    public static DateTimeFormatter XmpDateFormat = DateTimeFormatter.ISO_DATE_TIME;//2016-11-24T20:05:46
+    public static DateTimeFormatter XmpDateFormatTZ = DateTimeFormatter.ISO_OFFSET_DATE_TIME;//2016-11-24T20:05:46+02:00
+    static String[] imageFiles = {
+        "jpg",
+        "jpeg",
+        "png",
+        "gif",
+        "tif",
+        "arw",
+        "nef",
+        "dng",
+        "nar"            
+    };
+    static String[] RAWFiles = {
+        "tif",
+        "arw",
+        "nef",
+        "dng"
+    };
+    static String[] videoFiles = {
+        "avi",
+        "mpg",
+        "mp4",
+        "mts",
+        "3gp",
+        "mov"
+    };
+    static String[] metaFiles = {
+        "gpx",
+        "sfv",
+        "pdf",
+        "doc",
+        "xls",
+        "xlsx"
+    };
+
+    public static Boolean supportedFileType(String name) {
+        if (supportedMetaFileType(name)) return true;
+        if (supportedMediaFileType(name)) return true;
+        return false;
+    }
+    public static Boolean supportedMetaFileType(String name) {
+        String ext = FilenameUtils.getExtension(name.toLowerCase());
+        for (String extSupported : metaFiles) {
+            if (ext.equals(extSupported)) return true;
+        }
+        return false;
+
+    }
+    public static Boolean supportedMediaFileType(String name) {
+        String ext = FilenameUtils.getExtension(name.toLowerCase());
+        for (String extSupported : imageFiles) {
+            if (ext.equals(extSupported)) return true;
+        }
+        for (String extSupported : videoFiles) {
+            if (ext.equals(extSupported)) return true;
+        }
+        return false;
+    }
+    public static Boolean supportedVideoFileType(String name) {
+        String ext = FilenameUtils.getExtension(name.toLowerCase());
+        for (String extSupported : videoFiles) {
+            if (ext.equals(extSupported)) return true;
+        }
+        return false;
+    }
+    public static Boolean supportedRAWFileType(String name) {
+        String ext = FilenameUtils.getExtension(name.toLowerCase());
+        for (String extSupported : RAWFiles) {
+            if (ext.equals(extSupported)) return true;
+        }
+        return false;
+
+    }
+
+
     /**
      * Open up a <code> JOptionPane </code> with the given parameters
      * @param source description where the Exception is coming from, used as the header of the Pane
@@ -43,10 +123,10 @@ public class StaticTools {
     public static ZonedDateTime getTimeFromStr(String input, ZoneId zone) {
         ZonedDateTime result = null;
         try {
-            result = LocalDateTime.parse(input, PicOrganizes.ExifDateFormat).atZone(zone);
+            result = LocalDateTime.parse(input, ExifDateFormat).atZone(zone);
         } catch (DateTimeParseException e) {
             try {
-                result = LocalDateTime.parse(input, PicOrganizes.XmpDateFormat).atZone(zone);
+                result = LocalDateTime.parse(input, XmpDateFormat).atZone(zone);
             } catch (DateTimeParseException e1) {
             }
         }
@@ -57,10 +137,10 @@ public class StaticTools {
         ZonedDateTime result = null;
         if (input != null)
             try {
-                result = OffsetDateTime.parse(input, PicOrganizes.ExifDateFormatTZ).toZonedDateTime();
+                result = OffsetDateTime.parse(input, ExifDateFormatTZ).toZonedDateTime();
             } catch (DateTimeParseException e) {
                 try {
-                    result = OffsetDateTime.parse(input, PicOrganizes.XmpDateFormatTZ).toZonedDateTime();
+                    result = OffsetDateTime.parse(input, XmpDateFormatTZ).toZonedDateTime();
                 } catch (DateTimeParseException e1) {
                 }
             }

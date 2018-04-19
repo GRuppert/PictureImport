@@ -2,8 +2,9 @@ package Comparison;
 
 
 import static Hash.Hash.getHash;
+import static Main.PicOrganizes.view;
 import static Main.StaticTools.errorOut;
-import Main.PicOrganizes;
+import static Main.StaticTools.supportedFileType;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -50,8 +51,8 @@ public class Listing extends Task implements FileVisitor<Path>
     @Override
     protected Object call() throws Exception {
         Platform.runLater(() -> {
-            PicOrganizes.view.speeds.getData().clear();
-            PicOrganizes.view.speeds.getData().add(new XYChart.Data(0, 0));
+            view.speeds.getData().clear();
+            view.speeds.getData().add(new XYChart.Data(0, 0));
         });
         fileSizeCountTotal = 0;
         fileSizeCount = 0;
@@ -63,7 +64,7 @@ public class Listing extends Task implements FileVisitor<Path>
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                   @Override public FileVisitResult 
                 visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        if (!attrs.isDirectory() && attrs.isRegularFile() && PicOrganizes.supportedFileType(file.getFileName().toString())) {
+                        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
                             fileSizeCountTotal += attrs.size();
                             fileCountTotal++;
                         }
@@ -115,7 +116,7 @@ public class Listing extends Task implements FileVisitor<Path>
         if (isCancelled()) {
             return FileVisitResult.TERMINATE;
         }
-        if (!attrs.isDirectory() && attrs.isRegularFile() && PicOrganizes.supportedFileType(file.getFileName().toString())) {
+        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
             String hash = getHash(file.toFile());
 //            String hash = "Test";
             sb.append(start + fileCount).append(delimiter);
@@ -133,7 +134,7 @@ public class Listing extends Task implements FileVisitor<Path>
             long durationNano = System.nanoTime()-startTime;
             int percent = (int) (fileSizeCount*100/fileSizeCountTotal);
             int writeSpeed = (int) (fileSizeCount/1048576*1000000000/durationNano);
-            Platform.runLater(() -> {PicOrganizes.view.speeds.getData().add(new XYChart.Data(percent, writeSpeed));});
+            Platform.runLater(() -> {view.speeds.getData().add(new XYChart.Data(percent, writeSpeed));});
         }
         return FileVisitResult.CONTINUE;                            
     }

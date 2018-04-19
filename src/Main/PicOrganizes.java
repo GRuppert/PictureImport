@@ -9,6 +9,8 @@ import Comparison.metaChanges;
 import static ExifUtils.ExifReadWrite.exifToMeta;
 import static Hash.Hash.getHash;
 import static Main.StaticTools.errorOut;
+import static Main.StaticTools.supportedFileType;
+import static Main.StaticTools.supportedMediaFileType;
 import Rename.meta;
 import TimeShift.TimeLine;
 import java.util.ArrayList;
@@ -92,61 +94,6 @@ public class PicOrganizes extends Application {
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Static variables">
-    public static String[] CAMERAS = {
-        "NA",
-        "ILCE-5100",
-        "ILCE-6000",
-        "GT-I9192",
-        "GT-I9195I",
-        "Lumia 1020",
-        "FinePix S5800 S800",
-        "TG-3            ",
-        "ST25i",
-        "GT-I8190N",
-        "E52-1"
-    };
-    static String[] imageFiles = {
-        "jpg",
-        "jpeg",
-        "png",
-        "gif",
-        "tif",
-        "arw",
-        "nef",
-        "dng",
-        "nar"            
-    };
-    static String[] RAWFiles = {
-        "tif",
-        "arw",
-        "nef",
-        "dng"
-    };
-    static String[] videoFiles = {
-        "avi",
-        "mpg",
-        "mp4",
-        "mts",
-        "3gp",
-        "mov"
-    };
-    static String[] metaFiles = {
-        "gpx",
-        "sfv",
-        "pdf",
-        "doc",
-        "xls",
-        "xlsx"
-    };
-    public static DateTimeFormatter ExifDateFormat = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ss");//2016:11:24 20:05:46
-    public static DateTimeFormatter ExifDateFormatTZ = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ssXXX");//2016:11:24 20:05:46+02:00
-    public static DateTimeFormatter XmpDateFormat = DateTimeFormatter.ISO_DATE_TIME;//2016-11-24T20:05:46
-    public static DateTimeFormatter XmpDateFormatTZ = DateTimeFormatter.ISO_OFFSET_DATE_TIME;//2016-11-24T20:05:46+02:00
-    public static DateTimeFormatter outputFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ss");//2016-11-24@20-05-46
-    public static DateTimeFormatter dfV1 = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");//20161124_200546
-    public static DateTimeFormatter dfV2 = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ssZ");//2016-11-24@20-05-46+0200
-    public static DateTimeFormatter dfV3 = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");//20161124200546
-
     public static int MOVE = 1;
     public static int COPY = 0;
     // </editor-fold>
@@ -177,45 +124,6 @@ public class PicOrganizes extends Application {
     private final ObservableList<metaProp> meta = FXCollections.observableArrayList();
     private final ObservableList<duplicate> duplicates = FXCollections.observableArrayList();
     private final ObservableList<duplicate> modpic = FXCollections.observableArrayList();
-
-    public static Boolean supportedFileType(String name) {
-        if (supportedMetaFileType(name)) return true;
-        if (supportedMediaFileType(name)) return true;
-        return false;
-    }
-    public static Boolean supportedMetaFileType(String name) {
-        String ext = FilenameUtils.getExtension(name.toLowerCase());
-        for (String extSupported : metaFiles) {
-            if (ext.equals(extSupported)) return true;
-        }
-        return false;
-
-    }
-    public static Boolean supportedMediaFileType(String name) {
-        String ext = FilenameUtils.getExtension(name.toLowerCase());
-        for (String extSupported : imageFiles) {
-            if (ext.equals(extSupported)) return true;
-        }
-        for (String extSupported : videoFiles) {
-            if (ext.equals(extSupported)) return true;
-        }
-        return false;
-    }
-    public static Boolean supportedVideoFileType(String name) {
-        String ext = FilenameUtils.getExtension(name.toLowerCase());
-        for (String extSupported : videoFiles) {
-            if (ext.equals(extSupported)) return true;
-        }
-        return false;
-    }
-    public static Boolean supportedRAWFileType(String name) {
-        String ext = FilenameUtils.getExtension(name.toLowerCase());
-        for (String extSupported : RAWFiles) {
-            if (ext.equals(extSupported)) return true;
-        }
-        return false;
-
-    }
 
     
     /**
