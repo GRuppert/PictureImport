@@ -18,6 +18,7 @@ import static Main.StaticTools.supportedMediaFileType;
 import static Main.StaticTools.supportedRAWFileType;
 import static Main.StaticTools.supportedVideoFileType;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -156,8 +157,9 @@ public class mediaFile {
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
             compareMeta(metaExif, metaFile, metaXmp);
-            if (!orig.matches("[a-w]")) checkOrig(metaExif, metaFile, metaXmp, ext);
+            if (!orig.matches("[a-w]") && ext.equals("jpg")) checkRAW();
             
+            if (!odID.equals(dID)) notOrig();
             
             newName = new SimpleStringProperty(getNewFileName(Version));
         }
@@ -217,8 +219,8 @@ public class mediaFile {
                 addNote("Error during hashing" + model, true);
             }
 
-            if (metaExif.dID != null && !metaExif.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID());}
-            if (metaFile.dID != null && !metaFile.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID());}
+            if (metaExif.dID != null && !metaExif.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID()); notOrig();}
+            if (metaFile.dID != null && !metaFile.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID()); notOrig();}
             if (metaExif.dID == null) addExif("DocumentID" , getdID());
 
             if (metaFile.odID != null) odID = metaFile.odID;
@@ -226,7 +228,7 @@ public class mediaFile {
                 if (getOdID() != null) {
                     if (!metaExif.odID.equals(odID)) addNote("odID has been changed", true);
                 } else {
-                    odID = metaFile.odID; addNote("odID already presented", true);
+                    odID = metaFile.odID; //addNote("odID already presented", false);
                 }
             if (getOdID() == null) {
                 odID = getdID();
@@ -247,8 +249,6 @@ public class mediaFile {
                 }
                 if (!equal) {
                     addNote("date has been changed: " + (date.toEpochSecond() - metaExif.date.toEpochSecond()) + "sec", true);
-                } else {
-                    date = metaExif.date;
                 }
             } else {
                 date = metaExif.date;
@@ -271,25 +271,61 @@ public class mediaFile {
         if (metaXmp.odID != null && !metaXmp.odID.equals(odID)) addNote("XMP odID wrong", false);
     }
     
-    private void checkOrig(meta metaExif, meta metaFile, meta metaXmp, String ext) {
-            if (ext.equals("jpg")) {
-                checkRAW();
+    private void compareMeta(meta metaExifFile, meta metaFile, meta metaExifXmp) {
+        meta metaExif;
+        meta metaSec = null;
+        if (supportedRAWFileType(getFile().getName())) {
+            if (metaExifXmp != null) metaExif = metaExifXmp;
+            else {
+                if (metaExifFile != null) metaExif = metaExifFile;
+                else metaExif = new meta(null, null, null, null, null, null, null, null, null);
             }
-        
-    }
-    
-    private void compareMeta(meta metaExif, meta metaFile, meta metaXmp) {
-        if (metaExif == null) metaExif = new meta(null, null, null, null, null, null, null, null, null);
+            if (metaExifFile != null && metaExifFile.dID != null) notOrig();
+        } else {
+            if (metaExifFile == null) metaExif = new meta(null, null, null, null, null, null, null, null, null);
+            else metaExif = metaExifFile;
+            if (metaExifXmp != null) metaSec  = metaExifXmp;
+        }
         if (metaFile == null) metaFile = new meta(null, null, null, null, null, null, null, null, null);
-        if (metaXmp == null) metaXmp = new meta(null, null, null, null, null, null, null, null, null);
         
         compareModel(metaExif, metaFile);
         compareHash(metaExif, metaFile);
         compareDate(metaExif, metaFile);
-        compareXMP(metaXmp);
+        if (metaSec != null) compareXMP(metaSec);
                 
     }
  
+    private void notOrig() {
+        if (orig.matches("[0-9x-zX-Z]")) orig = "a";
+    }
+    
+    private File checkDir(String targetDirectory) {
+        File targetDir = new File(targetDirectory);
+        return targetDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                meta v = getV(name);
+                if (v != null && originalName.replaceFirst("jpg$", "arw").equals(v.originalFilename)) return true;
+                return false;
+            }
+        })[0];
+        
+    }
+    
+    private void checkRAW() {
+        File rawFile;
+        rawFile = checkDir(file.getParent());
+        if  (!rawFile.exists()) {
+            rawFile = checkDir(targetDirectory);
+        } 
+        if  (rawFile.exists()) {
+            meta v = getV(rawFile.getName());
+            if (v != null && v.odID != null) odID = v.odID;
+            else if (v != null && v.dID != null) odID = v.dID;
+            else odID = getHash(rawFile);
+        }
+    }
+    
     private void addExif(ZonedDateTime value) {
         addExif("DateTimeOriginal", value.format(ExifDateFormat));
         addExif("xmp:DateTimeOriginal", value.format(ExifDateFormatTZ));
@@ -310,7 +346,8 @@ public class mediaFile {
                     ExifUtils.ExifReadWrite.updateExif(exifMissing, getFile().getParentFile());
                     exifMissing.remove(fileXmp.getName());
                 } 
-            } else if (!exifMissing.isEmpty()) {
+            }
+            if (!exifMissing.isEmpty() && !(supportedRAWFileType(getFile().getName()) && orig.matches("[0-9]"))) {
                 exifMissing.add(updateFile);
                     ExifUtils.ExifReadWrite.updateExif(exifMissing, getFile().getParentFile());
 //                setiID();
@@ -508,7 +545,7 @@ public class mediaFile {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
                 
                 if (filename.substring(34 + offsetV, 35 + offsetV).equals("-") && filename.substring(67 + offsetV, 68 + offsetV).equals("-")) {
-                    return new meta(filename.substring(101 + offsetV), captureDate, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, null, filename.substring(68 + offsetV, 69 + offsetV));
+                    return new meta(filename.substring(70 + offsetV), captureDate, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, null, filename.substring(68 + offsetV, 69 + offsetV));
                     
                 }
             } catch (Exception e) {
@@ -517,8 +554,6 @@ public class mediaFile {
         }
         return null;
     }
-
-
 
     private meta repairMP4(meta metaExif) {
         ArrayList<String> meta = getExif(new String[]{"DateTimeOriginal", "DeviceManufacturer", "DeviceModelName", "CreationDateValue"}, getFile());
