@@ -19,6 +19,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.io.FilenameUtils;
 
 /**
@@ -415,7 +417,12 @@ public class Hash {
 
     }
     
-    public static String getFullHash(File file) throws FileNotFoundException, IOException {
+    /**
+     * 
+     * @param file
+     * @return MD5 hash of the whole file 
+     */
+    public static String getFullHash(File file) {
         MessageDigest md5Digest = null;
         try {
             md5Digest = MessageDigest.getInstance("MD5");
@@ -429,6 +436,8 @@ public class Hash {
             in.on(true);
             while (in.read(buffer) != -1) {}
             digest = md5Digest.digest();
+        } catch (IOException ex) {
+            return EMPTYHASH;
         }
         if (digest == null) {
             return EMPTYHASH;
@@ -443,7 +452,14 @@ public class Hash {
         return sb.toString();
     }
     
-    public static String getHash(File file) throws FileNotFoundException, IOException {
+    /**
+     * 
+     * @param file
+     * @return the Hash of the media data in the file for known file types
+     * @throws FileNotFoundException
+     * @throws IOException 
+     */
+    public static String getHash(File file) {
         MessageDigest md5Digest = null;
         try {
             md5Digest = MessageDigest.getInstance("MD5");
@@ -530,10 +546,10 @@ public class Hash {
                         break;
         // </editor-fold>
                     default:
-                        in.on(true);
+/*                        in.on(true);
                         while (in.read(buffer) != -1) {}
                         digest = md5Digest.digest();
-                        break;
+                        break;*/
                 }
             }  catch(IOException e) {
                 errorOut("Hash", e);         
@@ -552,8 +568,13 @@ public class Hash {
         return sb.toString();
     }
     
+    /**
+     * 
+     * @param hash
+     * @return XMP style representation of the Input if it is a valid HASH
+     */
     public static String formatHash(String hash) {
-        if (hash.length()!=32) return hash;
+        if (hash.length()!=32 || !hash.matches("^[0-9A-Fa-f]+$")) return hash;
         return hash.substring(0, 8) + "-" + hash.substring(8, 12) + "-" + hash.substring(12, 16) + "-" + hash.substring(16, 20) + "-" + hash.substring(20, 32);
     }
 

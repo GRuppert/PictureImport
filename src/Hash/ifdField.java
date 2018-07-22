@@ -426,8 +426,6 @@ typeDesc.put(5, "RATIONAL"); // Two LONGs: the first represents the numerator of
 
     }
     
-    
-    
     public String getTag() {
         if (tagDesc.containsKey(tag))
             return tagDesc.get(tag);

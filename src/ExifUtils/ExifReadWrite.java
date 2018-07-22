@@ -5,9 +5,11 @@
  */
 package ExifUtils;
 
+import Main.PicOrganizes;
 import static Main.StaticTools.ExifDateFormat;
 import static Main.StaticTools.XmpDateFormatTZ;
 import static Main.StaticTools.errorOut;
+import static Main.StaticTools.getTimeFromStr;
 import static Main.StaticTools.getZonedTimeFromStr;
 import Rename.meta;
 import com.adobe.xmp.XMPException;
@@ -68,7 +70,7 @@ public class ExifReadWrite {
         return exifToMetaET;*/
         return exifToMetaIMR(filenames, dir);
     }
-    
+
     private static List<meta> exifToMetaIMR(ArrayList<String> filenames, File dir) {
         List<meta> results = new ArrayList<>();      
         for (String filename : filenames) {
@@ -83,7 +85,7 @@ public class ExifReadWrite {
             try {
                 tags = readMeta(new File(dir + "\\" + filename));
             } catch (ImageProcessingException | IOException ex) {
-                meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString());
+                meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), null);
                 System.out.println(meta);
                 results.add(meta);
                 continue;
@@ -117,7 +119,12 @@ public class ExifReadWrite {
                         break;
                 }
             }
-            meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+            ZonedDateTime OrigDT = null;
+            if (captureDate != null) {
+                OrigDT = getZonedTimeFromStr(captureDate);
+                if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, PicOrganizes.view.getZone());
+            }
+            meta meta = new meta(dir + "\\" + filename, OrigDT, dateFormat, model, iID, dID, odID, note, null);
             System.out.println(meta);
             results.add(meta);
         }
@@ -149,7 +156,7 @@ public class ExifReadWrite {
             String line = iterator.next();
             if (line.startsWith("========")) {
                 if (i > -1) {
-                    meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+                    meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
                     System.out.println(meta);
                     results.add(meta);
                 }
@@ -200,7 +207,7 @@ public class ExifReadWrite {
             }
         }
         if (filename != null) {
-            meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note);
+            meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
             System.out.println(meta);
             results.add(meta);
 //            results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));

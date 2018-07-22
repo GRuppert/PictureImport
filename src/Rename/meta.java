@@ -21,9 +21,10 @@ public class meta{
     public String dID;
     public String iID;
     public String note = "";
+    public String orig;
     public Boolean dateFormat;
 
-    public meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note) {
+    public meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig) {
         this.originalFilename = originalFilename;
         this.date = date;
         this.dateFormat = dateFormat;
@@ -31,6 +32,7 @@ public class meta{
         this.odID = odID;
         this.dID = dID;
         this.iID = iID;
+        this.orig = orig;
     }
     
     public String toString() {
@@ -48,6 +50,8 @@ public class meta{
             .append(dID)
             .append(" ")
             .append(iID)
+            .append(" ")
+            .append(orig)
             .append(" ")
             .append(note)
             ;

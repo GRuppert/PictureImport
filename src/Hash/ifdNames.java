@@ -427,7 +427,6 @@ typeDesc.put(5, "RATIONAL"); // Two LONGs: the first represents the numerator of
             return tagDesc.get(tag);
         else return Integer.toString(tag);
     }
-
     
     public String getType(int type) {
             return typeDesc.get(type);
