@@ -147,12 +147,10 @@ public class mediaFile {
             if (metaFile != null && metaFile.orig != null) orig = metaFile.orig;
             
             //read External sidecars
-            meta metaXmp;
+            meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
-                metaXmp = exifToMeta(fileXmp);
-            } else {
-                metaXmp = null;
+                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp);
             }
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
@@ -203,15 +201,19 @@ public class mediaFile {
                this.dID = metaExif.dID;
            } else if (metaFile.dID != null) {
                this.dID = metaFile.dID;
+               addExif("DocumentID" , getdID());
            } else {
-                this.dID = getHash(getFile());
+               this.dID = getHash(getFile());
+               addExif("DocumentID" , getdID());
            }
            if (metaExif.odID != null) {
                this.odID = metaExif.odID;
            } else if (metaFile.odID != null) {
                this.odID = metaFile.odID;
+               addExif("OriginalDocumentID" , getOdID());
            } else {
                 this.odID = this.dID;
+               addExif("OriginalDocumentID" , getOdID());
            }
         } else {
             this.dID = getHash(getFile());
@@ -261,7 +263,7 @@ public class mediaFile {
                 addExif(date);
             }
         }
-        if (date != null && date.getZone().equals(view.getZone())) {addNote("TZ different", true);}
+        if (date != null && !date.isEqual(date.withZoneSameInstant(view.getZone()))) {addNote("TZ different", false);}
     }
     
     private void compareXMP(meta metaXmp) {
@@ -301,24 +303,27 @@ public class mediaFile {
     
     private File checkDir(String targetDirectory) {
         File targetDir = new File(targetDirectory);
-        return targetDir.listFiles(new FilenameFilter() {
+        File[] listFiles = targetDir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
                 meta v = getV(name);
-                if (v != null && originalName.replaceFirst("jpg$", "arw").equals(v.originalFilename)) return true;
+                if (v != null) {
+                    name = v.originalFilename;
+                }
+                if (originalName.toLowerCase().replaceFirst("jpg$", "arw").equals(name.toLowerCase())) return true;
                 return false;
             }
-        })[0];
-        
+        });
+        return (listFiles != null && listFiles.length > 0) ? listFiles[0] : null;
     }
     
     private void checkRAW() {
         File rawFile;
         rawFile = checkDir(file.getParent());
-        if  (!rawFile.exists()) {
+        if  (rawFile != null && !rawFile.exists()) {
             rawFile = checkDir(targetDirectory);
         } 
-        if  (rawFile.exists()) {
+        if  (rawFile != null && rawFile.exists()) {
             meta v = getV(rawFile.getName());
             if (v != null && v.odID != null) odID = v.odID;
             else if (v != null && v.dID != null) odID = v.dID;
@@ -556,7 +561,7 @@ public class mediaFile {
     }
 
     private meta repairMP4(meta metaExif) {
-        ArrayList<String> meta = getExif(new String[]{"DateTimeOriginal", "DeviceManufacturer", "DeviceModelName", "CreationDateValue"}, getFile());
+        ArrayList<String> meta = getExif(new String[]{"-DateTimeOriginal", "-DeviceManufacturer", "-DeviceModelName", "-CreationDateValue"}, getFile());
         Iterator<String> iterator = meta.iterator();
         String dto = null;
         String cdv = null;
@@ -565,17 +570,17 @@ public class mediaFile {
         while (iterator.hasNext()) {
             String line = iterator.next();
             String tagValue = line.substring(34);
-            switch (line.substring(0, 8)) {
-                case "DateTime":
+            switch (line.substring(0, 9)) {
+                case "Date/Time":
                     dto = tagValue;
                     break;
-                case "Creation":
+                case "Creation ":
                     cdv = tagValue;
                     break;
-                case "DeviceMa":
+                case "Device Ma":
                     make = tagValue;
                     break;
-                case "DeviceMo":
+                case "Device Mo":
                     model = tagValue;
                     break;
             }

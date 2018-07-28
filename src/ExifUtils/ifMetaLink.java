@@ -2,7 +2,9 @@ package ExifUtils;
 
 
 import Rename.meta;
+import com.drew.imaging.ImageProcessingException;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,8 +25,13 @@ public interface ifMetaLink {
      * @param dir the directory where the files are
      * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public List<meta> exifToMeta(ArrayList<String> filenames, File dir);
-            
-    
-    
+    public meta exifToMeta(File file);
+
+    public ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException;
+
+    public File createXmp(File file);
+
+    public ArrayList<String> getExif(String[] values, File file);
+
+    public void updateExif(List<String> valuePairs, File directory);
 }

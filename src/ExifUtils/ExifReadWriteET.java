@@ -42,8 +42,8 @@ import org.apache.commons.io.FilenameUtils;
  *
  * @author gabor
  */
-public class ExifReadWrite {
-    public static meta exifToMeta(File fileMeta) {
+public class ExifReadWriteET implements ifMetaLink {
+    public meta exifToMeta(File fileMeta) {
         ArrayList<String> files = new ArrayList<>();
         files.add(fileMeta.getName());
         List<meta> exifToMeta = exifToMeta(files, fileMeta.getParentFile());
@@ -61,91 +61,6 @@ public class ExifReadWrite {
      * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
     public static List<meta> exifToMeta(ArrayList<String> filenames, File dir) {
-/*        long startTime = System.nanoTime();
-        exifToMetaIMR(filenames, dir);
-        System.out.println("IMR:" + (System.nanoTime() - startTime)/1000000);
-        startTime = System.nanoTime();
-        List<meta> exifToMetaET = exifToMetaET(filenames, dir);
-        System.out.println("ET:" + (System.nanoTime() - startTime)/1000000);
-        return exifToMetaET;*/
-        return exifToMetaIMR(filenames, dir);
-    }
-
-    private static List<meta> exifToMetaIMR(ArrayList<String> filenames, File dir) {
-        List<meta> results = new ArrayList<>();      
-        for (String filename : filenames) {
-            ArrayList<String[]> tags;
-            String model = null;
-            String note = "";
-            String iID = null;
-            String dID = null;
-            String odID = null;
-            String captureDate = null;
-            ZonedDateTime wTZ = null;
-            Boolean dateFormat = false;
-            try {
-                tags = readMeta(new File(dir + "\\" + filename));
-            } catch (ImageProcessingException | IOException ex) {
-                meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), null);
-                System.out.println(meta);
-                results.add(meta);
-                continue;
-            }
-            for (String[] tag : tags) {
-                System.out.println(tag[0] + " : " + tag[1]);
-                switch (tag[0]) {
-                    case "Model":
-                    case "tiff:Model":
-                        model = tag[1];
-                        break;
-                    case "xmpMM:InstanceID":
-                        iID = tag[1];
-                        break;
-                    case "xmpMM:DocumentID":
-                        dID = tag[1];
-                        break;
-                    case "xmpMM:OriginalDocumentID":
-                        odID = tag[1];
-                        break;
-                    case "Offset Time Original":
-                    case "Unknown tag (0x9011)":
-                        if (captureDate == null) captureDate = tag[1];
-                        else captureDate += tag[1];
-                        dateFormat = true;
-                        break;
-                    case "Date/Time Original":
-                        if (captureDate == null) captureDate = tag[1];
-                        else captureDate = tag[1] + captureDate;
-                        if (wTZ != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
-                            dateFormat = true;
-                        break;
-                    case "exif:DateTimeOriginal":
-                        try {
-                            wTZ = ZonedDateTime.parse(tag[1], XmpDateFormatTZ);
-                            if ((captureDate != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
-                                || FilenameUtils.getExtension(filename.toLowerCase()).equals("xmp"))
-                                dateFormat = true;
-                        }
-                        catch (DateTimeParseException exc) {
-                        }  
-                        break;
-                }
-            }
-            ZonedDateTime OrigDT = null;
-            if (captureDate != null) {
-                OrigDT = getZonedTimeFromStr(captureDate);
-                if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, PicOrganizes.view.getZone());
-            } else if (wTZ != null) {
-                OrigDT = wTZ;
-            }
-            meta meta = new meta(dir + "\\" + filename, OrigDT, dateFormat, model, iID, dID, odID, note, null);
-            System.out.println(meta);
-            results.add(meta);
-        }
-        return results;
-    }
-    
-    private static List<meta> exifToMetaET(ArrayList<String> filenames, File dir) {
         String filename = null;
         if (filenames.size() == 1 && filenames.get(0).length() > 5) {filename = dir + "\\" + filenames.get(0);}
         filenames.add(0, "-OriginalDocumentID");
@@ -229,14 +144,14 @@ public class ExifReadWrite {
         return results;
     }
 
-    public static File createXmp(File file) {
+    public File createXmp(File file) {
         String[] commandAndOptions = {"exiftool", file.getName(), "-o", file.getName() + ".xmp"};
         ArrayList<String> result = exifTool(commandAndOptions, file.getParentFile());
         if (result.get(0).endsWith("files created")) return new File(file.getAbsolutePath() + ".xmp"); 
         return null;
     }
 
-    public static ArrayList<String> getExif(String[] values, File file) {
+    public ArrayList<String> getExif(String[] values, File file) {
         return getExifET(values, file);
     }
     
@@ -247,7 +162,7 @@ public class ExifReadWrite {
         return exifTool(command, file.getParentFile());
     }
     
-    public static void updateExif(List<String> valuePairs, File directory) {
+    public void updateExif(List<String> valuePairs, File directory) {
         valuePairs.add(0, "-overwrite_original");
         valuePairs.add(0, "exiftool");
         exifTool(valuePairs, directory);
@@ -339,7 +254,7 @@ public class ExifReadWrite {
         return lines;
     }
     
-    public static ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException {
+    public ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException {
         //TODO mp4
         Metadata metadata;
         ArrayList<String[]> tags = new ArrayList();

@@ -6,7 +6,6 @@ import Rename.mediaFile;
 import Rename.metaProp;
 import Comparison.duplicate;
 import Comparison.metaChanges;
-import ExifUtils.ExifReadWrite;
 import static ExifUtils.ExifReadWrite.exifToMeta;
 import static Hash.Hash.getHash;
 import static Main.StaticTools.errorOut;
@@ -14,7 +13,6 @@ import static Main.StaticTools.supportedFileType;
 import static Main.StaticTools.supportedMediaFileType;
 import Rename.meta;
 import TimeShift.TimeLine;
-import com.drew.imaging.ImageProcessingException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.awt.Dialog;
@@ -30,12 +28,9 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
@@ -87,8 +82,8 @@ import org.apache.commons.io.FilenameUtils;
 public class PicOrganizes extends Application {        
     // <editor-fold defaultstate="collapsed" desc="User variables">
     private String pictureSet = "K";
-    private Path toDir = Paths.get("E:\\Képek\\Dev\\TagEffect\\Mod");
-    private File fromDir = new File("E:\\Képek\\Dev\\TagEffect\\Orig");
+    private Path toDir = Paths.get("G:\\Pictures\\Photos\\Új\\SzandranakUj");
+    private File fromDir = new File("G:\\Pictures\\Photos\\Új\\Szandranak");
 //    private Path toDir = Paths.get("E:\\temp\\compare\\1");
 //    private File fromDir = new File("E:\\temp\\compare\\2");
 //    private Path toDir = Paths.get("G:\\Pictures\\Photos\\V5\\Közös");
@@ -135,29 +130,34 @@ public class PicOrganizes extends Application {
      * Creates a List with the predefined standard directories on recognized volumes
      * @return a List of String which are the default on the recognized media
      */
-    private List<String> defaultImportDirectories() {
+    private List<String> defaultImportDirectories(File nonExt) {
             ArrayList<File> drives = new ArrayList<>();
             ArrayList<String> list = new ArrayList<>();
             File[] paths;
             FileSystemView fsv = FileSystemView.getFileSystemView();
             paths = File.listRoots();
             ArrayList<String> Sony = new ArrayList<>();
-            Sony.add("DCIM\\");
-            Sony.add("PRIVATE\\AVCHD\\BDMV\\STREAM\\");
-            Sony.add("PRIVATE\\M4ROOT\\CLIP\\");
+            Sony.add("\\DCIM\\");
+            Sony.add("\\PRIVATE\\AVCHD\\BDMV\\STREAM\\");
+            Sony.add("\\PRIVATE\\M4ROOT\\CLIP\\");
             ArrayList<String> Samsung = new ArrayList<>();
-            Samsung.add("DCIM\\Camera");
-            Samsung.add("WhatsApp\\Media\\WhatsApp Images");
+            Samsung.add("\\DCIM\\Camera");
+            Samsung.add("\\WhatsApp\\Media\\WhatsApp Images");
 
-            for(File path:paths)
-            {
+            for(File path:paths) {
                 String desc = fsv.getSystemTypeDescription(path);
                 if (desc.startsWith("USB") || desc.startsWith("SD")) drives.add(path);
             }
-
+            if (nonExt != null && nonExt.exists()) {
+                for(File path:nonExt.listFiles()) {
+                    if (path.isDirectory()) drives.add(path);
+                }
+            }
+            
             for(File drive:drives) {                    
                 boolean valid = true;
                 for(String criteria:Sony) {
+                    //Todo might not work when drive is just a drive: double backslash
                     File probe = new File(drive+criteria);
                     if(probe.exists() && probe.isDirectory()) {
                         continue;
@@ -715,12 +715,12 @@ public class PicOrganizes extends Application {
         btnImport.setOnAction(new EventHandler<ActionEvent>(){
             @Override
             public void handle(ActionEvent event) {
-                List<String> directories = defaultImportDirectories();
+                List<String> directories = defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
                 Path backupdrive = null;
                 if ((backupdrive = Services.backupMounted()) == null) {
                     StaticTools.errorOut("No backup Drive", new Exception("Attach a backup drive!"));
                     if ((backupdrive = Services.backupMounted()) == null) {
-                        return;
+//                        return;
                     }
                 }
                 listOnScreen(createMediafileTable(fileRenameList(directories))); 
@@ -885,7 +885,15 @@ public class PicOrganizes extends Application {
     }
     
     private VBox createHeader() {
-        ObservableList<String> timeZones = FXCollections.observableArrayList(ZoneId.getAvailableZoneIds());
+        ObservableList<String> timeZones = FXCollections.observableArrayList(ZoneId.getAvailableZoneIds()).sorted(new Comparator() {
+            @Override
+            public int compare(Object o1, Object o2) {
+                String o1trim = o1.toString().replaceAll("[^A-Za-z0-9]", "").toLowerCase();
+                String o2trim = o2.toString().replaceAll("[^A-Za-z0-9]", "").toLowerCase();
+                return o1trim.compareTo(o2trim);
+            }
+            
+        });
         final ComboBox comboBox = new ComboBox(timeZones);
         comboBox.setOnAction((event) -> {
             zone = ZoneId.of(comboBox.getSelectionModel().getSelectedItem().toString());
@@ -1082,6 +1090,10 @@ public class PicOrganizes extends Application {
     }
     
     public void test() {
+/*        zone = ZoneId.of("America/Lima");
+        List<String> directories = defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\5100"));
+        listOnScreen(createMediafileTable(fileRenameList(directories))); 
+        /*
         try {
             ArrayList<String[]> readMeta = ExifReadWrite.readMeta(new File("e:\\Képek\\Dev\\ExifDamage\\orig\\DSC07620.JPG"));
             ArrayList<String[]> readMeta1 = ExifReadWrite.readMeta(new File("e:\\Képek\\Dev\\ExifDamage\\digi\\DSC07620.JPG"));
