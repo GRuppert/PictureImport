@@ -222,7 +222,7 @@ public class mediaFile {
             }
 
             if (metaExif.dID != null && !metaExif.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID()); notOrig();}
-            if (metaFile.dID != null && !metaFile.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID()); notOrig();}
+            else if (metaFile.dID != null && !metaFile.dID.equals(this.dID)) {addNote("dID has been changed", false); addExif("DocumentID" , getdID()); notOrig();}
             if (metaExif.dID == null) addExif("DocumentID" , getdID());
 
             if (metaFile.odID != null) odID = metaFile.odID;
@@ -230,11 +230,22 @@ public class mediaFile {
                 if (getOdID() != null) {
                     if (!metaExif.odID.equals(odID)) addNote("odID has been changed", true);
                 } else {
-                    odID = metaFile.odID; //addNote("odID already presented", false);
+                    odID = metaExif.odID; //addNote("odID already presented", false);
                 }
             if (getOdID() == null) {
-                odID = getdID();
-                addExif("OriginalDocumentID" , getOdID());
+                if (orig.equals("0")) {
+                    odID = getdID();
+                } else if (metaFile.dID != null) {
+                    odID = metaFile.dID;
+                } else if (metaExif.dID != null) {
+                    odID = metaExif.dID;
+                }
+                if (getOdID() == null) {
+                    //Todo nyers-jpg
+                    odID = Hash.Hash.EMPTYHASH;
+                } else {
+                    addExif("OriginalDocumentID" , getOdID());
+                }
             }
         }
     }
@@ -383,7 +394,9 @@ public class mediaFile {
                         Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
                 }
             } catch (IOException e) {
-                errorOut(this.getNewName(), e);         
+                System.out.println(e);
+                //Todo logging, All for error OK
+//                errorOut(this.getNewName(), e);         
             }                      
         }
     }
@@ -531,10 +544,9 @@ public class mediaFile {
         return null;
     }
 
-    public static meta getV6(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
-        if (true) return null;
+    public static meta getV6(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-0-
         int offsetV = 3;
-        if (filename.length() > offsetV+34+1+4+32+32) {
+        if (filename.length() > offsetV+34+1+4+32+2) {
             try {
                 String dateString = 
                         filename.substring(1 + offsetV, 5 + offsetV) + 
@@ -550,7 +562,7 @@ public class mediaFile {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
                 
                 if (filename.substring(34 + offsetV, 35 + offsetV).equals("-") && filename.substring(67 + offsetV, 68 + offsetV).equals("-")) {
-                    return new meta(filename.substring(70 + offsetV), captureDate, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, null, filename.substring(68 + offsetV, 69 + offsetV));
+                    return new meta(filename.substring(70 + offsetV), captureDate, null, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, filename.substring(68 + offsetV, 69 + offsetV));
                     
                 }
             } catch (Exception e) {
