@@ -1090,9 +1090,9 @@ public class PicOrganizes extends Application {
     }
     
     public void test() {
-/*        zone = ZoneId.of("America/Lima");
-        List<String> directories = defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\5100"));
+        List<String> directories = defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Umag"));
         listOnScreen(createMediafileTable(fileRenameList(directories))); 
+/*        zone = ZoneId.of("America/Lima");
         /*
         try {
             ArrayList<String[]> readMeta = ExifReadWrite.readMeta(new File("e:\\Képek\\Dev\\ExifDamage\\orig\\DSC07620.JPG"));

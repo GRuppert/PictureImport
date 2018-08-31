@@ -92,7 +92,7 @@ public class ExifReadWrite {
                 continue;
             }
             for (String[] tag : tags) {
-                System.out.println(tag[0] + " : " + tag[1]);
+//                System.out.println(tag[0] + " : " + tag[1]);
                 switch (tag[0]) {
                     case "Model":
                     case "tiff:Model":
