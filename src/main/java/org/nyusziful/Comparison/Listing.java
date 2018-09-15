@@ -1,7 +1,7 @@
 package org.nyusziful.Comparison;
 
 
-import static org.nyusziful.Hash.abstractHash.getHash;
+import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.PicOrganizes.view;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.supportedFileType;

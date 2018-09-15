@@ -2,11 +2,10 @@ package org.nyusziful.Rename;
 
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.createXmp;
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
 import static org.nyusziful.ExifUtils.ExifReadWrite.getExif;
-import static org.nyusziful.Hash.abstractHash.EMPTYHASH;
-import static org.nyusziful.Hash.abstractHash.getHash;
-import static org.nyusziful.Hash.abstractHash.getFullHash;
+import static org.nyusziful.Hash.MediaFileHash.EMPTYHASH;
+import static org.nyusziful.Hash.MediaFileHash.getHash;
+import static org.nyusziful.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.Main.PicOrganizes.COPY;
 import static org.nyusziful.Main.PicOrganizes.MOVE;
 import static org.nyusziful.Main.PicOrganizes.view;
@@ -34,8 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import org.apache.commons.io.FilenameUtils;
@@ -243,7 +240,7 @@ public class mediaFile {
                 }
                 if (getOdID() == null) {
                     //Todo nyers-jpg
-                    odID = org.nyusziful.Hash.abstractHash.EMPTYHASH;
+                    odID = org.nyusziful.Hash.MediaFileHash.EMPTYHASH;
                 } else {
                     addExif("OriginalDocumentID" , getOdID());
                 }

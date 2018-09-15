@@ -5,13 +5,17 @@
  */
 package org.nyusziful.Hash;
 
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+
 /**
  *
  * @author gabor
  */
 public interface hasher {
-    public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-
 
     /**
      * 
@@ -22,5 +26,5 @@ public interface hasher {
         if (hash.length()!=32 || !hash.matches("^[0-9A-Fa-f]+$")) return hash;
         return hash.substring(0, 8) + "-" + hash.substring(8, 12) + "-" + hash.substring(12, 16) + "-" + hash.substring(16, 20) + "-" + hash.substring(20, 32);
     }
-
+    
 }

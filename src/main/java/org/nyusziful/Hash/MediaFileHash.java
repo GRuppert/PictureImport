@@ -11,30 +11,39 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static org.nyusziful.Hash.basicFileReader.readBytes;
-import static org.nyusziful.Hash.basicFileReader.readEndianValue;
-import static org.nyusziful.Hash.basicFileReader.skipBytes;
 
 
 /**
  *
  * @author gabor
  */
-public class abstractHash implements hasher {
-    private static final Logger LOG = LogManager.getLogger(abstractHash.class);
-
-    private static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
-        return null;
+public class MediaFileHash {
+    public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+    private static final Logger LOG = LogManager.getLogger(MediaFileHash.class);
+    
+    private static String getType(File file) {
+        String ext = FilenameUtils.getExtension(file.getName().toLowerCase());
+        switch (ext) {
+            case "mp4":
+                return "mp4";
+            case "jpg":
+            case "jpeg":
+                return "jpeg";
+            case "arw":
+            case "dng":
+            case "nef":
+            case "tif":
+            case "tiff":
+                return "tiff";
+        }
+        return "";
     }
    
     /**
@@ -52,7 +61,17 @@ public class abstractHash implements hasher {
         byte[] digestDef = md5Digest.digest();
         byte[] digest = null;
         try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {            
-            digest = readDigest(file, fileStream, md5Digest, in);
+            switch (getType(file)) {
+                case "tiff":
+                    digest = tiffHash.readDigest(file, fileStream, md5Digest, in);
+                    break;
+                case "jpeg":
+                    digest = jpegHash.readDigest(file, fileStream, md5Digest, in);
+                    break;
+                case "mp4":
+                    digest = mp4Hash.readDigest(file, fileStream, md5Digest, in);
+                    break;
+            }
         }  catch(IOException e) {
             errorOut("Hash", e);         
         } 

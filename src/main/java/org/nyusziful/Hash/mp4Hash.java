@@ -5,20 +5,11 @@
  */
 package org.nyusziful.Hash;
 
-import static org.nyusziful.Main.StaticTools.errorOut;
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.nyusziful.Hash.basicFileReader.readBytes;
@@ -30,10 +21,10 @@ import static org.nyusziful.Hash.basicFileReader.skipBytes;
  *
  * @author gabor
  */
-public class mp4Hash extends abstractHash {
+public class mp4Hash implements hasher {
     private static final Logger LOG = LogManager.getLogger(mp4Hash.class);
 
-    private static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
+    public static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
         byte[] buffer = new byte[4096];
         long length;
         in.on(false);

@@ -7,7 +7,7 @@ import org.nyusziful.Rename.metaProp;
 import org.nyusziful.Comparison.duplicate;
 import org.nyusziful.Comparison.metaChanges;
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
-import static org.nyusziful.Hash.abstractHash.getHash;
+import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
@@ -76,6 +76,8 @@ import javax.swing.JProgressBar;
 import javax.swing.filechooser.FileSystemView;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
 
 //Exiftool must be in PATH

@@ -5,23 +5,17 @@
  */
 package org.nyusziful.Hash;
 
-import static org.nyusziful.Main.StaticTools.errorOut;
 import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static org.nyusziful.Hash.basicFileReader.readBytes;
 import static org.nyusziful.Hash.basicFileReader.readEndianValue;
 import static org.nyusziful.Hash.basicFileReader.skipBytes;
 
@@ -30,8 +24,8 @@ import static org.nyusziful.Hash.basicFileReader.skipBytes;
  *
  * @author gabor
  */
-public class tifftHash extends abstractHash {
-    private static final Logger LOG = LogManager.getLogger(tifftHash.class);
+public class tiffHash implements hasher {
+    private static final Logger LOG = LogManager.getLogger(tiffHash.class);
     
     private static byte[] getPointers(ArrayList<ifdField> imageLocationFields, File file, boolean endian) throws IOException {
 /*      RawImageDigest
@@ -257,7 +251,7 @@ public class tifftHash extends abstractHash {
     }
         
     //returns the pointer to the main image data in tiff based files
-    private static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
+    public static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
         in.mark(0);
         int c;
         long j = 0;
