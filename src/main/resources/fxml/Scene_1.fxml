@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" xmlns:fx="http://javafx.com/fxml" fx:controller="com.nyusziful.Main.FXMLController">
+    <top>
+        <Button layoutX="126" layoutY="90" text="Click Me!" onAction="#handleButtonAction" fx:id="button" />
+        <Label layoutX="126" layoutY="120" minHeight="16" minWidth="69" fx:id="label" />
+    </top>
+    <left>
+        <VBox>
+            <fx:define>
+                <ToggleGroup fx:id="group"/>  
+            </fx:define>
+            <RadioButton text="Copy" selected="false" toggleGroup="$group"/>
+            <RadioButton text="Move" selected="true" toggleGroup="$group"/>
+        </VBox>
+    </left>
+    <center>
+    </center>
+    <bottom>
+    </bottom>
+</BorderPane>

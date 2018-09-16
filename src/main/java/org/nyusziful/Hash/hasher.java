@@ -5,12 +5,6 @@
  */
 package org.nyusziful.Hash;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.security.DigestInputStream;
-import java.security.MessageDigest;
-
 /**
  *
  * @author gabor

@@ -40,6 +40,7 @@ import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
+import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
@@ -1307,11 +1308,12 @@ public class PicOrganizes extends Application {
     }
     
     @Override
-    public void start(Stage pStage) {
+    public void start(Stage pStage) throws Exception {
         view = this;
         this.primaryStage = pStage;
 
         Parent mainLook = createMainLook();
+        Parent root = FXMLLoader.load(getClass().getResource("/fxml/Scene.fxml"));
         Scene mainScene = new Scene(mainLook);
         mainScene.getStylesheets().add("Chart.css");
         primaryStage.setScene(mainScene);
