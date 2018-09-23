@@ -24,6 +24,18 @@ public class meta{
     public String orig;
     public Boolean dateFormat;
 
+    /**
+     *
+     * @param originalFilename
+     * @param date
+     * @param dateFormat
+     * @param model
+     * @param iID
+     * @param dID
+     * @param odID
+     * @param note
+     * @param orig
+     */
     public meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig) {
         this.originalFilename = originalFilename;
         this.date = date;

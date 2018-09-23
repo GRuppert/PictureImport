@@ -6,7 +6,7 @@ import org.nyusziful.Rename.mediaFile;
 import org.nyusziful.Rename.metaProp;
 import org.nyusziful.Comparison.duplicate;
 import org.nyusziful.Comparison.metaChanges;
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import static org.nyusziful.Rename.fileRenamer.getV;
 import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
@@ -301,7 +301,7 @@ public class PicOrganizes extends Application {
                   @Override public FileVisitResult 
                 visitFile(Path file, BasicFileAttributes attrs) {
                         if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                            files.add(new comparableMediaFile(file.toFile(), mediaFile.getV(file.toFile().getName())));                               
+                            files.add(new comparableMediaFile(file.toFile(), getV(file.toFile().getName())));                               
                         }
                         return FileVisitResult.CONTINUE;                            
                     }
