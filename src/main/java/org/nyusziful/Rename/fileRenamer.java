@@ -85,10 +85,10 @@ public class fileRenamer {
         return null;
     }
 
-    private static meta getV2(String filename) {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-"
+    private static meta getV2(String filename) {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-" UTC???
         if (filename.length() > 34+1+4) {
             try {
-                ZonedDateTime captureDate = LocalDateTime.parse(filename.substring(1, 10) + filename.substring(11, 17) + filename.substring(18, 22) + filename.substring(27, 32), dfV2).atZone(ZoneId.systemDefault());
+                ZonedDateTime captureDate = ZonedDateTime.parse(filename.substring(1, 10) + filename.substring(11, 17) + filename.substring(18, 22) + (filename.substring(27, 28).equals("p") ? "+" : "-") + filename.substring(28, 32), dfV2);
                 return new meta(filename.substring(34), captureDate, null, null, null, null, null, null, null);
             } catch (Exception e) {
                 return null;

@@ -69,7 +69,7 @@ public class meta{
             ;
         return sb.toString();
     }
-
+    
 /*    public meta(String originalFilename, String date, String model, String iID, String dID, String odID) {
         this.originalFilename = originalFilename;
         this.date = date;
