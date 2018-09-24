@@ -39,7 +39,7 @@ public class StaticTools {
 //            ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -Model " + fileNames, dir);
             ArrayList<String> files = new ArrayList<>();
             files.add(".");
-            List<meta> exifToMeta = exifToMeta(files, dir);
+            List<meta> exifToMeta = exifToMeta(files, dir, ZoneId.systemDefault());
             Iterator<meta> iterator = exifToMeta.iterator();
             String errors = "";
             while (iterator.hasNext()) {

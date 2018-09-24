@@ -37,6 +37,7 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import org.apache.commons.io.FilenameUtils;
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import org.nyusziful.Main.PicOrganizes;
 import static org.nyusziful.Rename.fileRenamer.getFileName;
 import static org.nyusziful.Rename.fileRenamer.getV;
 
@@ -111,7 +112,7 @@ public class mediaFile {
         } else {
             String ext = FilenameUtils.getExtension(originalName.toLowerCase());
             if (metaExif == null) {//if it hasn't been batch readed in the caller function
-                metaExif = exifToMeta(file);
+                metaExif = exifToMeta(file, PicOrganizes.view.getZone());
             }
 
             //standardizes data in Sony mp4 
@@ -131,7 +132,7 @@ public class mediaFile {
             meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
-                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp);
+                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp, PicOrganizes.view.getZone());
             }
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)

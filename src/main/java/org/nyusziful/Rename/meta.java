@@ -47,6 +47,7 @@ public class meta{
         this.orig = orig;
     }
     
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(originalFilename)
@@ -57,15 +58,15 @@ public class meta{
             .append(" ")
             .append(model)
             .append(" ")
-            .append(odID)
+            .append(iID)
             .append(" ")
             .append(dID)
             .append(" ")
-            .append(iID)
-            .append(" ")
-            .append(orig)
+            .append(odID)
             .append(" ")
             .append(note)
+            .append(" ")
+            .append(orig)
             ;
         return sb.toString();
     }

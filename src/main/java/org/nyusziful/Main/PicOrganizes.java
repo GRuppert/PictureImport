@@ -200,7 +200,7 @@ public class PicOrganizes extends Application {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         fileList.add(content[j*chunkSize + f].getName());
                     }
-                    List<meta> exifToMeta = exifToMeta(fileList, dir1);
+                    List<meta> exifToMeta = exifToMeta(fileList, dir1, this.getZone());
                     Iterator<meta> iterator = exifToMeta.iterator();
                     int i = 0;
                     while (iterator.hasNext()) {
@@ -231,7 +231,7 @@ public class PicOrganizes extends Application {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         fileList.add(content[j*chunkSize + f].getName());
                     }
-                    metas.addAll(exifToMeta(fileList, dir1));
+                    metas.addAll(exifToMeta(fileList, dir1, this.getZone()));
                     progressBar.setValue(j*chunkSize);
                     progressIndicator.setProgress((j*chunkSize)/content.length);
                 }
@@ -1072,7 +1072,7 @@ public class PicOrganizes extends Application {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         files.add(content[j*chunkSize + f].getName());
                     }
-                    List<meta> exifToMeta = exifToMeta(files, dir1);
+                    List<meta> exifToMeta = exifToMeta(files, dir1, this.getZone());
                     Iterator<meta> iterator = exifToMeta.iterator();
                     int i = 0;
                     while (iterator.hasNext()) {

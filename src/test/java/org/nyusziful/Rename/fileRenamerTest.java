@@ -8,6 +8,7 @@ package org.nyusziful.Rename;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import org.junit.Test;
 import static org.junit.Assert.*;
@@ -21,34 +22,44 @@ import org.junit.runners.Parameterized.Parameters;
  */
 @RunWith(Parameterized.class)
 public class fileRenamerTest {
-    static class TestData {
-        String filename;
-        meta meta;
-
-        public TestData(String filename, meta meta) {
-            this.filename = filename;
-            this.meta = meta;
-        }
-    }
-    private static final TestData[] TESTS = new TestData[] {
-        new TestData(
-            "K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-0-20160627_173440.jpg",
-            new meta("20160627_173440.jpg", ZonedDateTime.of(2016, 11, 04, 15, 10, 38, 00, ZoneId.of("+0100")), true, "", "", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", "", "", "0")
-        )
-    };
-    String filename;
-    meta meta;
+    String ver;
+    String pictureSet;
+    String originalName;
+    ZonedDateTime date;
+    String iID;
+    String dID;
+    String original;
+    String expResult;
     
     @Parameters    
-    public static List<TestData> data() {
-        return Arrays.asList(TESTS);
+    public static Collection data() {
+        return Arrays.asList(new Object[][] {
+            { "6", "K", "DSC0001.JPG", ZonedDateTime.of(2016, 11, 04, 16, 10, 38, 00, ZoneId.of("+0100")), null, "a3a650e9653d8c59a40571e6cf18b24d", "0", "V6_K2016-11-0_4@15-1_0-38(+0100)(Fri)-a3a650e9653d8c59a40571e6cf18b24d-0-DSC0001.JPG" },
+            { "6", "K", "DSC0001.JPG", ZonedDateTime.of(2016, 11, 04, 0, 10, 38, 00, ZoneId.of("+0100")), null, "a3a650e9653d8c59a40571e6cf18b24d", "A", "V6_K2016-11-0_3@23-1_0-38(+0100)(Fri)-a3a650e9653d8c59a40571e6cf18b24d-A-DSC0001.JPG" }
+        });
     }    
     
     
-    public fileRenamerTest(TestData data) {
+    public fileRenamerTest(
+            String ver,
+            String pictureSet,
+            String originalName,
+            ZonedDateTime date,
+            String iID,
+            String dID,
+            String original,
+            String expResult
+    ) {
         super();
-        this.filename = data.filename;
-        this.meta = data.meta;
+        this.ver = ver;
+        this.pictureSet = pictureSet;
+        this.originalName = originalName;
+        this.date = date;
+        this.iID = iID;
+        this.dID = dID;
+        this.original = original;
+        this.ver = ver;
+        this.expResult = expResult;
     }
 
     
@@ -58,18 +69,8 @@ public class fileRenamerTest {
     @Test
     public void testGetFileName() {
         System.out.println("getFileName");
-        String ver = "";
-        String pictureSet = "";
-        String originalName = "";
-        ZonedDateTime date = null;
-        String iID = "";
-        String dID = "";
-        String original = "";
-        String expResult = "";
         String result = fileRenamer.getFileName(ver, pictureSet, originalName, date, iID, dID, original);
-        assertEquals(expResult, result);
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
+        assertEquals("Rename of file(" + originalName + ") result: " + result + " awaited: " + expResult, expResult, result);
     }
     
 }

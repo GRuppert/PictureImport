@@ -29,6 +29,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -43,10 +44,10 @@ import org.apache.commons.io.FilenameUtils;
  * @author gabor
  */
 public class ExifReadWrite {
-    public static meta exifToMeta(File fileMeta) {
+    public static meta exifToMeta(File fileMeta, ZoneId defaultTZ) {
         ArrayList<String> files = new ArrayList<>();
         files.add(fileMeta.getName());
-        List<meta> exifToMeta = exifToMeta(files, fileMeta.getParentFile());
+        List<meta> exifToMeta = exifToMeta(files, fileMeta.getParentFile(), defaultTZ);
         Iterator<meta> iterator = exifToMeta.iterator();
         if (iterator.hasNext()) {
             return iterator.next();
@@ -58,9 +59,10 @@ public class ExifReadWrite {
      * Reads the standard metadata from the specified files in the given directory
      * @param filenames String list of the representation of the file names
      * @param dir the directory where the files are
+     * @param defaultTZ default time zone in case it can't be read from the filename
      * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public static List<meta> exifToMeta(ArrayList<String> filenames, File dir) {
+    public static List<meta> exifToMeta(ArrayList<String> filenames, File dir, ZoneId defaultTZ) {
 /*        long startTime = System.nanoTime();
         exifToMetaIMR(filenames, dir);
         System.out.println("IMR:" + (System.nanoTime() - startTime)/1000000);
@@ -68,10 +70,10 @@ public class ExifReadWrite {
         List<meta> exifToMetaET = exifToMetaET(filenames, dir);
         System.out.println("ET:" + (System.nanoTime() - startTime)/1000000);
         return exifToMetaET;*/
-        return exifToMetaIMR(filenames, dir);
+        return exifToMetaIMR(filenames, dir, defaultTZ);
     }
 
-    private static List<meta> exifToMetaIMR(ArrayList<String> filenames, File dir) {
+    private static List<meta> exifToMetaIMR(ArrayList<String> filenames, File dir, ZoneId defaultTZ) {
         List<meta> results = new ArrayList<>();      
         for (String filename : filenames) {
             ArrayList<String[]> tags;
@@ -134,7 +136,7 @@ public class ExifReadWrite {
             ZonedDateTime OrigDT = null;
             if (captureDate != null) {
                 OrigDT = getZonedTimeFromStr(captureDate);
-                if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, PicOrganizes.view.getZone());
+                if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, defaultTZ);
             } else if (wTZ != null) {
                 OrigDT = wTZ;
             }
@@ -386,6 +388,5 @@ public class ExifReadWrite {
         }                    
         return tags;
     }
-    
     
 }
