@@ -55,13 +55,17 @@ public class ExifReadWriteTest {
             }
         }
         long expResult = 2247519194L;
+        long check = 1009513469L;
         long result = 0;
+        long checkFile = 0;
         try {
             result = FileUtils.checksumCRC32(ExifReadWrite.createXmp(file));
+            checkFile = FileUtils.checksumCRC32(file);
         } catch (IOException ex) {
             fail("IOException: " + ex.getMessage());
         }
-        assertEquals("MD5 of file(" + file + ") counted: " + result + " awaited: " + expResult, expResult, result);
+        assertEquals("MD5 of xmp file(" + file + ") counted: " + result + " awaited: " + expResult, expResult, result);
+        assertEquals("MD5 of file(" + file + ") counted: " + checkFile + " awaited: " + check, check, checkFile);
     }
 
     /**
