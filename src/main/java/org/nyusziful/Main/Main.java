@@ -20,7 +20,7 @@ public class Main extends Application {
         view = this;
         this.primaryStage = stage;
 
-        Parent fmxlLook = FXMLLoader.load(getClass().getResource("/fxml/Scene.fxml"));
+        Parent fmxlLook = FXMLLoader.load(getClass().getResource("/fxml/picOrgScene.fxml"));
         
         Scene mainScene = new Scene(fmxlLook);
         mainScene.getStylesheets().add("Chart.css");

@@ -9,7 +9,7 @@
 <?import javafx.scene.chart.NumberAxis?>
 
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" xmlns:fx="http://javafx.com/fxml" fx:controller="com.nyusziful.Main.PicOrganizesFXML">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.PicOrganizesFXML">
     <top>
         <VBox>
             <HBox alignment="CENTER">
@@ -62,7 +62,7 @@
             <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefresh" />
             <ProgressIndicator fx:id="progressIndicator" />
             <Label fx:id="statusLabel" />
-            <AreaChart legendVisible="false" prfx:id="ac" prefWidth="300" prefHeight="100" minWidth="300" minHeight="100" maxWidth="300" maxHeight="100"> 
+            <AreaChart legendVisible="false" fx:id="ac" prefWidth="300" prefHeight="100" minWidth="300" minHeight="100" maxWidth="300" maxHeight="100"> 
                 <xAxis>
                     <NumberAxis fx:id="xAxis" opacity="0" tickLabelsVisible="false" minorTickVisible="false" side="BOTTOM"  lowerBound="0"  upperBound="100.0"/>
                 </xAxis>
