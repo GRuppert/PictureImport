@@ -14,7 +14,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
-import static org.nyusziful.Main.PicOrganizesFXML.MOVE;
+import static org.nyusziful.Main.MainController.MOVE;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 
 public class Migrate {
@@ -42,7 +42,7 @@ public class Migrate {
                 File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
                 int chunkSize = 100;//At least 2, exiftool has a different output format for single files
                 progressBar = new JProgressBar(0, content.length);
-                progressDialog = PicOrganizesFXML.progressDiag(progressBar);
+                progressDialog = MainController.progressDiag(progressBar);
                 for (int j = 0; j*chunkSize < content.length; j++) {
                     ArrayList<String> files = new ArrayList<>();
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {

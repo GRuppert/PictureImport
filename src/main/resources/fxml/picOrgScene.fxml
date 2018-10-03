@@ -9,7 +9,7 @@
 <?import javafx.scene.chart.NumberAxis?>
 
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.PicOrganizesFXML">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.MainController">
     <top>
         <VBox>
             <HBox alignment="CENTER">

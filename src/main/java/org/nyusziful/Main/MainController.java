@@ -73,7 +73,7 @@ import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
 
 //Exiftool must be in PATH
 // <2GB file support
-public class PicOrganizesFXML implements Initializable {
+public class MainController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
@@ -113,16 +113,10 @@ public class PicOrganizesFXML implements Initializable {
 //    private File fromDir = new File("G:\\Pictures\\Photos\\Új");
     // </editor-fold>
 
-    // <editor-fold defaultstate="collapsed" desc="Static variables">
-    public static int MOVE = 1;
-    public static int COPY = 0;
-    // </editor-fold>
-
     /**
     * Variables
     */
     public XYChart.Series speeds = new XYChart.Series();
-    public static PicOrganizesFXML view;
 
     private long fileSizeCountTotal = 0;
     private long fileSizeCount = 0;
@@ -136,12 +130,10 @@ public class PicOrganizesFXML implements Initializable {
     private final ObservableList<duplicate> duplicates = FXCollections.observableArrayList();
     private final ObservableList<duplicate> modpic = FXCollections.observableArrayList();
 
-    public PicOrganizesFXML() {
-        view = this;
+    public MainController() {
+
+
     }
-
-
-
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {

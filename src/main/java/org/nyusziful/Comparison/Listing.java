@@ -2,7 +2,7 @@ package org.nyusziful.Comparison;
 
 
 import static org.nyusziful.Hash.MediaFileHash.getHash;
-import static org.nyusziful.Main.PicOrganizesFXML.view;
+import static org.nyusziful.Main.MainController.view;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import java.io.File;

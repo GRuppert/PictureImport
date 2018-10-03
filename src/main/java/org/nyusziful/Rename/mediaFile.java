@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -19,7 +20,6 @@ import java.util.Iterator;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.*;
 import static org.nyusziful.Hash.MediaFileHash.*;
-import static org.nyusziful.Main.PicOrganizesFXML.*;
 import static org.nyusziful.Main.StaticTools.*;
 import static org.nyusziful.Rename.fileRenamer.getFileName;
 import static org.nyusziful.Rename.fileRenamer.getV;
@@ -29,6 +29,11 @@ import static org.nyusziful.Rename.fileRenamer.getV;
  * @author gabor
  */
 public class mediaFile {
+    // <editor-fold defaultstate="collapsed" desc="Static variables">
+    public static int MOVE = 1;
+    public static int COPY = 0;
+    // </editor-fold>
+
     public static String Version = "6";
     
     private final SimpleBooleanProperty processing;
@@ -43,7 +48,9 @@ public class mediaFile {
     private String orig = "0";
     private String targetDirectory;
     private boolean forceRewrite;
-    
+    private ZoneId zone;
+    private String pictureSet;
+
     private String iID;
     private String dID;
     private String odID;
@@ -58,7 +65,7 @@ public class mediaFile {
         newName.set(getNewFileName("5"));
     }
     
-
+/*
     public mediaFile(String fileIn) {
         this(new File(fileIn));
     }
@@ -75,24 +82,28 @@ public class mediaFile {
     public mediaFile(meta metaExif) {
         this(new File(metaExif.originalFilename), metaExif, true);
     }
-    
-    public mediaFile(File fileIn, meta metaExif, boolean forceRewrite) {
+ */
+    public mediaFile(File fileIn, meta metaExif, boolean forceRewrite, ZoneId zone, String pictureSet, String targetDirectory) {
         this.file = fileIn;
+        this.zone = zone;
+        this.pictureSet = pictureSet;
         this.forceRewrite = forceRewrite;
+        this.targetDirectory = targetDirectory + "\\" + file.getParentFile().getName();
+
         processing = new SimpleBooleanProperty(true);
         currentName = new SimpleStringProperty(fileIn.getName());
+        xmpMissing = new SimpleBooleanProperty(false);
         note = new SimpleStringProperty("");
         if (metaExif != null && !metaExif.note.equals("")) addNote(metaExif.note, false);
-        xmpMissing = new SimpleBooleanProperty(false);
+
         originalName = file.getName();
-        targetDirectory = view.getToDir().toString() + "\\" + file.getParentFile().getName();
-        
+
         if (!supportedMediaFileType(currentName.get())) {
             newName = new SimpleStringProperty(/*targetDirectory + "\\" + */originalName);
         } else {
             String ext = FilenameUtils.getExtension(originalName.toLowerCase());
             if (metaExif == null) {//if it hasn't been batch readed in the caller function
-                metaExif = exifToMeta(file, view.getZone());
+                metaExif = exifToMeta(file, zone);
             }
 
             //standardizes data in Sony mp4 
@@ -112,7 +123,7 @@ public class mediaFile {
             meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
-                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp, view.getZone());
+                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp, zone);
             }
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
@@ -129,10 +140,10 @@ public class mediaFile {
         switch (ver) {
             case "5":
                 setiID();
-                return getFileName(ver, view.getPictureSet(), originalName, date, getiID(), getdID(), "");
+                return getFileName(ver, pictureSet, originalName, date, getiID(), getdID(), "");
 
             case "6":
-                return getFileName(ver, view.getPictureSet(), originalName, date, "", getdID(), orig);
+                return getFileName(ver, pictureSet, originalName, date, "", getdID(), orig);
             default:
                 return null;
         }
@@ -236,7 +247,7 @@ public class mediaFile {
                 addExif(date);
             }
         }
-        if (date != null && !date.isEqual(date.withZoneSameInstant(view.getZone()))) {addNote("TZ different", false);}
+        if (date != null && !date.isEqual(date.withZoneSameInstant(zone))) {addNote("TZ different", false);}
     }
     
     private void compareXMP(meta metaXmp) {
