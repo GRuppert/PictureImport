@@ -5,7 +5,6 @@
  */
 package org.nyusziful.ExifUtils;
 
-import org.nyusziful.Main.PicOrganizes;
 import static org.nyusziful.Main.StaticTools.ExifDateFormat;
 import static org.nyusziful.Main.StaticTools.XmpDateFormatTZ;
 import static org.nyusziful.Main.StaticTools.errorOut;

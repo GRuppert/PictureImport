@@ -60,7 +60,7 @@
             <Button text="Go" onAction="#handleGoButtonAction" fx:id="btnGo" />
             <Button text="Abort" onAction="#handleAbortButtonAction" fx:id="btnAbort" />
             <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefresh" />
-            <ProgressIndicator fx:id="progressIndicator" />
+            <ProgressIndicator fx:id="progressIndicator" progress="0"/>
             <Label fx:id="statusLabel" />
             <AreaChart legendVisible="false" fx:id="ac" prefWidth="300" prefHeight="100" minWidth="300" minHeight="100" maxWidth="300" maxHeight="100"> 
                 <xAxis>

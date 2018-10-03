@@ -5,7 +5,6 @@
  */
 package org.nyusziful.ExifUtils;
 
-import org.nyusziful.Main.PicOrganizes;
 import static org.nyusziful.Main.StaticTools.ExifDateFormat;
 import static org.nyusziful.Main.StaticTools.XmpDateFormatTZ;
 import static org.nyusziful.Main.StaticTools.errorOut;
@@ -29,6 +28,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -45,11 +45,11 @@ import org.apache.commons.io.FilenameUtils;
 public class ExifReadWriteIMR implements ifMetaLink {
     /**
      * Reads the standard metadata from the specified files in the given directory
-     * @param filenames String list of the representation of the file names
-     * @param dir the directory where the files are
+     * @param file file to be read
+     * @param zone Timezone used if it is not presented in the exif
      * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public meta exifToMeta(File file) {
+    public meta exifToMeta(File file, ZoneId zone) {
         ArrayList<String[]> tags;
         String model = null;
         String note = "";
@@ -102,7 +102,7 @@ public class ExifReadWriteIMR implements ifMetaLink {
         ZonedDateTime OrigDT = null;
         if (captureDate != null) {
             OrigDT = getZonedTimeFromStr(captureDate);
-            if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, PicOrganizes.view.getZone());
+            if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, zone);
         } else if (wTZ != null) {
             OrigDT = wTZ;
         }

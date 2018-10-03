@@ -73,16 +73,37 @@ import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
 
 //Exiftool must be in PATH
 // <2GB file support
-public class PicOrganizesFXML implements Initializable {     
+public class PicOrganizesFXML implements Initializable {
+
+    // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
     private ToggleGroup group;
-
     @FXML
     public ProgressIndicator progressIndicator;
-    
-    
+    @FXML
+    private Tab tab1;
+    @FXML
+    private Tab tab2;
+    @FXML
+    private Tab tab3;
+    @FXML
+    private Tab tab4;
+    @FXML
+    private ComboBox TimeZone;
+    @FXML
+    private Label statusLabel;
+    @FXML
+    private AreaChart<Number,Number> ac;
+    @FXML
+    private Label from;
+    @FXML
+    private Label to;
+    // </editor-fold>
+
     
     // <editor-fold defaultstate="collapsed" desc="User variables">
+    private int copyOrMove;
+    private ZoneId zone;
     private String pictureSet = "K";
     private Path toDir = Paths.get("G:\\Pictures\\Photos\\Új\\SzandranakUj");
     private File fromDir = new File("G:\\Pictures\\Photos\\Új\\Szandranak");
@@ -90,9 +111,6 @@ public class PicOrganizesFXML implements Initializable {
 //    private File fromDir = new File("E:\\temp\\compare\\2");
 //    private Path toDir = Paths.get("G:\\Pictures\\Photos\\V5\\Közös");
 //    private File fromDir = new File("G:\\Pictures\\Photos\\Új");
-    private String naModel;
-    private int copyOrMove;
-    private ZoneId zone;
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Static variables">
@@ -104,16 +122,13 @@ public class PicOrganizesFXML implements Initializable {
     * Variables
     */
     public XYChart.Series speeds = new XYChart.Series();
+    public static PicOrganizesFXML view;
 
     private long fileSizeCountTotal = 0;
     private long fileSizeCount = 0;
     private long fileCountTotal = 0;
     private long fileCount = 0;
     private BorderPane root;
-    private final Tab tab1 = new Tab();
-    private final Tab tab2 = new Tab();
-    private final Tab tab3 = new Tab();
-    private final Tab tab4 = new Tab();
 
     private Task currentTask;
     private final ObservableList<mediaFile> data = FXCollections.observableArrayList();
@@ -122,19 +137,12 @@ public class PicOrganizesFXML implements Initializable {
     private final ObservableList<duplicate> modpic = FXCollections.observableArrayList();
 
     public PicOrganizesFXML() {
-        
+        view = this;
     }
-    
-    @FXML
-    private ComboBox TimeZone;
 
-    @FXML
-    private Label statusLabel;
 
-    @FXML
-    private AreaChart<Number,Number> ac;
-    
-    
+
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         group.selectedToggleProperty().addListener((ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) -> {
@@ -518,7 +526,7 @@ public class PicOrganizesFXML implements Initializable {
    
     //Sets the center view to pic stripes
     private void stripesOnScreen(File dir){
-        TimeLine timeLine = new TimeLine(dir);
+        TimeLine timeLine = new TimeLine(dir, zone);
         root.setCenter(timeLine.getStripeBox());
         timeLine.resetView();
     }
@@ -837,9 +845,6 @@ public class PicOrganizesFXML implements Initializable {
     }
     
     @FXML
-    private Label from;
-    
-    @FXML
     private void handleFromButtonAction() {
         File file = StaticTools.getDir(getFromDir());
         if (file != null) {
@@ -848,9 +853,6 @@ public class PicOrganizesFXML implements Initializable {
         }
     }
 
-    @FXML
-    private Label to;
-    
     @FXML
     private void handleToButtonAction() {
         File file = StaticTools.getDir(getToDir().toFile());
@@ -881,7 +883,7 @@ public class PicOrganizesFXML implements Initializable {
         JProgressBar progressBar = new JProgressBar(0, data.size());
         JDialog progressDialog = progressDiag(progressBar);                           
         for (mediaFile record : data) {
-            record.write();
+            record.write(copyOrMove);
             progressBar.setValue(i);
             progressIndicator.setProgress(i/data.size());
             i++;
@@ -916,8 +918,7 @@ public class PicOrganizesFXML implements Initializable {
 
 
     
-    // <editor-fold defaultstate="collapsed" desc="Sets the whole look and function for the GUI">
-    private JDialog progressDiag(JProgressBar bar) {
+    public static JDialog progressDiag(JProgressBar bar) {
         JDialog progressDialog = new JDialog(null, Dialog.ModalityType.MODELESS);
         JPanel newContentPane = new JPanel();
         newContentPane.setOpaque(true); //content panes must be opaque
@@ -929,269 +930,7 @@ public class PicOrganizesFXML implements Initializable {
         progressDialog.setVisible(true);           
         return progressDialog;
     }
-    // </editor-fold>
 
-    private void osNev() {
-        zone = ZoneId.systemDefault();
-        copyOrMove = MOVE;
-        File dirRoot = new File("G:\\Pictures\\Photos\\Régi képek\\Dupla\\Képek");
-        toDir = Paths.get("G:\\Pictures\\Photos\\V5");
-//        File dirRoot = new File("G:\\Pictures\\Photos\\Új");
-        System.out.println("---- " + dirRoot.getName() + " ----\n\n");
-        File[] dirs = dirRoot.listFiles(new FilenameFilter() {
-             public boolean accept(File dir, String name) {
-                 return (new File(dir + "\\" + name).isDirectory());
-             }});
-        JProgressBar progressBar;
-        JDialog progressDialog;
-        for(int k = 0; k < dirs.length; k++) {
-            File dir1 = dirs[k];
-            if(dir1.isDirectory()) {
-                System.out.println(dir1.getName());
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-                progressBar = new JProgressBar(0, content.length);
-                progressDialog = progressDiag(progressBar); 
-                for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> files = new ArrayList<>();
-                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
-                        files.add(content[j*chunkSize + f].getName());
-                    }
-                    List<meta> exifToMeta = exifToMeta(files, dir1, this.getZone());
-                    Iterator<meta> iterator = exifToMeta.iterator();
-                    int i = 0;
-                    while (iterator.hasNext()) {
-                        meta next = iterator.next();
-                        mediaFile media = new mediaFile(next);
-                        if (media.getProcessing()) {
-                            media.write();
-                        } else {
-                            System.out.println(media.getNewName() + ": " + media.getNote());
-                        }
-                        i++;
-                        progressBar.setValue(i + j*chunkSize);
-                        progressIndicator.setProgress((i + j*chunkSize)/content.length);
-                    }
-                }
-                progressDialog.dispose();
-            }
-        }
-    }
-    
-    public void test() {
-        List<String> directories = defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Umag"));
-        listOnScreen(createMediafileTable(fileRenameList(directories))); 
-/*        zone = ZoneId.of("America/Lima");
-        /*
-        try {
-            ArrayList<String[]> readMeta = ExifReadWrite.readMeta(new File("e:\\Képek\\Dev\\ExifDamage\\orig\\DSC07620.JPG"));
-            ArrayList<String[]> readMeta1 = ExifReadWrite.readMeta(new File("e:\\Képek\\Dev\\ExifDamage\\digi\\DSC07620.JPG"));
-            readMeta.stream().forEach((meta) -> System.out.println(meta[0] + " : " + meta[1]));
-            System.out.println("-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-");
-            readMeta1.stream().forEach((meta) -> System.out.println(meta[0] + " : " + meta[1]));
-        } catch (ImageProcessingException | IOException ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        /*        ArrayList<comparableMediaFile> readDirectoryContent = readDirectoryContent(Paths.get("E:\\temp\\compare\\"));
-        for (comparableMediaFile mFile : readDirectoryContent) {
-        System.out.println(mFile.file.getName());
-        System.out.println("-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-");
-        ArrayList<String[]> readMeta = StaticTools.readMeta(mFile.file);
-        for (String[] tagValue : readMeta) {
-        System.out.println(tagValue[0] + " : " + tagValue[1]);
-        }
-        }
-        /*        String fullHash = "";
-        StringBuilder builder = new StringBuilder();
-        File input = new File("K:\\Képek\\Photos\\Nagyok\\Japán\\Nyers");
-        long startTime = System.nanoTime();
-        try {
-        Files.walkFileTree (input.toPath(), new SimpleFileVisitor<Path>() {
-        @Override public FileVisitResult
-        visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-        builder.append(StaticTools.getFullHash(file.toFile())).append(" ").append(file.getFileName()).append("\n");
-        }
-        return FileVisitResult.CONTINUE;
-        }
-        @Override public FileVisitResult
-        visitFileFailed(Path file, IOException exc) {
-        StaticTools.errorOut(file.toString(), exc);
-        // Skip folders that can't be traversed
-        return FileVisitResult.CONTINUE;
-        }
-        @Override public FileVisitResult
-        postVisitDirectory (Path dir, IOException exc) {
-        if (exc != null)
-        StaticTools.errorOut(dir.toString(), exc);
-        // Ignore errors traversing a folder
-        return FileVisitResult.CONTINUE;
-        }
-        });
-        FileUtils.writeStringToFile(new File("e:\\java.md5"), builder.toString(), "ISO-8859-1");
-        } catch (Exception ex) {
-        Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        System.out.println(fullHash + " : " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime));
-        startTime = System.nanoTime();
-        try {
-        fullHash = StaticTools.getFullHashPS(input);
-        } catch (IOException ex) {
-        Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        System.out.println(fullHash + " : " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime));
-        /*
-        osNev();
-        try {
-        Path move = Files.move(Paths.get("E:\\temp\\V5\\K2016-05-2_6@19-3_4-36(+0200)(Thu)-9e56374d932984f18cdf67adfdd5789d-9e56374d932984f18cdf67adfdd5789d-_DSC1920.ARW"), Paths.get("G:\\Pictures\\Photos\\V5\\Közös\\V5\\V5_K2016-05-2_6@19-3_4-36(+0200)(Thu)-null-4078f129a436f88812c97b9ae7500199-_DSC1920.ARW"));
-        } catch (IOException e) {
-        StaticTools.errorOut("Test", e);
-        }
-        /*        try {
-        ArrayList<String> hash = StaticTools.getHash(Paths.get("E:\\rosszJPG"));
-        System.out.println("h");
-        } catch (IOException ex) {
-        Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        /*        StaticTools.copyAndBackup(new File("F:\\proba.arw"), new File("E:\\proba.arw"), new File("G:\\proba.arw"));
-        String[] command = new String[]{"exiftool", "-a", "-G1", "20160325_130704_ILCE-5100-DSC05306.JPG"};
-        //        String[] command = new String[]{"exiftool", "-overwrite_original", "-n", "-DateTimeOriginal=2017:05:10 21:10:36+02:00", "-DocumentID=\"48f57c56c937f9dfe8ffdf73ee979c56\" ", "-OriginalDocumentID=\"48f57c56c937f9dfe8ffdf73ee979c56\" ", "DSC06063.JPG"};
-        ArrayList<String> exifTool = StaticTools.exifTool(command, new File("E:\\jatszoter\\jpg"));
-        String[] command2 = new String[]{"exiftool", "-a", "-G1", "20160325_050704_ILCE-5100-DSC05306_2.JPG"};
-        ArrayList<String> exifTool2 = StaticTools.exifTool(command2, new File("E:\\jatszoter\\jpg"));
-        Iterator<String> iterator = exifTool.iterator();
-        while (iterator.hasNext()) {
-        String next = iterator.next();
-        if (!exifTool2.remove(next)) {
-        System.out.println(next);
-        }
-        }
-        System.out.println("----------------------------------");
-        Iterator<String> iterator2 = exifTool2.iterator();
-        while (iterator2.hasNext()) {
-        System.out.println(iterator2.next());
-        }
-         *       osNev();
-        if (true) return;
-        /*        StringBuffer str = getDirHash(new File("E:\\KÃƒÂ©pek"), new StringBuffer());
-        PrintWriter writer = null;
-        try {
-        writer = new PrintWriter(new File("E:\\hash.txt"), "UTF-8");
-        writer.println(str);
-        } catch (FileNotFoundException ex) {
-        Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (UnsupportedEncodingException ex) {
-        Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-        } finally {
-        writer.close();
-        }
-         */
-//            readMetaDataTest(new File("e:\\DSC07914.ARW"));
-//            removeFiles();
-//            compare();
-        
-            
-            /*        ArrayList<comparableMediaFile> readDirectoryContent = readDirectoryContent(Paths.get("E:\\temp\\compare\\"));
-            for (comparableMediaFile mFile : readDirectoryContent) {
-            System.out.println(mFile.file.getName());
-            System.out.println("-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-");
-            ArrayList<String[]> readMeta = StaticTools.readMeta(mFile.file);
-            for (String[] tagValue : readMeta) {
-            System.out.println(tagValue[0] + " : " + tagValue[1]);
-            }
-            }
-            
-            /*        String fullHash = "";
-            StringBuilder builder = new StringBuilder();
-            File input = new File("K:\\Képek\\Photos\\Nagyok\\Japán\\Nyers");
-            long startTime = System.nanoTime();
-            try {
-            Files.walkFileTree (input.toPath(), new SimpleFileVisitor<Path>() {
-            @Override public FileVisitResult
-            visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-            if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-            builder.append(StaticTools.getFullHash(file.toFile())).append(" ").append(file.getFileName()).append("\n");
-            }
-            return FileVisitResult.CONTINUE;
-            }
-            @Override public FileVisitResult
-            visitFileFailed(Path file, IOException exc) {
-            StaticTools.errorOut(file.toString(), exc);
-            // Skip folders that can't be traversed
-            return FileVisitResult.CONTINUE;
-            }
-            @Override public FileVisitResult
-            postVisitDirectory (Path dir, IOException exc) {
-            if (exc != null)
-            StaticTools.errorOut(dir.toString(), exc);
-            // Ignore errors traversing a folder
-            return FileVisitResult.CONTINUE;
-            }
-            });
-            FileUtils.writeStringToFile(new File("e:\\java.md5"), builder.toString(), "ISO-8859-1");
-            } catch (Exception ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            System.out.println(fullHash + " : " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime));
-            startTime = System.nanoTime();
-            try {
-            fullHash = StaticTools.getFullHashPS(input);
-            } catch (IOException ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            System.out.println(fullHash + " : " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime));
-            /*
-            osNev();
-            try {
-            Path move = Files.move(Paths.get("E:\\temp\\V5\\K2016-05-2_6@19-3_4-36(+0200)(Thu)-9e56374d932984f18cdf67adfdd5789d-9e56374d932984f18cdf67adfdd5789d-_DSC1920.ARW"), Paths.get("G:\\Pictures\\Photos\\V5\\Közös\\V5\\V5_K2016-05-2_6@19-3_4-36(+0200)(Thu)-null-4078f129a436f88812c97b9ae7500199-_DSC1920.ARW"));
-            } catch (IOException e) {
-            StaticTools.errorOut("Test", e);
-            }
-            /*        try {
-            ArrayList<String> hash = StaticTools.getHash(Paths.get("E:\\rosszJPG"));
-            System.out.println("h");
-            } catch (IOException ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            /*        StaticTools.copyAndBackup(new File("F:\\proba.arw"), new File("E:\\proba.arw"), new File("G:\\proba.arw"));
-            String[] command = new String[]{"exiftool", "-a", "-G1", "20160325_130704_ILCE-5100-DSC05306.JPG"};
-            //        String[] command = new String[]{"exiftool", "-overwrite_original", "-n", "-DateTimeOriginal=2017:05:10 21:10:36+02:00", "-DocumentID=\"48f57c56c937f9dfe8ffdf73ee979c56\" ", "-OriginalDocumentID=\"48f57c56c937f9dfe8ffdf73ee979c56\" ", "DSC06063.JPG"};
-            ArrayList<String> exifTool = StaticTools.exifTool(command, new File("E:\\jatszoter\\jpg"));
-            String[] command2 = new String[]{"exiftool", "-a", "-G1", "20160325_050704_ILCE-5100-DSC05306_2.JPG"};
-            ArrayList<String> exifTool2 = StaticTools.exifTool(command2, new File("E:\\jatszoter\\jpg"));
-            Iterator<String> iterator = exifTool.iterator();
-            while (iterator.hasNext()) {
-            String next = iterator.next();
-            if (!exifTool2.remove(next)) {
-            System.out.println(next);
-            }
-            }
-            System.out.println("----------------------------------");
-            Iterator<String> iterator2 = exifTool2.iterator();
-            while (iterator2.hasNext()) {
-            System.out.println(iterator2.next());
-            }
-            *       osNev();
-            if (true) return;
-            /*        StringBuffer str = getDirHash(new File("E:\\KÃƒÂ©pek"), new StringBuffer());
-            PrintWriter writer = null;
-            try {
-            writer = new PrintWriter(new File("E:\\hash.txt"), "UTF-8");
-            writer.println(str);
-            } catch (FileNotFoundException ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (UnsupportedEncodingException ex) {
-            Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
-            } finally {
-            writer.close();
-            }
-            */ 
-//            readMetaDataTest(new File("e:\\DSC07914.ARW"));
-//            removeFiles();
-//            compare();
-
-    }
-    
     // <editor-fold defaultstate="collapsed" desc="Getter-Setter section">
     /**
      * @return the pictureSet
@@ -1212,13 +951,6 @@ public class PicOrganizesFXML implements Initializable {
      */
     public File getFromDir() {
         return fromDir;
-    }
-
-    /**
-     * @return the naModel
-     */
-    public String getNaModel() {
-        return naModel;
     }
 
     /**

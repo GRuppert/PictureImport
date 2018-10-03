@@ -7,7 +7,6 @@ package org.nyusziful.TimeShift;
  */
 
 
-import static org.nyusziful.Main.PicOrganizes.view;
 import static org.nyusziful.TimeShift.StaticTools.readFiles;
 import java.io.File;
 import java.time.Instant;
@@ -47,9 +46,9 @@ public class TimeLine {
     private BorderPane controls = new BorderPane();
     private int zoomAmount = 25;
 
-    public TimeLine(File dir) {
+    public TimeLine(File dir, ZoneId zone) {
         stripeBox = new VBox();
-        stripes = readFiles(dir, this, view.getZone());
+        stripes = readFiles(dir, this, zone);
         Iterator<String> iterator = stripes.keySet().iterator();
         resetLimits();
         while(iterator.hasNext()) {

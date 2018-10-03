@@ -5,6 +5,7 @@ import org.nyusziful.Rename.meta;
 import com.drew.imaging.ImageProcessingException;
 import java.io.File;
 import java.io.IOException;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,7 +26,7 @@ public interface ifMetaLink {
      * @param dir the directory where the files are
      * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public meta exifToMeta(File file);
+    public meta exifToMeta(File file, ZoneId zone);
 
     public ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException;
 

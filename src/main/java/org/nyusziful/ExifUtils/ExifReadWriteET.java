@@ -5,13 +5,6 @@
  */
 package org.nyusziful.ExifUtils;
 
-import org.nyusziful.Main.PicOrganizes;
-import static org.nyusziful.Main.StaticTools.ExifDateFormat;
-import static org.nyusziful.Main.StaticTools.XmpDateFormatTZ;
-import static org.nyusziful.Main.StaticTools.errorOut;
-import static org.nyusziful.Main.StaticTools.getTimeFromStr;
-import static org.nyusziful.Main.StaticTools.getZonedTimeFromStr;
-import org.nyusziful.Rename.meta;
 import com.adobe.xmp.XMPException;
 import com.adobe.xmp.XMPIterator;
 import com.adobe.xmp.XMPMeta;
@@ -23,27 +16,22 @@ import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.drew.metadata.xmp.XmpDirectory;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.Rename.meta;
+
+import java.io.*;
+import java.time.ZoneId;
+import java.util.*;
+
+import static org.nyusziful.Main.StaticTools.errorOut;
+import static org.nyusziful.Main.StaticTools.getZonedTimeFromStr;
 
 /**
  *
  * @author gabor
  */
 public class ExifReadWriteET implements ifMetaLink {
-    public meta exifToMeta(File fileMeta) {
+    public meta exifToMeta(File fileMeta, ZoneId zone) {
         ArrayList<String> files = new ArrayList<>();
         files.add(fileMeta.getName());
         List<meta> exifToMeta = exifToMeta(files, fileMeta.getParentFile());

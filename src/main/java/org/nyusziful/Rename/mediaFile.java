@@ -1,43 +1,26 @@
 package org.nyusziful.Rename;
 
 
-import static org.nyusziful.ExifUtils.ExifReadWrite.createXmp;
-import static org.nyusziful.ExifUtils.ExifReadWrite.getExif;
-import static org.nyusziful.Hash.MediaFileHash.EMPTYHASH;
-import static org.nyusziful.Hash.MediaFileHash.getHash;
-import static org.nyusziful.Hash.MediaFileHash.getFullHash;
-import static org.nyusziful.Main.PicOrganizes.COPY;
-import static org.nyusziful.Main.PicOrganizes.MOVE;
-import static org.nyusziful.Main.PicOrganizes.view;
-import static org.nyusziful.Main.StaticTools.ExifDateFormat;
-import static org.nyusziful.Main.StaticTools.ExifDateFormatTZ;
-import static org.nyusziful.Main.StaticTools.errorOut;
-import static org.nyusziful.Main.StaticTools.getZonedTimeFromStr;
-import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
-import static org.nyusziful.Main.StaticTools.supportedRAWFileType;
-import static org.nyusziful.Main.StaticTools.supportedVideoFileType;
+import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.property.SimpleStringProperty;
+import org.apache.commons.io.FilenameUtils;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Locale;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import org.apache.commons.io.FilenameUtils;
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
-import org.nyusziful.Main.PicOrganizes;
+
+import static org.nyusziful.ExifUtils.ExifReadWrite.*;
+import static org.nyusziful.Hash.MediaFileHash.*;
+import static org.nyusziful.Main.PicOrganizesFXML.*;
+import static org.nyusziful.Main.StaticTools.*;
 import static org.nyusziful.Rename.fileRenamer.getFileName;
 import static org.nyusziful.Rename.fileRenamer.getV;
 
@@ -70,9 +53,6 @@ public class mediaFile {
     private HashMap<String, String> exifPar = new HashMap<>();
     private ArrayList<String> exifMissing = new ArrayList<String>();
 
-    /**
-     * @param iID the iID to set
-     */
     private final void setiID() {
         this.iID = getFullHash(file);
         newName.set(getNewFileName("5"));
@@ -112,7 +92,7 @@ public class mediaFile {
         } else {
             String ext = FilenameUtils.getExtension(originalName.toLowerCase());
             if (metaExif == null) {//if it hasn't been batch readed in the caller function
-                metaExif = exifToMeta(file, PicOrganizes.view.getZone());
+                metaExif = exifToMeta(file, view.getZone());
             }
 
             //standardizes data in Sony mp4 
@@ -132,7 +112,7 @@ public class mediaFile {
             meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
-                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp, PicOrganizes.view.getZone());
+                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp, view.getZone());
             }
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
@@ -360,17 +340,17 @@ public class mediaFile {
         }
     }
     
-    public void write() {
+    public void write(int copy) {
         if (processing.get()) {
             try {        
                 validPath(this.getNewPath());
                 updateExif();
 //                if (iID == null && supportedMediaFileType(currentName.get())) setiID();
-                if (view.getCopyOrMove() == COPY) {
+                if (copy == COPY) {
                     Files.copy(this.getOldPath(), this.getNewPath());                               
                     if (fileXmp != null && fileXmp.exists())
                         Files.copy(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
-                } else if (view.getCopyOrMove() == MOVE) {
+                } else if (copy == MOVE) {
                     Files.move(this.getOldPath(), this.getNewPath());                               
                     if (fileXmp != null && fileXmp.exists())
                         Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
