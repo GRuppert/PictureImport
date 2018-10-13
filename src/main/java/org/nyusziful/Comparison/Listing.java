@@ -2,7 +2,6 @@ package org.nyusziful.Comparison;
 
 
 import static org.nyusziful.Hash.MediaFileHash.getHash;
-import static org.nyusziful.Main.MainController.view;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import java.io.File;
@@ -17,6 +16,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import javafx.application.Platform;
 import javafx.concurrent.Task;
 import javafx.scene.chart.XYChart;
+import org.nyusziful.Main.Progress;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -50,10 +50,7 @@ public class Listing extends Task implements FileVisitor<Path>
 
     @Override
     protected Object call() throws Exception {
-        Platform.runLater(() -> {
-            view.speeds.getData().clear();
-            view.speeds.getData().add(new XYChart.Data(0, 0));
-        });
+        Progress.getInstance().reset();
         fileSizeCountTotal = 0;
         fileSizeCount = 0;
         fileCountTotal = 0;
@@ -129,12 +126,12 @@ public class Listing extends Task implements FileVisitor<Path>
             sb.append('\n');
             fileSizeCount += attrs.size();
             fileCount++;
-            updateMessage("Read: " + fileSizeCount/1048576 + "MB from: " + fileSizeCountTotal/1048576 + "MB");
+            updateMessage("Read: " + fileSizeCount / 1048576 + "MB from: " + fileSizeCountTotal/1048576 + "MB");
             updateProgress(fileSizeCount, fileSizeCountTotal);
             long durationNano = System.nanoTime()-startTime;
-            int percent = (int) (fileSizeCount*100/fileSizeCountTotal);
-            int writeSpeed = (int) (fileSizeCount/1048576*1000000000/durationNano);
-            Platform.runLater(() -> {view.speeds.getData().add(new XYChart.Data(percent, writeSpeed));});
+            double percent = fileSizeCount / fileSizeCountTotal;
+            int writeSpeed = (int) (fileSizeCount / 1048576 * 1000000000 / durationNano);
+            Progress.getInstance().setProgress(percent, writeSpeed);
         }
         return FileVisitResult.CONTINUE;                            
     }

@@ -2,7 +2,7 @@ package org.nyusziful.Main;
 
 import org.nyusziful.Comparison.Listing;
 import org.nyusziful.Comparison.comparableMediaFile;
-import org.nyusziful.Rename.mediaFile;
+import org.nyusziful.Rename.WritableMediaFile;
 import org.nyusziful.Rename.metaProp;
 import org.nyusziful.Comparison.duplicate;
 import org.nyusziful.Comparison.metaChanges;
@@ -44,13 +44,11 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
-import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.Tab;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -66,7 +64,7 @@ import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
-import javax.swing.filechooser.FileSystemView;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
@@ -79,15 +77,7 @@ public class MainController implements Initializable {
     @FXML
     private ToggleGroup group;
     @FXML
-    public ProgressIndicator progressIndicator;
-    @FXML
-    private Tab tab1;
-    @FXML
-    private Tab tab2;
-    @FXML
-    private Tab tab3;
-    @FXML
-    private Tab tab4;
+    private ProgressIndicator progressIndicator;
     @FXML
     private ComboBox TimeZone;
     @FXML
@@ -98,25 +88,14 @@ public class MainController implements Initializable {
     private Label from;
     @FXML
     private Label to;
+    @FXML
+    private BorderPane mainPane;
     // </editor-fold>
 
     
-    // <editor-fold defaultstate="collapsed" desc="User variables">
-    private int copyOrMove;
-    private ZoneId zone;
-    private String pictureSet = "K";
-    private Path toDir = Paths.get("G:\\Pictures\\Photos\\Új\\SzandranakUj");
-    private File fromDir = new File("G:\\Pictures\\Photos\\Új\\Szandranak");
-//    private Path toDir = Paths.get("E:\\temp\\compare\\1");
-//    private File fromDir = new File("E:\\temp\\compare\\2");
-//    private Path toDir = Paths.get("G:\\Pictures\\Photos\\V5\\Közös");
-//    private File fromDir = new File("G:\\Pictures\\Photos\\Új");
-    // </editor-fold>
-
     /**
     * Variables
     */
-    public XYChart.Series speeds = new XYChart.Series();
 
     private long fileSizeCountTotal = 0;
     private long fileSizeCount = 0;
@@ -125,25 +104,26 @@ public class MainController implements Initializable {
     private BorderPane root;
 
     private Task currentTask;
-    private final ObservableList<mediaFile> data = FXCollections.observableArrayList();
     private final ObservableList<metaProp> meta = FXCollections.observableArrayList();
     private final ObservableList<duplicate> duplicates = FXCollections.observableArrayList();
     private final ObservableList<duplicate> modpic = FXCollections.observableArrayList();
 
+    private CommonProperties commonProperties;
+
     public MainController() {
-
-
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        CommonProperties.getInstance();
         group.selectedToggleProperty().addListener((ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) -> {
             if (group.getSelectedToggle() != null) {
-                copyOrMove = (int) group.getSelectedToggle().getUserData();                
+                commonProperties.setCopyOrMove((int) group.getSelectedToggle().getUserData());
             }
         });
 
-        ac.getData().addAll(speeds);
+        ac.getData().addAll(Progress.getInstance().getSpeeds());
+        progressIndicator.progressProperty().bindBidirectional(Progress.getInstance().getProgressProperty());
         
         ObservableList<String> timeZones = FXCollections.observableArrayList(ZoneId.getAvailableZoneIds()).sorted(new Comparator() {
             @Override
@@ -155,70 +135,21 @@ public class MainController implements Initializable {
             
         });
         TimeZone.getItems().addAll(timeZones);
-        zone = ZoneId.systemDefault();
+        commonProperties.setZone(ZoneId.systemDefault());
         TimeZone.getSelectionModel().select(ZoneId.systemDefault().getId());
     }    
 
 
-    
-    /**
-     * Creates a List with the predefined standard directories on recognized volumes
-     * @return a List of String which are the default on the recognized media
-     */
-    private List<String> defaultImportDirectories(File nonExt) {
-            ArrayList<File> drives = new ArrayList<>();
-            ArrayList<String> list = new ArrayList<>();
-            File[] paths;
-            FileSystemView fsv = FileSystemView.getFileSystemView();
-            paths = File.listRoots();
-            ArrayList<String> Sony = new ArrayList<>();
-            Sony.add("\\DCIM\\");
-            Sony.add("\\PRIVATE\\AVCHD\\BDMV\\STREAM\\");
-            Sony.add("\\PRIVATE\\M4ROOT\\CLIP\\");
-            ArrayList<String> Samsung = new ArrayList<>();
-            Samsung.add("\\DCIM\\Camera");
-            Samsung.add("\\WhatsApp\\Media\\WhatsApp Images");
 
-            for(File path:paths) {
-                String desc = fsv.getSystemTypeDescription(path);
-                if (desc.startsWith("USB") || desc.startsWith("SD")) drives.add(path);
-            }
-            if (nonExt != null && nonExt.exists()) {
-                for(File path:nonExt.listFiles()) {
-                    if (path.isDirectory()) drives.add(path);
-                }
-            }
-            
-            for(File drive:drives) {                    
-                boolean valid = true;
-                for(String criteria:Sony) {
-                    //Todo might not work when drive is just a drive: double backslash
-                    File probe = new File(drive+criteria);
-                    if(probe.exists() && probe.isDirectory()) {
-                        continue;
-                    }
-                    valid = false;
-                    break;
-                }
-                if (valid) {
-                    for (File subdir:new File(drive+Sony.get(0)).listFiles((File dir, String name) -> dir.isDirectory())) {
-                        list.add(subdir.toString());
-                    }
-                    list.add(drive+Sony.get(1));
-                    list.add(drive+Sony.get(2));
-                }
-            }
-            return list;		
-    }
 
     /**
-     * Creates a mediaFile object for each media file in the directories non-recursive
+     * Creates a WritableMediaFile object for each media file in the directories non-recursive
      * @param directories list of the directories to process
-     * @return the list of the <code> mediaFile </code> objects
+     * @return the list of the <code> WritableMediaFile </code> objects
      */
-    private List<mediaFile> fileRenameList(List<String> directories) {
+    private List<WritableMediaFile> fileRenameList(List<String> directories) {
         Iterator<String> iter = directories.iterator();
-        ArrayList<mediaFile> files = new ArrayList<>();
+        ArrayList<WritableMediaFile> files = new ArrayList<>();
         while(iter.hasNext()) {
             File dir1 = new File(iter.next());
             if(dir1.isDirectory()) {
@@ -236,16 +167,16 @@ public class MainController implements Initializable {
                     int i = 0;
                     while (iterator.hasNext()) {
                         meta next = iterator.next();
-                        files.add(new mediaFile(next));
+                        files.add(new WritableMediaFile(next));
                         progressBar.setValue(i + j*chunkSize);
-                        progressIndicator.setProgress((i + j*chunkSize)/content.length);
+                        this.setProgress((i + j*chunkSize)/content.length);
                     }
                 }
                 progressDialog.dispose();
             }				
         }
         return files;
-    }       
+    }
 
     private ArrayList<meta> fileMetaList(ArrayList<String> directories, Path target) {
         Iterator<String> iter = directories.iterator();
@@ -264,65 +195,13 @@ public class MainController implements Initializable {
                     }
                     metas.addAll(exifToMeta(fileList, dir1, this.getZone()));
                     progressBar.setValue(j*chunkSize);
-                    progressIndicator.setProgress((j*chunkSize)/content.length);
+                    this.setProgress((j*chunkSize)/content.length);
                 }
                 progressDialog.dispose();
             }				
         }
         return metas;
     }       
-
-    private void sortToDateDirectories(ArrayList<String> directories) {
-        Iterator<String> iter = directories.iterator();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles(new FilenameFilter() {
-                    public boolean accept(File dir, String name) {
-                            name = name.toLowerCase();
-                        return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
-                    }});
-                if (content.length > 0) {
-                    Path target = null;
-                    String oldName = "";
-                    ArrayList<mediaFile> files = new ArrayList<>();
-                    JProgressBar progressBar = new JProgressBar(0, content.length);
-                    JDialog progressDialog = progressDiag(progressBar); 
-                    int i = 0;
-                    for (File content1 : content) {
-                        Path source = content1.toPath();
-                        String fileName = content1.getName().substring(1, 12);
-                        fileName = fileName.substring(0, 4) + fileName.substring(5, 7) + fileName.substring(8, 9) + fileName.substring(10, 11);
-                        if (!fileName.equals(oldName)) {
-                            int fY = Integer.parseInt(fileName.substring(0, 4)), fM = Integer.parseInt(fileName.substring(4, 6))-1, fD = Integer.parseInt(fileName.substring(6, 8));
-                            File[] dirs = getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
-                            for (int j = 0; j < dirs.length; j++) {
-                                String actDir = dirs[j].getName();
-                                int sY = Integer.parseInt(actDir.substring(0, 4)), sM = Integer.parseInt(actDir.substring(5, 7))-1, sD = Integer.parseInt(actDir.substring(8, 10));
-                                int eY = Integer.parseInt(actDir.substring(13, 17)), eM = Integer.parseInt(actDir.substring(18, 20))-1, eD = Integer.parseInt(actDir.substring(21, 23));
-                                if ((fY*10000 + fM*100 + fD >= sY*10000 + sM*100 + sD) && (fY*10000 + fM*100 + fD <= eY*10000 + eM*100 + eD)) {
-                                    target = dirs[j].toPath();
-                                    files.add(new mediaFile(source.toString(), target + "\\"));
-                                    System.out.println(source.toString() + " -> " + target);
-                                    j = dirs.length;
-                                }
-                            }
-                        } else {
-                            files.add(new mediaFile(source.toString(), target + "\\"));
-                            System.out.println(source.toString() + " -> " + target);
-                        }   
-                        oldName = fileName;
-                        i++;
-                        progressBar.setValue(i);
-                        progressIndicator.setProgress((i)/content.length);
-                    }
-                    progressDialog.dispose();
-                    listOnScreen(createMediafileTable(files));
-                }
-            }				
-        }
-
-    }
 
     private ArrayList<comparableMediaFile> readDirectoryContent(Path path) {
         final ArrayList<comparableMediaFile> files = new ArrayList();
@@ -358,8 +237,7 @@ public class MainController implements Initializable {
             throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
         }
         return files;
-    } 
-    
+    }
 
     private TableView createDuplicateTable(ObservableList<duplicate> input) {
         TableView<duplicate> table = new TableView<>();
@@ -377,150 +255,84 @@ public class MainController implements Initializable {
         buttonCol.setMinWidth(150);
         buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("meta"));
         buttonCol.setCellFactory(new Callback<TableColumn<duplicate, String>, TableCell<duplicate, String>>() {
-          @Override 
-          public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {
-            return new TableCell<duplicate, String>() {
-              final Button button = new Button(); {
-                button.setMinWidth(130);
-              }
-              @Override
-              public void updateItem(final String object, boolean empty) {
-                super.updateItem(object, empty);
-                int index = this.getIndex();
-                setGraphic(button);
-                if (object != null) {
-                    button.setText(object);
-                    button.setOnAction(new EventHandler<ActionEvent>() {
-                      @Override public void handle(ActionEvent event) {
-                        StackPane pane = new StackPane();
-                        Scene scene = new Scene(pane);
-                        Stage stage = new Stage();
-                        stage.setScene(scene);
-                        TableView table = new TableView();
-                        table.setEditable(false);
+            @Override
+            public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {
+                return new TableCell<duplicate, String>() {
+                    final Button button = new Button(); {
+                        button.setMinWidth(130);
+                    }
+                    @Override
+                    public void updateItem(final String object, boolean empty) {
+                        super.updateItem(object, empty);
+                        int index = this.getIndex();
+                        setGraphic(button);
+                        if (object != null) {
+                            button.setText(object);
+                            button.setOnAction(new EventHandler<ActionEvent>() {
+                                @Override public void handle(ActionEvent event) {
+                                    StackPane pane = new StackPane();
+                                    Scene scene = new Scene(pane);
+                                    Stage stage = new Stage();
+                                    stage.setScene(scene);
+                                    TableView table = new TableView();
+                                    table.setEditable(false);
 
-                        TableColumn nameCol = new TableColumn("Field");
-                        TableColumn firstCol = new TableColumn("Left Value");
-                        TableColumn secondCol = new TableColumn("Right Value");
-                        nameCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                            @Override
-                             public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                 String[] x = p.getValue();
-                                 if (x != null && x.length>0) {
-                                     return new SimpleStringProperty(x[0]);
-                                 } else {
-                                     return new SimpleStringProperty("<no name>");
-                                 }
-                             }
-                        });
-                        firstCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                            @Override
-                             public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                 String[] x = p.getValue();
-                                 if (x != null && x.length>0) {
-                                     return new SimpleStringProperty(x[1]);
-                                 } else {
-                                     return new SimpleStringProperty("<no name>");
-                                 }
-                             }
-                        });
-                        secondCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                            @Override
-                             public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                 String[] x = p.getValue();
-                                 if (x != null && x.length>0) {
-                                     return new SimpleStringProperty(x[2]);
-                                 } else {
-                                     return new SimpleStringProperty("<no name>");
-                                 }
-                             }
-                        });
-                        table.getItems().addAll(input.get(index).getConflicts().toArray());
-                        table.getColumns().addAll(nameCol, firstCol, secondCol);
-                        pane.getChildren().add(table);
-                        stage.show();
-                      }
-                    });
-                } else {
-                    button.setText("");
-                }
-              }
-            };
-          }
-        });     
-        
-        
+                                    TableColumn nameCol = new TableColumn("Field");
+                                    TableColumn firstCol = new TableColumn("Left Value");
+                                    TableColumn secondCol = new TableColumn("Right Value");
+                                    nameCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                                        @Override
+                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                            String[] x = p.getValue();
+                                            if (x != null && x.length>0) {
+                                                return new SimpleStringProperty(x[0]);
+                                            } else {
+                                                return new SimpleStringProperty("<no name>");
+                                            }
+                                        }
+                                    });
+                                    firstCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                                        @Override
+                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                            String[] x = p.getValue();
+                                            if (x != null && x.length>0) {
+                                                return new SimpleStringProperty(x[1]);
+                                            } else {
+                                                return new SimpleStringProperty("<no name>");
+                                            }
+                                        }
+                                    });
+                                    secondCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                                        @Override
+                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                            String[] x = p.getValue();
+                                            if (x != null && x.length>0) {
+                                                return new SimpleStringProperty(x[2]);
+                                            } else {
+                                                return new SimpleStringProperty("<no name>");
+                                            }
+                                        }
+                                    });
+                                    table.getItems().addAll(input.get(index).getConflicts().toArray());
+                                    table.getColumns().addAll(nameCol, firstCol, secondCol);
+                                    pane.getChildren().add(table);
+                                    stage.show();
+                                }
+                            });
+                        } else {
+                            button.setText("");
+                        }
+                    }
+                };
+            }
+        });
+
+
         TableColumn secondNameCol = new TableColumn("Right Filename");
         secondNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("secondName"));
         table.setItems(input);
-        table.getColumns().addAll(processingCol, firstNameCol, buttonCol, secondNameCol); 
+        table.getColumns().addAll(processingCol, firstNameCol, buttonCol, secondNameCol);
         return table;
-    }
-   
-    //Sets the center view to table format
-    private void listOnScreen(TableView tableView) {
-        tab1.setText("Results");
-        tab1.setContent(tableView);
-        tab2.setText("");
-        tab2.setContent(null);
-        StaticTools.beep();
-    }
-
-    private TableView createMediafileTable(List<mediaFile> newData) {
-        data.removeAll(data);
-        newData.stream().forEach((obj) -> {data.add(obj);});
-        TableView<mediaFile> table = new TableView<>();
-        table.setEditable(true);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        TableColumn< mediaFile, Boolean > processingCol = new TableColumn<>( "Ok" );
-        processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
-        processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
-        processingCol.setPrefWidth(50);
-        processingCol.setResizable(false);
-        processingCol.setEditable(true);
-        TableColumn oldNameCol = new TableColumn("Current Filename");
-        oldNameCol.setCellValueFactory(new PropertyValueFactory<mediaFile, String>("currentName"));
-        TableColumn newNameCol = new TableColumn("After Rename");
-        newNameCol.setCellValueFactory(new PropertyValueFactory<mediaFile, String>("newName"));
-        TableColumn noteCol = new TableColumn("Remarks");
-        noteCol.setCellValueFactory(new PropertyValueFactory<mediaFile, String>("note"));
-        TableColumn< mediaFile, Boolean > xmpCol = new TableColumn<>( "xmp" );
-        xmpCol.setCellValueFactory( f -> f.getValue().xmpMissingProperty());
-        xmpCol.setCellFactory(CheckBoxTableCell.forTableColumn(xmpCol));
-        xmpCol.setPrefWidth(50);
-        xmpCol.setResizable(false);
-        table.setItems(data);
-        table.getColumns().addAll(processingCol, oldNameCol, newNameCol, noteCol, xmpCol); 
-        return table;
-    }
-    
-    private TableView createMetaTable(ArrayList<meta> newData) {
-        meta.removeAll(meta);
-        newData.stream().forEach((obj) -> {meta.add(new metaProp(obj));});
-        TableView<metaProp> table = new TableView<>();
-        table.setEditable(true);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        TableColumn< metaProp, Boolean > dateFormatCol = new TableColumn<>( "dateFormat" );
-        dateFormatCol.setCellValueFactory( f -> f.getValue().dateFormatProperty());
-        dateFormatCol.setCellFactory(CheckBoxTableCell.forTableColumn(dateFormatCol));
-        dateFormatCol.setPrefWidth(50);
-        dateFormatCol.setResizable(false);
-        TableColumn nameCol = new TableColumn("Filename");
-        nameCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("originalFilename"));
-        TableColumn dateCol = new TableColumn("Date");
-        dateCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("date"));
-        TableColumn modelCol = new TableColumn("Model");
-        modelCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("model"));
-        table.setItems(meta);
-        table.getColumns().addAll(nameCol, dateCol, dateFormatCol, modelCol); 
-        return table;
-    }
-   
-    //Sets the center view to pic stripes
-    private void stripesOnScreen(File dir){
-        TimeLine timeLine = new TimeLine(dir, zone);
-        root.setCenter(timeLine.getStripeBox());
-        timeLine.resetView();
     }
 
     private StringBuffer getDirHash(File dir, StringBuffer str) {
@@ -545,102 +357,11 @@ public class MainController implements Initializable {
         return str;
     }
 
-    private void listFiles(Path path, int start) {
-        fileSizeCountTotal = 0;
-        fileSizeCount = 0;
-        fileCountTotal = 0;
-        fileCount = 0;
-        String filename = "";
-        try
-        {
-            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
-                  @Override public FileVisitResult 
-                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-                            fileSizeCountTotal += attrs.size();
-                            fileCountTotal++;
-//                            System.out.println(file.getFileName());
-                        }
-                        return FileVisitResult.CONTINUE;                            
-                    }
 
-                  @Override public FileVisitResult 
-                visitFileFailed(Path file, IOException exc) {
-                        StaticTools.errorOut(file.toString(), exc);
-                        // Skip folders that can't be traversed
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                  @Override public FileVisitResult
-                postVisitDirectory (Path dir, IOException exc) {
-                        if (exc != null)
-                        StaticTools.errorOut(dir.toString(), exc);
-                        // Ignore errors traversing a folder
-                        return FileVisitResult.CONTINUE;
-                    }
-            });
-            JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
-            JDialog progressDialog = progressDiag(progressBar); 
-            PrintWriter pw = new PrintWriter(new File("e:\\test2.csv"));
-            long startTime = System.nanoTime();
-            String delimiter = "\t";
-            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
-                  @Override public FileVisitResult 
-                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-                            StringBuilder sb = new StringBuilder();
-                            String hash = getHash(file.toFile());
-                            sb.append(start + fileCount).append(delimiter);
-                            sb.append(hash).append(delimiter);
-                            sb.append(hash).append(delimiter);
-                            sb.append(delimiter);
-                            sb.append(file.getParent().toString().substring(2)).append(delimiter);
-                            sb.append(file.getFileName()).append(delimiter);
-                            sb.append(attrs.size());
-                            sb.append('\n');
-                            pw.write(sb.toString());
-                            fileSizeCount += attrs.size();
-                            fileCount++;
-                            if ((fileCount % 10000) == 0) {
-                                long toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
-                                System.out.print("Time elasped: " + toSeconds + "s Data processed: " + fileSizeCount/1048576 + "MB from " + fileCount + " files" );
-                                System.out.println(" Avg. speed " + fileSizeCount/1048576/toSeconds + "MB/s ETA: " + toSeconds*(fileSizeCountTotal - fileSizeCount)/fileSizeCount + "s Data left: " + (fileSizeCountTotal-fileSizeCount)/1048576 + "MB from " + (fileCountTotal-fileCount) + " files");
-                                pw.flush();
-                            }
-                            progressBar.setValue((int)(fileSizeCount/1000000));
-                            progressIndicator.setProgress(fileSizeCount/fileSizeCountTotal);
-                        }
-                        return FileVisitResult.CONTINUE;                            
-                    }
-
-                  @Override public FileVisitResult 
-                visitFileFailed(Path file, IOException exc) {
-//                        StaticTools.errorOut(file.toString(), exc);
-                        // Skip folders that can't be traversed
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                  @Override public FileVisitResult
-                postVisitDirectory (Path dir, IOException exc) {
-//                        if (exc != null)
-//                        StaticTools.errorOut(dir.toString(), exc);
-                        // Ignore errors traversing a folder
-                        return FileVisitResult.CONTINUE;
-                    }
-            });
-            pw.close();
-            progressDialog.dispose();
-        }
-        catch (IOException e)
-        {
-            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
-        }
-    }
-    
-
+    // <editor-fold defaultstate="collapsed" desc="View Action">
     @FXML
     private void handleImportButtonAction() {
-        List<String> directories = defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
+        List<String> directories = StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
         Path backupdrive = null;
         if ((backupdrive = Services.backupMounted()) == null) {
             StaticTools.errorOut("No backup Drive", new Exception("Attach a backup drive!"));
@@ -648,7 +369,7 @@ public class MainController implements Initializable {
 //                        return;
             }
         }
-        listOnScreen(createMediafileTable(fileRenameList(directories))); 
+        listOnScreen(createMediafileTable(fileRenameList(directories)));
     }
 
     @FXML
@@ -656,7 +377,7 @@ public class MainController implements Initializable {
         File file = StaticTools.getDir(getFromDir());
         if(file != null) {
             stripesOnScreen(file);
-        }                    
+        }
     }
 
     @FXML
@@ -666,8 +387,8 @@ public class MainController implements Initializable {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
             Path tempDir = Paths.get(getToDir().toString() + "\\" + file.getName());
-            listOnScreen(createMetaTable(fileMetaList(directories, tempDir))); 
-        }                    
+            listOnScreen(createMetaTable(fileMetaList(directories, tempDir)));
+        }
     }
 
     @FXML
@@ -676,8 +397,8 @@ public class MainController implements Initializable {
         if(file != null) {
             List<String> directories = new ArrayList<>();
             directories.add(file.toString());
-            listOnScreen(createMediafileTable(fileRenameList(directories))); 
-        }                    
+            listOnScreen(createMediafileTable(fileRenameList(directories)));
+        }
     }
 
     @FXML
@@ -686,25 +407,188 @@ public class MainController implements Initializable {
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
-            sortToDateDirectories(directories); 
-        }                    
+            sortToDateDirectories(directories);
+        }
     }
 
     @FXML
     private void handleShowButtonAction() {
-        File[] dirs = getToDir().toFile().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
+        show();
+    }
+
+    /**
+     * Compare Files according to their filenames
+     */
+    @FXML
+    private void handleCompareButtonAction() {
+        compare();
+    }
+
+    @FXML
+    private void handleListButtonAction() {
+        createList();
+    }
+
+    @FXML
+    private void handleToButtonAction() {
+        File file = StaticTools.getDir(getToDir().toFile());
+        if (file != null) {
+            toDir = file.toPath();
+            setToText(getToDir().toString());
+        }
+    }
+
+    @FXML
+    private void handleFromButtonAction() {
+        File file = StaticTools.getDir(getFromDir());
+        if (file != null) {
+            fromDir = file;
+            setFromText(getFromDir().toString());
+        }
+    }
+    // </editor-fold>
+
+    // <editor-fold defaultstate="collapsed" desc="View Update">
+    @FXML
+    private void handleTimeZoneComboBoxAction() {
+        zone = ZoneId.of(TimeZone.getSelectionModel().getSelectedItem().toString());
+    }
+
+    private void setFromText(String text) {
+        from.setText(text);
+    }
+
+    private void setToText(String text) {
+        to.setText(text);
+    }
+
+    //Sets the center view to table format
+    private void listOnScreen(TableView tableView) {
+        mainPane.setCenter(tableView);
+        StaticTools.beep();
+    }
+
+    //Sets the center view to pic stripes
+    private void stripesOnScreen(File dir){
+        TimeLine timeLine = new TimeLine(dir, this.getZone());
+        root.setCenter(timeLine.getStripeBox());
+        timeLine.resetView();
+    }
+
+
+
+    public void setProgress(double percent) {
+        progressIndicator.setProgress(percent < 1 ? percent : 1);
+    }
+
+
+    // </editor-fold>
+
+    // <editor-fold defaultstate="collapsed" desc="Model Notify">
+
+    // </editor-fold>
+
+    // <editor-fold defaultstate="collapsed" desc="Model Update">
+    private void createList() {
+        File file = StaticTools.getDir(getFromDir());
+        File output = StaticTools.getFile(getFromDir());
+        int start = -1;
+        do {
+            String result= JOptionPane.showInputDialog("Last record value: ");
+            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
+        } while (start == -1);
+        if(file != null && output != null) {
+//                    listFiles(file.toPath(), start + 1);
+            currentTask = new Listing(file.toPath(), start + 1, output);
+            Thread th = new Thread(currentTask);
+            progressIndicator.progressProperty().unbind();
+            progressIndicator.progressProperty().bind(currentTask.progressProperty());
+            statusLabel.textProperty().bind(currentTask.messageProperty());
+            th.setDaemon(true);
+            th.start();
+        }
+
+//                Listing p = new Listing();
+//                new Thread(p).start();
+
+/*                File file = StaticTools.getDir(getFromDir());
+        int start = -1;
+        do {
+            String result= JOptionPane.showInputDialog("Last record value: ");
+            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
+        } while (start == -1);
+        if(file != null) {
+            listFiles(file.toPath(), start + 1);
+        }
+        */
+    }
+
+    private void sortToDateDirectories(ArrayList<String> directories) {
+        Iterator<String> iter = directories.iterator();
+        while(iter.hasNext()) {
+            File dir1 = new File(iter.next());
+            if(dir1.isDirectory()) {
+                File[] content = dir1.listFiles(new FilenameFilter() {
+                    public boolean accept(File dir, String name) {
+                        name = name.toLowerCase();
+                        return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
+                    }});
+                if (content.length > 0) {
+                    Path target = null;
+                    String oldName = "";
+                    ArrayList<WritableMediaFile> files = new ArrayList<>();
+                    JProgressBar progressBar = new JProgressBar(0, content.length);
+                    JDialog progressDialog = progressDiag(progressBar);
+                    int i = 0;
+                    for (File content1 : content) {
+                        Path source = content1.toPath();
+                        String fileName = content1.getName().substring(1, 12);
+                        fileName = fileName.substring(0, 4) + fileName.substring(5, 7) + fileName.substring(8, 9) + fileName.substring(10, 11);
+                        if (!fileName.equals(oldName)) {
+                            int fY = Integer.parseInt(fileName.substring(0, 4)), fM = Integer.parseInt(fileName.substring(4, 6))-1, fD = Integer.parseInt(fileName.substring(6, 8));
+                            File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
+                            for (int j = 0; j < dirs.length; j++) {
+                                String actDir = dirs[j].getName();
+                                int sY = Integer.parseInt(actDir.substring(0, 4)), sM = Integer.parseInt(actDir.substring(5, 7))-1, sD = Integer.parseInt(actDir.substring(8, 10));
+                                int eY = Integer.parseInt(actDir.substring(13, 17)), eM = Integer.parseInt(actDir.substring(18, 20))-1, eD = Integer.parseInt(actDir.substring(21, 23));
+                                if ((fY*10000 + fM*100 + fD >= sY*10000 + sM*100 + sD) && (fY*10000 + fM*100 + fD <= eY*10000 + eM*100 + eD)) {
+                                    target = dirs[j].toPath();
+                                    files.add(new WritableMediaFile(source.toString(), target + "\\"));
+                                    System.out.println(source.toString() + " -> " + target);
+                                    j = dirs.length;
+                                }
+                            }
+                        } else {
+                            files.add(new WritableMediaFile(source.toString(), target + "\\"));
+                            System.out.println(source.toString() + " -> " + target);
+                        }
+                        oldName = fileName;
+                        i++;
+                        progressBar.setValue(i);
+                        this.setProgress((i)/content.length);
+                    }
+                    progressDialog.dispose();
+                    listOnScreen(createMediafileTable(files));
+                }
+            }
+        }
+
+    }
+
+    private void show() {
+        File[] dirs = commonProperties.getToDir().toFile().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
         for(int j = 0; j < dirs.length; j++) {
-                File[] content = dirs[j].listFiles();
+            File[] content = dirs[j].listFiles();
     /*                              File[] content = dirs[j].listFiles(new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
                     return name.endsWith(".mts") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4");
-                }});                                
+                }});
     */
-                System.out.println(dirs[j].getName() + " : " + content.length);
+            System.out.println(dirs[j].getName() + " : " + content.length);
         }
         ZonedDateTime cal;
-        File[] dirc = getFromDir().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
+        File[] dirc = commonProperties.getFromDir().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
         String oldDir = "";
         for(int j = 0; j < dirc.length - 1; j++) {
             String actDir = dirc[j].getName();
@@ -717,13 +601,9 @@ public class MainController implements Initializable {
         }
     }
 
-    /**
-     * Compare Files according to their filenames
-     */
-    @FXML
-    private void handleCompareButtonAction() {
-        ArrayList<comparableMediaFile> fromFiles = readDirectoryContent(getFromDir().toPath());
-        ArrayList<comparableMediaFile> toFiles = readDirectoryContent(getToDir());
+    private void compare() {
+        ArrayList<comparableMediaFile> fromFiles = readDirectoryContent(commonProperties.getFromDir().toPath());
+        ArrayList<comparableMediaFile> toFiles = readDirectoryContent(commonProperties.getToDir());
         ArrayList<comparableMediaFile> singles = new ArrayList<>();
         ObservableList<String> pairs =FXCollections.observableArrayList ();
         StringBuilder pairTo = new StringBuilder();
@@ -765,7 +645,7 @@ public class MainController implements Initializable {
                 if (change.compare(dup.footprint, dup.getDir())) {
                     continue dupFor;
                 }
-            }            
+            }
             metaChange.add(new metaChanges(dup.footprint, dup.getDir()));
         }
         for (metaChanges change : metaChange) {
@@ -801,115 +681,101 @@ public class MainController implements Initializable {
         StaticTools.beep();
     }
 
-    @FXML
-    private void handleListButtonAction() {
-        File file = StaticTools.getDir(getFromDir());
-        File output = StaticTools.getFile(getFromDir());
-        int start = -1;
-        do {
-            String result= JOptionPane.showInputDialog("Last record value: ");
-            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
-        } while (start == -1);
-        if(file != null && output != null) {
-//                    listFiles(file.toPath(), start + 1);
-            currentTask = new Listing(file.toPath(), start + 1, output);
-            Thread th = new Thread(currentTask);
-            progressIndicator.progressProperty().unbind();
-            progressIndicator.progressProperty().bind(currentTask.progressProperty());
-            statusLabel.textProperty().bind(currentTask.messageProperty());
-            th.setDaemon(true);
-            th.start();
+    private void listFiles(Path path, int start) {
+        fileSizeCountTotal = 0;
+        fileSizeCount = 0;
+        fileCountTotal = 0;
+        fileCount = 0;
+        String filename = "";
+        try
+        {
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult
+                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
+                        fileSizeCountTotal += attrs.size();
+                        fileCountTotal++;
+//                            System.out.println(file.getFileName());
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                visitFileFailed(Path file, IOException exc) {
+                    StaticTools.errorOut(file.toString(), exc);
+                    // Skip folders that can't be traversed
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+                    if (exc != null)
+                        StaticTools.errorOut(dir.toString(), exc);
+                    // Ignore errors traversing a folder
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
+            JDialog progressDialog = progressDiag(progressBar);
+            PrintWriter pw = new PrintWriter(new File("e:\\test2.csv"));
+            long startTime = System.nanoTime();
+            String delimiter = "\t";
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult
+                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
+                        StringBuilder sb = new StringBuilder();
+                        String hash = getHash(file.toFile());
+                        sb.append(start + fileCount).append(delimiter);
+                        sb.append(hash).append(delimiter);
+                        sb.append(hash).append(delimiter);
+                        sb.append(delimiter);
+                        sb.append(file.getParent().toString().substring(2)).append(delimiter);
+                        sb.append(file.getFileName()).append(delimiter);
+                        sb.append(attrs.size());
+                        sb.append('\n');
+                        pw.write(sb.toString());
+                        fileSizeCount += attrs.size();
+                        fileCount++;
+                        if ((fileCount % 10000) == 0) {
+                            long toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
+                            System.out.print("Time elasped: " + toSeconds + "s Data processed: " + fileSizeCount/1048576 + "MB from " + fileCount + " files" );
+                            System.out.println(" Avg. speed " + fileSizeCount/1048576/toSeconds + "MB/s ETA: " + toSeconds*(fileSizeCountTotal - fileSizeCount)/fileSizeCount + "s Data left: " + (fileSizeCountTotal-fileSizeCount)/1048576 + "MB from " + (fileCountTotal-fileCount) + " files");
+                            pw.flush();
+                        }
+                        progressBar.setValue((int)(fileSizeCount/1000000));
+                        this.setProgress(fileSizeCount/fileSizeCountTotal);
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                visitFileFailed(Path file, IOException exc) {
+//                        StaticTools.errorOut(file.toString(), exc);
+                    // Skip folders that can't be traversed
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+//                        if (exc != null)
+//                        StaticTools.errorOut(dir.toString(), exc);
+                    // Ignore errors traversing a folder
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            pw.close();
+            progressDialog.dispose();
         }
-
-//                Listing p = new Listing();
-//                new Thread(p).start();
-
-/*                File file = StaticTools.getDir(getFromDir());
-        int start = -1;
-        do {
-            String result= JOptionPane.showInputDialog("Last record value: ");
-            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
-        } while (start == -1);
-        if(file != null) {
-            listFiles(file.toPath(), start + 1);
-        }
-        */
-    }
-    
-    @FXML
-    private void handleFromButtonAction() {
-        File file = StaticTools.getDir(getFromDir());
-        if (file != null) {
-            fromDir = file;
-            from.setText(getFromDir().toString());
-        }
-    }
-
-    @FXML
-    private void handleToButtonAction() {
-        File file = StaticTools.getDir(getToDir().toFile());
-        if (file != null) {
-            toDir = file.toPath();
-            to.setText(getToDir().toString());
-        }
-    }
-
-    @FXML
-    private void handleAllButtonAction() {
-        data.forEach( f -> f.setProcessing(Boolean.TRUE));
-    }
-
-    @FXML
-    private void handleNoneButtonAction() {
-        data.forEach( f -> f.setProcessing(Boolean.FALSE));
-    }
-
-    @FXML
-    private void handleInvertButtonAction() {
-        data.forEach( f -> f.setProcessing(!f.getProcessing()));
-    }
-
-    @FXML
-    private void handleGoButtonAction() {
-        int i = 0;
-        JProgressBar progressBar = new JProgressBar(0, data.size());
-        JDialog progressDialog = progressDiag(progressBar);                           
-        for (mediaFile record : data) {
-            record.write(copyOrMove);
-            progressBar.setValue(i);
-            progressIndicator.setProgress(i/data.size());
-            i++;
-        }
-        data.removeAll(data);                        
-        progressDialog.dispose();
-        StaticTools.beep();
-    }
-
-    @FXML
-    private void handleAbortButtonAction() {
-        data.removeAll(data);
-        currentTask.cancel();
-    }
-
-    @FXML
-    private void handleRefreshButtonAction() {
-        for(mediaFile paths:data) {
-            Path newPath = paths.getNewPath();
-            String fileName = newPath.getFileName().toString();
-            String replacement = getToDir() + "\\" + fileName;
-            paths.setNewName(replacement);
+        catch (IOException e)
+        {
+            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
         }
     }
 
-    @FXML
-    private void handleTimeZoneComboBoxAction() {
-        zone = ZoneId.of(TimeZone.getSelectionModel().getSelectedItem().toString());
-    }
-    
+    // </editor-fold>
 
 
-
-    
     public static JDialog progressDiag(JProgressBar bar) {
         JDialog progressDialog = new JDialog(null, Dialog.ModalityType.MODELESS);
         JPanel newContentPane = new JPanel();
@@ -922,41 +788,4 @@ public class MainController implements Initializable {
         progressDialog.setVisible(true);           
         return progressDialog;
     }
-
-    // <editor-fold defaultstate="collapsed" desc="Getter-Setter section">
-    /**
-     * @return the pictureSet
-     */
-    public String getPictureSet() {
-        return pictureSet;
-    }
-
-    /**
-     * @return the toDir
-     */
-    public Path getToDir() {
-        return toDir;
-    }
-
-    /**
-     * @return the fromDir
-     */
-    public File getFromDir() {
-        return fromDir;
-    }
-
-    /**
-     * @return the copyOrMove
-     */
-    public int getCopyOrMove() {
-        return copyOrMove;
-    }
-
-    /**
-     * @return the zone
-     */
-    public ZoneId getZone() {
-        return zone;
-    }
-    // </editor-fold>
 }

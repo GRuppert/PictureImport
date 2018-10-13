@@ -28,7 +28,7 @@ import static org.nyusziful.Rename.fileRenamer.getV;
  *
  * @author gabor
  */
-public class mediaFile {
+public class WritableMediaFile implements mediaFile {
     // <editor-fold defaultstate="collapsed" desc="Static variables">
     public static int MOVE = 1;
     public static int COPY = 0;
@@ -66,24 +66,24 @@ public class mediaFile {
     }
     
 /*
-    public mediaFile(String fileIn) {
+    public WritableMediaFile(String fileIn) {
         this(new File(fileIn));
     }
 
-    public mediaFile(String fileIn, String targetDir) {
+    public WritableMediaFile(String fileIn, String targetDir) {
         this(fileIn);
         targetDirectory = targetDir;
     }
 
-    public mediaFile(File fileIn) {
+    public WritableMediaFile(File fileIn) {
         this(fileIn, null, true);
     }
     
-    public mediaFile(meta metaExif) {
+    public WritableMediaFile(meta metaExif) {
         this(new File(metaExif.originalFilename), metaExif, true);
     }
  */
-    public mediaFile(File fileIn, meta metaExif, boolean forceRewrite, ZoneId zone, String pictureSet, String targetDirectory) {
+    public WritableMediaFile(File fileIn, meta metaExif, boolean forceRewrite, ZoneId zone, String pictureSet, String targetDirectory) {
         this.file = fileIn;
         this.zone = zone;
         this.pictureSet = pictureSet;

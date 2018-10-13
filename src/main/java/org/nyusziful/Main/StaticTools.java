@@ -17,9 +17,14 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
+
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.filechooser.FileSystemView;
+
 import org.apache.commons.io.FilenameUtils;
 
 /**
@@ -104,6 +109,57 @@ public class StaticTools {
 
     }
 
+
+    /**
+     * Creates a List with the predefined standard directories on recognized volumes
+     * @return a List of String which are the default on the recognized media
+     */
+    public static List<String> defaultImportDirectories(File nonExt) {
+        ArrayList<File> drives = new ArrayList<>();
+        ArrayList<String> list = new ArrayList<>();
+        File[] paths;
+        FileSystemView fsv = FileSystemView.getFileSystemView();
+        paths = File.listRoots();
+        ArrayList<String> Sony = new ArrayList<>();
+        Sony.add("\\DCIM\\");
+        Sony.add("\\PRIVATE\\AVCHD\\BDMV\\STREAM\\");
+        Sony.add("\\PRIVATE\\M4ROOT\\CLIP\\");
+        ArrayList<String> Samsung = new ArrayList<>();
+        Samsung.add("\\DCIM\\Camera");
+        Samsung.add("\\WhatsApp\\Media\\WhatsApp Images");
+
+        for(File path:paths) {
+            String desc = fsv.getSystemTypeDescription(path);
+            if (desc.startsWith("USB") || desc.startsWith("SD")) drives.add(path);
+        }
+
+        if (nonExt != null && nonExt.exists()) {
+            for(File path:nonExt.listFiles()) {
+                if (path.isDirectory()) drives.add(path);
+            }
+        }
+
+        for(File drive:drives) {
+            boolean valid = true;
+            for(String criteria:Sony) {
+                //Todo might not work when drive is just a drive: double backslash
+                File probe = new File(drive+criteria);
+                if(probe.exists() && probe.isDirectory()) {
+                    continue;
+                }
+                valid = false;
+                break;
+            }
+            if (valid) {
+                for (File subdir:new File(drive+Sony.get(0)).listFiles((File dir, String name) -> dir.isDirectory())) {
+                    list.add(subdir.toString());
+                }
+                list.add(drive+Sony.get(1));
+                list.add(drive+Sony.get(2));
+            }
+        }
+        return list;
+    }
 
     /**
      * Open up a <code> JOptionPane </code> with the given parameters

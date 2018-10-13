@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.AreaChart?>
+<?import javafx.scene.chart.NumberAxis?>
+
+
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Rename.MediaFileTableViewController">
+    <top>
+        <HBox>
+            <Button text="All" onAction="#handleAllButtonAction" fx:id="btnAll" />
+            <Button text="None" onAction="#handleNoneButtonAction" fx:id="btnNone" />
+            <Button text="Invert" onAction="#handleInvertButtonAction" fx:id="btnInvert" />
+        </HBox>
+    </top>
+    <center>
+        <TableView>
+        </TableView>
+    </center>
+    <bottom>
+        <HBox>
+            <Button text="Go" onAction="#handleGoButtonAction" fx:id="btnGo" />
+            <Button text="Abort" onAction="#handleAbortButtonAction" fx:id="btnAbort" />
+            <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefresh" />
+        </HBox>
+    </bottom>
+</BorderPane>

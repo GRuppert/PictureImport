@@ -1,6 +1,6 @@
 package org.nyusziful.Main;
 
-import org.nyusziful.Rename.mediaFile;
+import org.nyusziful.Rename.WritableMediaFile;
 import org.nyusziful.Rename.meta;
 
 import javax.swing.*;
@@ -14,8 +14,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
-import static org.nyusziful.Main.MainController.MOVE;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
+import static org.nyusziful.Rename.WritableMediaFile.MOVE;
 
 public class Migrate {
     public static void main(String[] args) {
@@ -53,7 +53,9 @@ public class Migrate {
                     int i = 0;
                     while (iterator.hasNext()) {
                         meta next = iterator.next();
-                        mediaFile media = new mediaFile(next);
+                        //TODO null!
+                        WritableMediaFile media = null;
+//                        WritableMediaFile media = new WritableMediaFile(next);
                         if (media.getProcessing()) {
                             media.write(copyOrMove);
                         } else {

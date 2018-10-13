@@ -9,9 +9,10 @@
 <?import javafx.scene.chart.NumberAxis?>
 
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.MainController">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="mainPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.MainController">
     <top>
         <VBox>
+            <Label text="Functions" alignment="CENTER"/>
             <HBox alignment="CENTER">
                 <Button text="Import" onAction="#handleImportButtonAction" fx:id="btnImport" />
                 <Button text="Shift" onAction="#handleShiftButtonAction" fx:id="btnShift" />
@@ -23,18 +24,19 @@
                 <Button text="List" onAction="#handleListButtonAction" fx:id="btnList" />
             </HBox>
             <HBox>
-                <Label minHeight="16" minWidth="69" fx:id="from" />
-                <Button text="Set" onAction="#handleFromButtonAction" fx:id="btnFrom" />
-            </HBox>
-            <HBox>
-                <Label minHeight="16" minWidth="69" fx:id="to" />
-                <Button text="Set" onAction="#handleToButtonAction" fx:id="btnTo" />
+                <HBox alignment="CENTER_LEFT">
+                    <Label text="From"/>
+                    <Label minHeight="16" minWidth="69" fx:id="from" />
+                    <Button text="Set" onAction="#handleFromButtonAction" fx:id="btnFrom" />
+                </HBox>
+                <HBox alignment="CENTER_RIGHT">
+                    <Label text="To"/>
+                    <Label minHeight="16" minWidth="69" fx:id="to" />
+                    <Button text="Set" onAction="#handleToButtonAction" fx:id="btnTo" />
+                </HBox>
             </HBox>
             <HBox>
                 <ComboBox fx:id="TimeZone" onAction="#handleTimeZoneComboBoxAction" />            
-                <Button text="All" onAction="#handleAllButtonAction" fx:id="btnAll" />
-                <Button text="None" onAction="#handleNoneButtonAction" fx:id="btnNone" />
-                <Button text="Invert" onAction="#handleInvertButtonAction" fx:id="btnInvert" />
             </HBox>
         </VBox>
     </top>
@@ -48,18 +50,9 @@
         </VBox>
     </left>
     <center>
-        <TabPane>
-            <Tab fx:id="tab1"/>
-            <Tab fx:id="tab2"/>
-            <Tab fx:id="tab3"/>
-            <Tab fx:id="tab4"/>
-        </TabPane>
     </center>
     <bottom>
         <HBox alignment="CENTER" spacing="10">
-            <Button text="Go" onAction="#handleGoButtonAction" fx:id="btnGo" />
-            <Button text="Abort" onAction="#handleAbortButtonAction" fx:id="btnAbort" />
-            <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefresh" />
             <ProgressIndicator fx:id="progressIndicator" progress="0"/>
             <Label fx:id="statusLabel" />
             <AreaChart legendVisible="false" fx:id="ac" prefWidth="300" prefHeight="100" minWidth="300" minHeight="100" maxWidth="300" maxHeight="100"> 
