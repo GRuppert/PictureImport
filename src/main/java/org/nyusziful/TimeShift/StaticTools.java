@@ -5,7 +5,7 @@
  */
 package org.nyusziful.TimeShift;
 
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifTool;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import org.nyusziful.Rename.meta;
@@ -39,7 +39,7 @@ public class StaticTools {
 //            ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -Model " + fileNames, dir);
             ArrayList<String> files = new ArrayList<>();
             files.add(".");
-            List<meta> exifToMeta = exifToMeta(files, dir, ZoneId.systemDefault());
+            List<meta> exifToMeta = readFileMeta(files, dir, ZoneId.systemDefault());
             Iterator<meta> iterator = exifToMeta.iterator();
             String errors = "";
             while (iterator.hasNext()) {

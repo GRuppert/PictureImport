@@ -19,7 +19,7 @@
                 <Button text="Meta" onAction="#handleMetaButtonAction" fx:id="btnMeta" />
                 <Button text="Rename" onAction="#handleRenameButtonAction" fx:id="btnRename" />
                 <Button text="Sort to Directories" onAction="#handleMoveButtonAction" fx:id="btnMove" />
-                <Button text="Distribute" onAction="#handleShowButtonAction" fx:id="btnShow" />
+                <Button text="Check folder sturcture" onAction="#handleShowButtonAction" fx:id="btnShow" />
                 <Button text="Compare" onAction="#handleCompareButtonAction" fx:id="btnCompare" />
                 <Button text="List" onAction="#handleListButtonAction" fx:id="btnList" />
             </HBox>

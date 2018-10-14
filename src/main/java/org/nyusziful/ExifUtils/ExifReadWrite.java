@@ -43,17 +43,17 @@ import org.apache.commons.io.FilenameUtils;
  * @author gabor
  */
 public class ExifReadWrite {
-    public static meta exifToMeta(File fileMeta, ZoneId defaultTZ) {
+    public static meta readFileMeta(File fileMeta, ZoneId defaultTZ) {
         ArrayList<String> files = new ArrayList<>();
         files.add(fileMeta.getName());
-        List<meta> exifToMeta = exifToMeta(files, fileMeta.getParentFile(), defaultTZ);
+        List<meta> exifToMeta = readFileMeta(files, fileMeta.getParentFile(), defaultTZ);
         Iterator<meta> iterator = exifToMeta.iterator();
         if (iterator.hasNext()) {
             return iterator.next();
         }
         return null;
     }
-    
+
     /**
      * Reads the standard metadata from the specified files in the given directory
      * @param filenames String list of the representation of the file names
@@ -61,7 +61,7 @@ public class ExifReadWrite {
      * @param defaultTZ default time zone in case it can't be read from the filename
      * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public static List<meta> exifToMeta(ArrayList<String> filenames, File dir, ZoneId defaultTZ) {
+    public static List<meta> readFileMeta(ArrayList<String> filenames, File dir, ZoneId defaultTZ) {
 /*        long startTime = System.nanoTime();
         exifToMetaIMR(filenames, dir);
         System.out.println("IMR:" + (System.nanoTime() - startTime)/1000000);

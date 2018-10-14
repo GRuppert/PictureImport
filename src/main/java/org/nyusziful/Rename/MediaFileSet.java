@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 
 public class MediaFileSet {
@@ -42,7 +42,7 @@ public class MediaFileSet {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         fileList.add(content[j*chunkSize + f].getName());
                     }
-                    List<meta> exifToMeta = exifToMeta(fileList, dir1, commonProperties.getZone());
+                    List<meta> exifToMeta = readFileMeta(fileList, dir1, commonProperties.getZone());
                     Iterator<meta> iterator = exifToMeta.iterator();
                     int i = 0;
                     while (iterator.hasNext()) {
@@ -58,7 +58,6 @@ public class MediaFileSet {
 
 
         //Todo implement from the controller
-        ArrayList<WritableMediaFile> files = null;
         fillData(files);
     }
 

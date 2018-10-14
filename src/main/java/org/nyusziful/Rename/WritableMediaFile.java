@@ -15,7 +15,6 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.*;
@@ -103,7 +102,7 @@ public class WritableMediaFile implements tableViewMediaFile {
         } else {
             String ext = FilenameUtils.getExtension(originalName.toLowerCase());
             if (metaExif == null) {//if it hasn't been batch readed in the caller function
-                metaExif = exifToMeta(file, zone);
+                metaExif = readFileMeta(file, zone);
             }
 
             //standardizes data in Sony mp4 
@@ -123,7 +122,7 @@ public class WritableMediaFile implements tableViewMediaFile {
             meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
-                if (fileXmp.exists()) metaXmp = exifToMeta(fileXmp, zone);
+                if (fileXmp.exists()) metaXmp = readFileMeta(fileXmp, zone);
             }
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)

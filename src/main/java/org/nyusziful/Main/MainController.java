@@ -1,7 +1,6 @@
 package org.nyusziful.Main;
 
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
 import org.nyusziful.Comparison.Listing;
 import org.nyusziful.Comparison.comparableMediaFile;
 import org.nyusziful.Rename.*;
@@ -16,11 +15,9 @@ import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
 import org.nyusziful.TimeShift.TimeLine;
 import java.util.ArrayList;
 import java.util.Iterator;
-import java.awt.Dialog;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.URL;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -33,7 +30,7 @@ import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.concurrent.TimeUnit;
+
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -63,12 +60,11 @@ import javafx.stage.Stage;
 import javafx.util.Callback;
 import javax.swing.JDialog;
 import javax.swing.JOptionPane;
-import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 
 //Exiftool must be in PATH
 // <2GB file support
@@ -92,11 +88,6 @@ public class MainController implements Initializable {
     @FXML
     private BorderPane mainPane;
     // </editor-fold>
-
-    private long fileSizeCountTotal = 0;
-    private long fileSizeCount = 0;
-    private long fileCountTotal = 0;
-    private long fileCount = 0;
 
     private Task currentTask;
     private final ObservableList<metaProp> meta = FXCollections.observableArrayList();
@@ -133,209 +124,6 @@ public class MainController implements Initializable {
         TimeZone.getSelectionModel().select(ZoneId.systemDefault().getId());
     }
 
-    private TableView createMetaTable(ArrayList<meta> newData) {
-        meta.removeAll(meta);
-        newData.stream().forEach((obj) -> {meta.add(new metaProp(obj));});
-        TableView<metaProp> table = new TableView<>();
-        table.setEditable(true);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        TableColumn< metaProp, Boolean > dateFormatCol = new TableColumn<>( "dateFormat" );
-        dateFormatCol.setCellValueFactory( f -> f.getValue().dateFormatProperty());
-        dateFormatCol.setCellFactory(CheckBoxTableCell.forTableColumn(dateFormatCol));
-        dateFormatCol.setPrefWidth(50);
-        dateFormatCol.setResizable(false);
-        TableColumn nameCol = new TableColumn("Filename");
-        nameCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("originalFilename"));
-        TableColumn dateCol = new TableColumn("Date");
-        dateCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("date"));
-        TableColumn modelCol = new TableColumn("Model");
-        modelCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("model"));
-        table.setItems(meta);
-        table.getColumns().addAll(nameCol, dateCol, dateFormatCol, modelCol);
-        return table;
-    }
-
-
-    private ArrayList<meta> fileMetaList(ArrayList<String> directories, Path target) {
-        Iterator<String> iter = directories.iterator();
-        ArrayList<meta> metas = new ArrayList<>();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-                JProgressBar progressBar = new JProgressBar(0, content.length);
-                JDialog progressDialog = progressDiag(progressBar); 
-                for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> fileList = new ArrayList<>();
-                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
-                        fileList.add(content[j*chunkSize + f].getName());
-                    }
-                    metas.addAll(exifToMeta(fileList, dir1, commonProperties.getZone()));
-                    progressBar.setValue(j*chunkSize);
-                    this.setProgress((j*chunkSize)/content.length);
-                }
-                progressDialog.dispose();
-            }				
-        }
-        return metas;
-    }       
-
-    private ArrayList<comparableMediaFile> readDirectoryContent(Path path) {
-        final ArrayList<comparableMediaFile> files = new ArrayList();
-        try
-        {
-            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
-                  @Override public FileVisitResult 
-                visitFile(Path file, BasicFileAttributes attrs) {
-                        if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                            files.add(new comparableMediaFile(file.toFile(), getV(file.toFile().getName())));                               
-                        }
-                        return FileVisitResult.CONTINUE;                            
-                    }
-
-                  @Override public FileVisitResult 
-                visitFileFailed(Path file, IOException exc) {
-                        StaticTools.errorOut(file.toString(), exc);
-                        // Skip folders that can't be traversed
-                        return FileVisitResult.CONTINUE;
-                    }
-
-                  @Override public FileVisitResult
-                postVisitDirectory (Path dir, IOException exc) {
-                        if (exc != null)
-                        StaticTools.errorOut(dir.toString(), exc);
-                        // Ignore errors traversing a folder
-                        return FileVisitResult.CONTINUE;
-                    }
-            });
-        }
-        catch (IOException e)
-        {
-            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
-        }
-        return files;
-    }
-
-    private TableView createDuplicateTable(ObservableList<duplicate> input) {
-        TableView<duplicate> table = new TableView<>();
-        table.setEditable(true);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        TableColumn< duplicate, Boolean > processingCol = new TableColumn<>( "Ok" );
-        processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
-        processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
-        processingCol.setPrefWidth(50);
-        processingCol.setResizable(false);
-        processingCol.setEditable(true);
-        TableColumn firstNameCol = new TableColumn("Left Filename");
-        firstNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("firstName"));
-        TableColumn buttonCol = new TableColumn("Metadata");
-        buttonCol.setMinWidth(150);
-        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("meta"));
-        buttonCol.setCellFactory(new Callback<TableColumn<duplicate, String>, TableCell<duplicate, String>>() {
-            @Override
-            public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {
-                return new TableCell<duplicate, String>() {
-                    final Button button = new Button(); {
-                        button.setMinWidth(130);
-                    }
-                    @Override
-                    public void updateItem(final String object, boolean empty) {
-                        super.updateItem(object, empty);
-                        int index = this.getIndex();
-                        setGraphic(button);
-                        if (object != null) {
-                            button.setText(object);
-                            button.setOnAction(new EventHandler<ActionEvent>() {
-                                @Override public void handle(ActionEvent event) {
-                                    StackPane pane = new StackPane();
-                                    Scene scene = new Scene(pane);
-                                    Stage stage = new Stage();
-                                    stage.setScene(scene);
-                                    TableView table = new TableView();
-                                    table.setEditable(false);
-
-                                    TableColumn nameCol = new TableColumn("Field");
-                                    TableColumn firstCol = new TableColumn("Left Value");
-                                    TableColumn secondCol = new TableColumn("Right Value");
-                                    nameCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                                        @Override
-                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                            String[] x = p.getValue();
-                                            if (x != null && x.length>0) {
-                                                return new SimpleStringProperty(x[0]);
-                                            } else {
-                                                return new SimpleStringProperty("<no name>");
-                                            }
-                                        }
-                                    });
-                                    firstCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                                        @Override
-                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                            String[] x = p.getValue();
-                                            if (x != null && x.length>0) {
-                                                return new SimpleStringProperty(x[1]);
-                                            } else {
-                                                return new SimpleStringProperty("<no name>");
-                                            }
-                                        }
-                                    });
-                                    secondCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                                        @Override
-                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                            String[] x = p.getValue();
-                                            if (x != null && x.length>0) {
-                                                return new SimpleStringProperty(x[2]);
-                                            } else {
-                                                return new SimpleStringProperty("<no name>");
-                                            }
-                                        }
-                                    });
-                                    table.getItems().addAll(input.get(index).getConflicts().toArray());
-                                    table.getColumns().addAll(nameCol, firstCol, secondCol);
-                                    pane.getChildren().add(table);
-                                    stage.show();
-                                }
-                            });
-                        } else {
-                            button.setText("");
-                        }
-                    }
-                };
-            }
-        });
-
-
-        TableColumn secondNameCol = new TableColumn("Right Filename");
-        secondNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("secondName"));
-        table.setItems(input);
-        table.getColumns().addAll(processingCol, firstNameCol, buttonCol, secondNameCol);
-        return table;
-    }
-
-    private StringBuffer getDirHash(File dir, StringBuffer str) {
-        if(dir.isDirectory()) {
-            File[] dirs = dir.listFiles(new FilenameFilter() {
-                public boolean accept(File dir, String name) {
-                    return (new File(dir + "\\" + name).isDirectory());
-                }});
-            for(int i = 0; i < dirs.length; i++) {
-                str = getDirHash(dirs[i], str);
-            } 
-            File[] content = dir.listFiles(new FilenameFilter() {
-                public boolean accept(File dir, String name) {
-                    return supportedMediaFileType(name);
-                }});
-            for(int i = 0; i < content.length; i++) {
-                String hash = getHash(content[i]);
-                str.append(hash + "\t" + content[i] + "\n");
-                content[i].renameTo(new File(content[i].getParentFile() + "\\" + hash + content[i].getName()));
-            } 
-        }       
-        return str;
-    }
-
-
     // <editor-fold defaultstate="collapsed" desc="View Action">
     @FXML
     private void handleImportButtonAction() {
@@ -357,9 +145,6 @@ public class MainController implements Initializable {
             stripesOnScreen(file);
         }
     }
-
-
-
 
     @FXML
     private void handleMetaButtonAction() {
@@ -473,41 +258,181 @@ public class MainController implements Initializable {
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Model Update">
-    private void createList() {
-        File file = StaticTools.getDir(commonProperties.getFromDir());
-        File output = StaticTools.getFile(commonProperties.getFromDir());
-        int start;
-        do {
-            String result= JOptionPane.showInputDialog("Last record value: ");
-            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
-        } while (start == -1);
-        if(file != null && output != null) {
-//                    listFiles(file.toPath(), start + 1);
-            currentTask = new Listing(file.toPath(), start + 1, output);
-            Thread th = new Thread(currentTask);
-            progressIndicator.progressProperty().unbind();
-            progressIndicator.progressProperty().bind(currentTask.progressProperty());
-            statusLabel.textProperty().bind(currentTask.messageProperty());
-            th.setDaemon(true);
-            th.start();
-        }
 
-//                Listing p = new Listing();
-//                new Thread(p).start();
+    // </editor-fold>
 
-/*                File file = StaticTools.getDir(getFromDir());
-        int start = -1;
-        do {
-            String result= JOptionPane.showInputDialog("Last record value: ");
-            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
-        } while (start == -1);
-        if(file != null) {
-            listFiles(file.toPath(), start + 1);
-        }
-        */
+
+    private TableView createMetaTable(ArrayList<meta> newData) {
+        meta.removeAll(meta);
+        newData.stream().forEach((obj) -> {meta.add(new metaProp(obj));});
+        TableView<metaProp> table = new TableView<>();
+        table.setEditable(true);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn< metaProp, Boolean > dateFormatCol = new TableColumn<>( "dateFormat" );
+        dateFormatCol.setCellValueFactory( f -> f.getValue().dateFormatProperty());
+        dateFormatCol.setCellFactory(CheckBoxTableCell.forTableColumn(dateFormatCol));
+        dateFormatCol.setPrefWidth(50);
+        dateFormatCol.setResizable(false);
+        TableColumn nameCol = new TableColumn("Filename");
+        nameCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("originalFilename"));
+        TableColumn dateCol = new TableColumn("Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("date"));
+        TableColumn modelCol = new TableColumn("Model");
+        modelCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("model"));
+        table.setItems(meta);
+        table.getColumns().addAll(nameCol, dateCol, dateFormatCol, modelCol);
+        return table;
     }
 
+    private ArrayList<meta> fileMetaList(ArrayList<String> directories, Path target) {
+        Iterator<String> iter = directories.iterator();
+        ArrayList<meta> metas = new ArrayList<>();
+        while(iter.hasNext()) {
+            File dir1 = new File(iter.next());
+            if(dir1.isDirectory()) {
+                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
+                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
+                JProgressBar progressBar = new JProgressBar(0, content.length);
+                JDialog progressDialog = progressDiag(progressBar);
+                for (int j = 0; j*chunkSize < content.length; j++) {
+                    ArrayList<String> fileList = new ArrayList<>();
+                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
+                        fileList.add(content[j*chunkSize + f].getName());
+                    }
+                    metas.addAll(readFileMeta(fileList, dir1, commonProperties.getZone()));
+                    progressBar.setValue(j*chunkSize);
+                    this.setProgress((j*chunkSize)/content.length);
+                }
+                progressDialog.dispose();
+            }
+        }
+        return metas;
+    }
 
+    private ArrayList<comparableMediaFile> readDirectoryContent(Path path) {
+        List<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsRecursive(path);
+        final ArrayList<comparableMediaFile> files = new ArrayList();
+        directoryElements.stream().forEach((de) -> files.add(new comparableMediaFile(de.file, getV(de.file.getName()))));
+        return files;
+    }
+
+    private TableView createDuplicateTable(ObservableList<duplicate> input) {
+        TableView<duplicate> table = new TableView<>();
+        table.setEditable(true);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn< duplicate, Boolean > processingCol = new TableColumn<>( "Ok" );
+        processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
+        processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
+        processingCol.setPrefWidth(50);
+        processingCol.setResizable(false);
+        processingCol.setEditable(true);
+        TableColumn firstNameCol = new TableColumn("Left Filename");
+        firstNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("firstName"));
+        TableColumn buttonCol = new TableColumn("Metadata");
+        buttonCol.setMinWidth(150);
+        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("meta"));
+        buttonCol.setCellFactory(new Callback<TableColumn<duplicate, String>, TableCell<duplicate, String>>() {
+            @Override
+            public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {
+                return new TableCell<duplicate, String>() {
+                    final Button button = new Button(); {
+                        button.setMinWidth(130);
+                    }
+                    @Override
+                    public void updateItem(final String object, boolean empty) {
+                        super.updateItem(object, empty);
+                        int index = this.getIndex();
+                        setGraphic(button);
+                        if (object != null) {
+                            button.setText(object);
+                            button.setOnAction(new EventHandler<ActionEvent>() {
+                                @Override public void handle(ActionEvent event) {
+                                    StackPane pane = new StackPane();
+                                    Scene scene = new Scene(pane);
+                                    Stage stage = new Stage();
+                                    stage.setScene(scene);
+                                    TableView table = new TableView();
+                                    table.setEditable(false);
+
+                                    TableColumn nameCol = new TableColumn("Field");
+                                    TableColumn firstCol = new TableColumn("Left Value");
+                                    TableColumn secondCol = new TableColumn("Right Value");
+                                    nameCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                                        @Override
+                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                            String[] x = p.getValue();
+                                            if (x != null && x.length>0) {
+                                                return new SimpleStringProperty(x[0]);
+                                            } else {
+                                                return new SimpleStringProperty("<no name>");
+                                            }
+                                        }
+                                    });
+                                    firstCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                                        @Override
+                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                            String[] x = p.getValue();
+                                            if (x != null && x.length>0) {
+                                                return new SimpleStringProperty(x[1]);
+                                            } else {
+                                                return new SimpleStringProperty("<no name>");
+                                            }
+                                        }
+                                    });
+                                    secondCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
+                                        @Override
+                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
+                                            String[] x = p.getValue();
+                                            if (x != null && x.length>0) {
+                                                return new SimpleStringProperty(x[2]);
+                                            } else {
+                                                return new SimpleStringProperty("<no name>");
+                                            }
+                                        }
+                                    });
+                                    table.getItems().addAll(input.get(index).getConflicts().toArray());
+                                    table.getColumns().addAll(nameCol, firstCol, secondCol);
+                                    pane.getChildren().add(table);
+                                    stage.show();
+                                }
+                            });
+                        } else {
+                            button.setText("");
+                        }
+                    }
+                };
+            }
+        });
+
+
+        TableColumn secondNameCol = new TableColumn("Right Filename");
+        secondNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("secondName"));
+        table.setItems(input);
+        table.getColumns().addAll(processingCol, firstNameCol, buttonCol, secondNameCol);
+        return table;
+    }
+
+    private StringBuffer getDirHash(File dir, StringBuffer str) {
+        if(dir.isDirectory()) {
+            File[] dirs = dir.listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return (new File(dir + "\\" + name).isDirectory());
+                }});
+            for(int i = 0; i < dirs.length; i++) {
+                str = getDirHash(dirs[i], str);
+            }
+            File[] content = dir.listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return supportedMediaFileType(name);
+                }});
+            for(int i = 0; i < content.length; i++) {
+                String hash = getHash(content[i]);
+                str.append(hash + "\t" + content[i] + "\n");
+                content[i].renameTo(new File(content[i].getParentFile() + "\\" + hash + content[i].getName()));
+            }
+        }
+        return str;
+    }
 
     private void sortToDateDirectories(ArrayList<String> directories) {
         for (String directory : directories) {
@@ -559,32 +484,6 @@ public class MainController implements Initializable {
             }
         }
 
-    }
-
-    private void show() {
-        File[] dirs = commonProperties.getToDir().toFile().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
-        for(int j = 0; j < dirs.length; j++) {
-            File[] content = dirs[j].listFiles();
-    /*                              File[] content = dirs[j].listFiles(new FilenameFilter() {
-                    public boolean accept(File dir, String name) {
-                        name = name.toLowerCase();
-                    return name.endsWith(".mts") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4");
-                }});
-    */
-            System.out.println(dirs[j].getName() + " : " + content.length);
-        }
-        ZonedDateTime cal;
-        File[] dirc = commonProperties.getFromDir().listFiles(new FilenameFilter() {public boolean accept(File dir, String name) {return dir.isDirectory();}});
-        String oldDir = "";
-        for(int j = 0; j < dirc.length - 1; j++) {
-            String actDir = dirc[j].getName();
-            int eY = Integer.parseInt(actDir.substring(13, 17)), eM = Integer.parseInt(actDir.substring(18, 20))-1, eD = Integer.parseInt(actDir.substring(21, 23));
-            String nextDir = dirc[j].getName();
-            int sY = Integer.parseInt(nextDir.substring(0, 4)), sM = Integer.parseInt(nextDir.substring(5, 7))-1, sD = Integer.parseInt(nextDir.substring(8, 10));
-            if (sY*10000 + sM*100 + sD <= eY*10000 + eM*100 +  eD) {
-                System.out.println(oldDir + " -><- " + actDir);
-            }
-        }
     }
 
     private void compare() {
@@ -667,111 +566,78 @@ public class MainController implements Initializable {
         StaticTools.beep();
     }
 
-    private void listFiles(Path path, int start) {
-        fileSizeCountTotal = 0;
-        fileSizeCount = 0;
-        fileCountTotal = 0;
-        fileCount = 0;
-        String filename = "";
-        try
-        {
-            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult
-                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-                        fileSizeCountTotal += attrs.size();
-                        fileCountTotal++;
-//                            System.out.println(file.getFileName());
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
 
-                @Override public FileVisitResult
-                visitFileFailed(Path file, IOException exc) {
-                    StaticTools.errorOut(file.toString(), exc);
-                    // Skip folders that can't be traversed
-                    return FileVisitResult.CONTINUE;
-                }
 
-                @Override public FileVisitResult
-                postVisitDirectory (Path dir, IOException exc) {
-                    if (exc != null)
-                        StaticTools.errorOut(dir.toString(), exc);
-                    // Ignore errors traversing a folder
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-            JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
-            JDialog progressDialog = progressDiag(progressBar);
-            PrintWriter pw = new PrintWriter(new File("e:\\test2.csv"));
-            long startTime = System.nanoTime();
-            String delimiter = "\t";
-            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult
-                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-                        StringBuilder sb = new StringBuilder();
-                        String hash = getHash(file.toFile());
-                        sb.append(start + fileCount).append(delimiter);
-                        sb.append(hash).append(delimiter);
-                        sb.append(hash).append(delimiter);
-                        sb.append(delimiter);
-                        sb.append(file.getParent().toString().substring(2)).append(delimiter);
-                        sb.append(file.getFileName()).append(delimiter);
-                        sb.append(attrs.size());
-                        sb.append('\n');
-                        pw.write(sb.toString());
-                        fileSizeCount += attrs.size();
-                        fileCount++;
-                        if ((fileCount % 10000) == 0) {
-                            long toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
-                            System.out.print("Time elasped: " + toSeconds + "s Data processed: " + fileSizeCount/1048576 + "MB from " + fileCount + " files" );
-                            System.out.println(" Avg. speed " + fileSizeCount/1048576/toSeconds + "MB/s ETA: " + toSeconds*(fileSizeCountTotal - fileSizeCount)/fileSizeCount + "s Data left: " + (fileSizeCountTotal-fileSizeCount)/1048576 + "MB from " + (fileCountTotal-fileCount) + " files");
-                            pw.flush();
-                        }
-                        progressBar.setValue((int)(fileSizeCount/1000000));
-                        this.setProgress(fileSizeCount/fileSizeCountTotal);
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
 
-                @Override public FileVisitResult
-                visitFileFailed(Path file, IOException exc) {
-//                        StaticTools.errorOut(file.toString(), exc);
-                    // Skip folders that can't be traversed
-                    return FileVisitResult.CONTINUE;
-                }
 
-                @Override public FileVisitResult
-                postVisitDirectory (Path dir, IOException exc) {
-//                        if (exc != null)
-//                        StaticTools.errorOut(dir.toString(), exc);
-                    // Ignore errors traversing a folder
-                    return FileVisitResult.CONTINUE;
-                }
-            });
-            pw.close();
-            progressDialog.dispose();
+    /**
+     * Creates a new background task which reads the From directory files' hashes into a list file
+     */
+    private void createList() {
+        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File output = StaticTools.getFile(commonProperties.getFromDir());
+        int start;
+        do {
+            String result= JOptionPane.showInputDialog("Last record value: ");
+            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
+        } while (start == -1);
+        if(file != null && output != null) {
+//                    listFiles(file.toPath(), start + 1);
+            currentTask = new Listing(file.toPath(), start + 1, output);
+            Thread th = new Thread(currentTask);
+            progressIndicator.progressProperty().unbind();
+            progressIndicator.progressProperty().bind(currentTask.progressProperty());
+            statusLabel.textProperty().bind(currentTask.messageProperty());
+            th.setDaemon(true);
+            th.start();
         }
-        catch (IOException e)
-        {
-            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
+
+//                Listing p = new Listing();
+//                new Thread(p).start();
+
+/*                File file = StaticTools.getDir(getFromDir());
+        int start = -1;
+        do {
+            String result= JOptionPane.showInputDialog("Last record value: ");
+            try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
+        } while (start == -1);
+        if(file != null) {
+            listFiles(file.toPath(), start + 1);
         }
+        */
     }
 
-    // </editor-fold>
 
 
-    public static JDialog progressDiag(JProgressBar bar) {
-        JDialog progressDialog = new JDialog(null, Dialog.ModalityType.MODELESS);
-        JPanel newContentPane = new JPanel();
-        newContentPane.setOpaque(true); //content panes must be opaque
-        progressDialog.setContentPane(newContentPane);
-        bar.setValue(0);
-        bar.setStringPainted(true);
-        newContentPane.add(bar);                            
-        progressDialog.pack();
-        progressDialog.setVisible(true);           
-        return progressDialog;
+    /**
+     * Prints out a list of folders which are overlapping
+     * Folder name format:"YYYY-MM-DD - YYYY-MM-DD Description"
+     */
+    private void show() {
+        File[] dirs = commonProperties.getToDir().toFile().listFiles((dir, name) -> dir.isDirectory());
+        StringBuilder sb = new StringBuilder();
+        for(int j = 0; j < dirs.length; j++) {
+            File[] content = dirs[j].listFiles();
+    /*                              File[] content = dirs[j].listFiles(new FilenameFilter() {
+                    public boolean accept(File dir, String name) {
+                        name = name.toLowerCase();
+                    return name.endsWith(".mts") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4");
+                }});
+    */
+            sb.append(dirs[j].getName() + " : " + content.length + "\n");
+        }
+        ZonedDateTime cal;
+        File[] dirc = commonProperties.getFromDir().listFiles((dir, name) -> dir.isDirectory());
+        String oldDir = "";
+        for(int j = 0; j < dirc.length - 1; j++) {
+            String actDir = dirc[j].getName();
+            int eY = Integer.parseInt(actDir.substring(13, 17)), eM = Integer.parseInt(actDir.substring(18, 20))-1, eD = Integer.parseInt(actDir.substring(21, 23));
+            String nextDir = dirc[j].getName();
+            int sY = Integer.parseInt(nextDir.substring(0, 4)), sM = Integer.parseInt(nextDir.substring(5, 7))-1, sD = Integer.parseInt(nextDir.substring(8, 10));
+            if (sY*10000 + sM*100 + sD <= eY*10000 + eM*100 +  eD) {
+                sb.append(oldDir + " -><- " + actDir + "\n");
+            }
+        }
+        mainPane.setCenter(new Label(sb.toString()));
     }
 }

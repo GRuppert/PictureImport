@@ -9,8 +9,8 @@ import java.awt.Toolkit;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -18,6 +18,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javafx.stage.DirectoryChooser;
@@ -26,6 +27,9 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileSystemView;
 
 import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.Comparison.comparableMediaFile;
+
+import static org.nyusziful.Rename.fileRenamer.getV;
 
 /**
  *
@@ -225,7 +229,76 @@ public class StaticTools {
             chooser.setInitialDirectory(new File("C:\\"));
         return chooser.showSaveDialog(null);
     }
-    
+
+    public static List<DirectoryElement> getDirectoryElements(Path path, boolean recursive) {
+        if (recursive) return getDirectoryElementsRecursive(path);
+        else return getDirectoryElementsNonRecursive(path);
+    }
+
+    public static List<DirectoryElement> getDirectoryElementsRecursive(Path path) {
+        final ArrayList<DirectoryElement> elements = new ArrayList();
+        try
+        {
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult
+                visitFile(Path file, BasicFileAttributes attrs) {
+                    if (!attrs.isDirectory() && attrs.isRegularFile()) {
+                        elements.add(new DirectoryElement(file.toFile()));
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                visitFileFailed(Path file, IOException exc) {
+                    StaticTools.errorOut(file.toString(), exc);
+                    // Skip folders that can't be traversed
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+                    if (exc != null)
+                        StaticTools.errorOut(dir.toString(), exc);
+                    // Ignore errors traversing a folder
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        }
+        catch (IOException e)
+        {
+            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+        return elements;
+
+    }
+
+    public static List<DirectoryElement> getDirectoryElementsNonRecursive(Path path) {
+        final ArrayList<DirectoryElement> elements = new ArrayList();
+        File dir1 = path.toFile();
+        if(dir1.isDirectory()) {
+            File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
+            for (File file:content) {
+                elements.add(new DirectoryElement(file));
+            }
+        }
+        return  elements;
+    }
+
+    public static List<DirectoryElement> getDirectoryElementsNonRecursive(List<String> directories) {
+        Iterator<String> iter = directories.iterator();
+        ArrayList<DirectoryElement> elements = new ArrayList<>();
+        while(iter.hasNext()) {
+            File dir1 = new File(iter.next());
+            if(dir1.isDirectory()) {
+                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
+                for (File file:content) {
+                    elements.add(new DirectoryElement(file));
+                }
+            }
+        }
+        return  elements;
+    }
+
 
     //remove 5/41MP Nokia "duplicates"
     private static void removeFiles(File file) {

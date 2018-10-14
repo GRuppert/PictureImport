@@ -4,20 +4,30 @@ import org.nyusziful.Rename.WritableMediaFile;
 import org.nyusziful.Rename.meta;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.File;
 import java.io.FilenameFilter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
+import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import static org.nyusziful.Rename.WritableMediaFile.MOVE;
 
 public class Migrate {
+    private long fileSizeCountTotal = 0;
+    private long fileSizeCount = 0;
+    private long fileCountTotal = 0;
+    private long fileCount = 0;
+
     public static void main(String[] args) {
 
     }
@@ -42,13 +52,13 @@ public class Migrate {
                 File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
                 int chunkSize = 100;//At least 2, exiftool has a different output format for single files
                 progressBar = new JProgressBar(0, content.length);
-                progressDialog = MainController.progressDiag(progressBar);
+                progressDialog = progressDiag(progressBar);
                 for (int j = 0; j*chunkSize < content.length; j++) {
                     ArrayList<String> files = new ArrayList<>();
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         files.add(content[j*chunkSize + f].getName());
                     }
-                    List<meta> exifToMeta = exifToMeta(files, dir1, zone);
+                    List<meta> exifToMeta = readFileMeta(files, dir1, zone);
                     Iterator<meta> iterator = exifToMeta.iterator();
                     int i = 0;
                     while (iterator.hasNext()) {
@@ -284,5 +294,107 @@ public class Migrate {
 
     }
 
+    public static JDialog progressDiag(JProgressBar bar) {
+        JDialog progressDialog = new JDialog(null, Dialog.ModalityType.MODELESS);
+        JPanel newContentPane = new JPanel();
+        newContentPane.setOpaque(true); //content panes must be opaque
+        progressDialog.setContentPane(newContentPane);
+        bar.setValue(0);
+        bar.setStringPainted(true);
+        newContentPane.add(bar);
+        progressDialog.pack();
+        progressDialog.setVisible(true);
+        return progressDialog;
+    }
 
+    private void listFiles(Path path, int start) {
+        fileSizeCountTotal = 0;
+        fileSizeCount = 0;
+        fileCountTotal = 0;
+        fileCount = 0;
+        String filename = "";
+        try
+        {
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult
+                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
+                        fileSizeCountTotal += attrs.size();
+                        fileCountTotal++;
+//                            System.out.println(file.getFileName());
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                visitFileFailed(Path file, IOException exc) {
+                    StaticTools.errorOut(file.toString(), exc);
+                    // Skip folders that can't be traversed
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+                    if (exc != null)
+                        StaticTools.errorOut(dir.toString(), exc);
+                    // Ignore errors traversing a folder
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
+            JDialog progressDialog = progressDiag(progressBar);
+            PrintWriter pw = new PrintWriter(new File("e:\\test2.csv"));
+            long startTime = System.nanoTime();
+            String delimiter = "\t";
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult
+                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
+                        StringBuilder sb = new StringBuilder();
+                        String hash = getHash(file.toFile());
+                        sb.append(start + fileCount).append(delimiter);
+                        sb.append(hash).append(delimiter);
+                        sb.append(hash).append(delimiter);
+                        sb.append(delimiter);
+                        sb.append(file.getParent().toString().substring(2)).append(delimiter);
+                        sb.append(file.getFileName()).append(delimiter);
+                        sb.append(attrs.size());
+                        sb.append('\n');
+                        pw.write(sb.toString());
+                        fileSizeCount += attrs.size();
+                        fileCount++;
+                        if ((fileCount % 10000) == 0) {
+                            long toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
+                            System.out.print("Time elasped: " + toSeconds + "s Data processed: " + fileSizeCount/1048576 + "MB from " + fileCount + " files" );
+                            System.out.println(" Avg. speed " + fileSizeCount/1048576/toSeconds + "MB/s ETA: " + toSeconds*(fileSizeCountTotal - fileSizeCount)/fileSizeCount + "s Data left: " + (fileSizeCountTotal-fileSizeCount)/1048576 + "MB from " + (fileCountTotal-fileCount) + " files");
+                            pw.flush();
+                        }
+                        progressBar.setValue((int)(fileSizeCount/1000000));
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                visitFileFailed(Path file, IOException exc) {
+//                        StaticTools.errorOut(file.toString(), exc);
+                    // Skip folders that can't be traversed
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+//                        if (exc != null)
+//                        StaticTools.errorOut(dir.toString(), exc);
+                    // Ignore errors traversing a folder
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+            pw.close();
+            progressDialog.dispose();
+        }
+        catch (IOException e)
+        {
+            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
+        }
+    }
 }
