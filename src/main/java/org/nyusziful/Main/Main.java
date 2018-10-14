@@ -21,7 +21,6 @@ public class Main extends Application {
         this.primaryStage = stage;
 
         Parent fmxlLook = FXMLLoader.load(getClass().getResource("/fxml/main.fxml"));
-        
         Scene mainScene = new Scene(fmxlLook);
         mainScene.getStylesheets().add("Chart.css");
         primaryStage.setScene(mainScene);

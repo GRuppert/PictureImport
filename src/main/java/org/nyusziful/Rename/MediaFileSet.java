@@ -9,18 +9,63 @@ import javax.swing.*;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import static org.nyusziful.ExifUtils.ExifReadWrite.exifToMeta;
+import static org.nyusziful.Main.StaticTools.supportedFileType;
 
 public class MediaFileSet {
-    ArrayList<WritableMediaFile> files = new ArrayList<>();
+//    ArrayList<WritableMediaFile> files = new ArrayList<>();
     private final ObservableList<WritableMediaFile> dataModel = FXCollections.observableArrayList();
-    Thread applier;
 
     public MediaFileSet(ArrayList<WritableMediaFile> files) {
-        this.files = files;
+        fillData(files);
     }
 
-    public MediaFileSet(File rootdir, boolean recursive) {
+    /**
+     * Creates a WritableMediaFile object for each media file in the directories non-recursive
+     * @param directories list of the directories to process
+     */
+    public MediaFileSet(List<String> directories) {
+        Iterator<String> iter = directories.iterator();
+        ArrayList<WritableMediaFile> files = new ArrayList<>();
+        while(iter.hasNext()) {
+            File dir1 = new File(iter.next());
+            if(dir1.isDirectory()) {
+                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
+                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
+                JProgressBar progressBar = new JProgressBar(0, content.length);
+                JDialog progressDialog = progressDiag(progressBar);
+                for (int j = 0; j*chunkSize < content.length; j++) {
+                    ArrayList<String> fileList = new ArrayList<>();
+                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
+                        fileList.add(content[j*chunkSize + f].getName());
+                    }
+                    List<meta> exifToMeta = exifToMeta(fileList, dir1, commonProperties.getZone());
+                    Iterator<meta> iterator = exifToMeta.iterator();
+                    int i = 0;
+                    while (iterator.hasNext()) {
+                        meta next = iterator.next();
+                        files.add(new WritableMediaFile(next));
+                        progressBar.setValue(i + j*chunkSize);
+                        this.setProgress((i + j*chunkSize)/content.length);
+                    }
+                }
+                progressDialog.dispose();
+            }
+        }
+
+
         //Todo implement from the controller
+        ArrayList<WritableMediaFile> files = null;
+        fillData(files);
+    }
+
+    private void fillData(List<WritableMediaFile> files) {
+//        this.files = files;
+        dataModel.removeAll(dataModel);
+        files.stream().forEach((obj) -> {dataModel.add(obj);});
     }
 
     public ObservableList<WritableMediaFile> getDataModel() {
@@ -28,19 +73,19 @@ public class MediaFileSet {
     }
 
     public void selectAll() {
-        dataModel.forEach(f -> f.setProcessing(Boolean.TRUE));
+        getDataModel().forEach(f -> f.setProcessing(Boolean.TRUE));
     }
 
     public void selectNone() {
-        dataModel.forEach(f -> f.setProcessing(Boolean.FALSE));
+        getDataModel().forEach(f -> f.setProcessing(Boolean.FALSE));
     }
 
     public void invertSelection() {
-        dataModel.forEach(f -> f.setProcessing(!f.getProcessing()));
+        getDataModel().forEach(f -> f.setProcessing(!f.getProcessing()));
     }
 
     public void updatePaths(String replacePath) {
-        for(WritableMediaFile paths: dataModel) {
+        for(WritableMediaFile paths: getDataModel()) {
             Path newPath = paths.getNewPath();
             String fileName = newPath.getFileName().toString();
             String replacement =  replacePath + "\\" + fileName;
@@ -59,10 +104,10 @@ public class MediaFileSet {
                     e.printStackTrace();
                 }
             }
-            progress.setGoal(dataModel.size());
-            for (WritableMediaFile record : dataModel) {
+            progress.setGoal(getDataModel().size());
+            for (WritableMediaFile record : getDataModel()) {
                 record.write(copyOrMove);
-                dataModel.remove(record);
+                getDataModel().remove(record);
                 i++;
                 progress.setProgress(i);
             }
@@ -72,6 +117,6 @@ public class MediaFileSet {
     }
 
     public void removeAll() {
-        dataModel.removeAll(dataModel);
+        getDataModel().removeAll(getDataModel());
     }
 }

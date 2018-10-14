@@ -28,13 +28,13 @@ import static org.nyusziful.Rename.fileRenamer.getV;
  *
  * @author gabor
  */
-public class WritableMediaFile implements mediaFile {
+public class WritableMediaFile implements tableViewMediaFile {
     // <editor-fold defaultstate="collapsed" desc="Static variables">
     public static int MOVE = 1;
     public static int COPY = 0;
     // </editor-fold>
 
-    public static String Version = "6";
+    private static String Version = "6";
     
     private final SimpleBooleanProperty processing;
     private final SimpleStringProperty currentName;
@@ -57,10 +57,10 @@ public class WritableMediaFile implements mediaFile {
     private String model = null;//Filename, Exif, xmp, xml
     private ZonedDateTime date = null;//Filename, Exif, xmp, xml, mod +TZ
 
-    private HashMap<String, String> exifPar = new HashMap<>();
-    private ArrayList<String> exifMissing = new ArrayList<String>();
+//    private HashMap<String, String> exifPar = new HashMap<>();
+    private ArrayList<String> exifMissing = new ArrayList<>();
 
-    private final void setiID() {
+    private void setiID() {
         this.iID = getFullHash(file);
         newName.set(getNewFileName("5"));
     }

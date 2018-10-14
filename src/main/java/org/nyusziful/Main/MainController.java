@@ -1,9 +1,10 @@
 package org.nyusziful.Main;
 
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
 import org.nyusziful.Comparison.Listing;
 import org.nyusziful.Comparison.comparableMediaFile;
-import org.nyusziful.Rename.WritableMediaFile;
-import org.nyusziful.Rename.metaProp;
+import org.nyusziful.Rename.*;
 import org.nyusziful.Comparison.duplicate;
 import org.nyusziful.Comparison.metaChanges;
 import static org.nyusziful.Rename.fileRenamer.getV;
@@ -11,7 +12,7 @@ import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
-import org.nyusziful.Rename.meta;
+
 import org.nyusziful.TimeShift.TimeLine;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -92,16 +93,10 @@ public class MainController implements Initializable {
     private BorderPane mainPane;
     // </editor-fold>
 
-    
-    /**
-    * Variables
-    */
-
     private long fileSizeCountTotal = 0;
     private long fileSizeCount = 0;
     private long fileCountTotal = 0;
     private long fileCount = 0;
-    private BorderPane root;
 
     private Task currentTask;
     private final ObservableList<metaProp> meta = FXCollections.observableArrayList();
@@ -115,7 +110,6 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        CommonProperties.getInstance();
         group.selectedToggleProperty().addListener((ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) -> {
             if (group.getSelectedToggle() != null) {
                 commonProperties.setCopyOrMove((int) group.getSelectedToggle().getUserData());
@@ -137,46 +131,30 @@ public class MainController implements Initializable {
         TimeZone.getItems().addAll(timeZones);
         commonProperties.setZone(ZoneId.systemDefault());
         TimeZone.getSelectionModel().select(ZoneId.systemDefault().getId());
-    }    
-
-
-
-
-    /**
-     * Creates a WritableMediaFile object for each media file in the directories non-recursive
-     * @param directories list of the directories to process
-     * @return the list of the <code> WritableMediaFile </code> objects
-     */
-    private List<WritableMediaFile> fileRenameList(List<String> directories) {
-        Iterator<String> iter = directories.iterator();
-        ArrayList<WritableMediaFile> files = new ArrayList<>();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-                JProgressBar progressBar = new JProgressBar(0, content.length);
-                JDialog progressDialog = progressDiag(progressBar); 
-                for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> fileList = new ArrayList<>();
-                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
-                        fileList.add(content[j*chunkSize + f].getName());
-                    }
-                    List<meta> exifToMeta = exifToMeta(fileList, dir1, this.getZone());
-                    Iterator<meta> iterator = exifToMeta.iterator();
-                    int i = 0;
-                    while (iterator.hasNext()) {
-                        meta next = iterator.next();
-                        files.add(new WritableMediaFile(next));
-                        progressBar.setValue(i + j*chunkSize);
-                        this.setProgress((i + j*chunkSize)/content.length);
-                    }
-                }
-                progressDialog.dispose();
-            }				
-        }
-        return files;
     }
+
+    private TableView createMetaTable(ArrayList<meta> newData) {
+        meta.removeAll(meta);
+        newData.stream().forEach((obj) -> {meta.add(new metaProp(obj));});
+        TableView<metaProp> table = new TableView<>();
+        table.setEditable(true);
+        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TableColumn< metaProp, Boolean > dateFormatCol = new TableColumn<>( "dateFormat" );
+        dateFormatCol.setCellValueFactory( f -> f.getValue().dateFormatProperty());
+        dateFormatCol.setCellFactory(CheckBoxTableCell.forTableColumn(dateFormatCol));
+        dateFormatCol.setPrefWidth(50);
+        dateFormatCol.setResizable(false);
+        TableColumn nameCol = new TableColumn("Filename");
+        nameCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("originalFilename"));
+        TableColumn dateCol = new TableColumn("Date");
+        dateCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("date"));
+        TableColumn modelCol = new TableColumn("Model");
+        modelCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("model"));
+        table.setItems(meta);
+        table.getColumns().addAll(nameCol, dateCol, dateFormatCol, modelCol);
+        return table;
+    }
+
 
     private ArrayList<meta> fileMetaList(ArrayList<String> directories, Path target) {
         Iterator<String> iter = directories.iterator();
@@ -193,7 +171,7 @@ public class MainController implements Initializable {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         fileList.add(content[j*chunkSize + f].getName());
                     }
-                    metas.addAll(exifToMeta(fileList, dir1, this.getZone()));
+                    metas.addAll(exifToMeta(fileList, dir1, commonProperties.getZone()));
                     progressBar.setValue(j*chunkSize);
                     this.setProgress((j*chunkSize)/content.length);
                 }
@@ -369,41 +347,44 @@ public class MainController implements Initializable {
 //                        return;
             }
         }
-        listOnScreen(createMediafileTable(fileRenameList(directories)));
+        listOnScreen(directories);
     }
 
     @FXML
     private void handleShiftButtonAction() {
-        File file = StaticTools.getDir(getFromDir());
+        File file = StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             stripesOnScreen(file);
         }
     }
 
+
+
+
     @FXML
     private void handleMetaButtonAction() {
-        File file = StaticTools.getDir(getFromDir());
+        File file = StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
-            Path tempDir = Paths.get(getToDir().toString() + "\\" + file.getName());
+            Path tempDir = Paths.get(commonProperties.getToDir().toString() + "\\" + file.getName());
             listOnScreen(createMetaTable(fileMetaList(directories, tempDir)));
         }
     }
 
     @FXML
     private void handleRenameButtonAction() {
-        File file = StaticTools.getDir(getFromDir());
+        File file = StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             List<String> directories = new ArrayList<>();
             directories.add(file.toString());
-            listOnScreen(createMediafileTable(fileRenameList(directories)));
+            listOnScreen(directories);
         }
     }
 
     @FXML
     private void handleMoveButtonAction() {
-        File file = StaticTools.getDir(getFromDir());
+        File file = StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
@@ -431,19 +412,19 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleToButtonAction() {
-        File file = StaticTools.getDir(getToDir().toFile());
+        File file = StaticTools.getDir(commonProperties.getToDir().toFile());
         if (file != null) {
-            toDir = file.toPath();
-            setToText(getToDir().toString());
+            commonProperties.setToDir(file.toPath());
+            setToText(commonProperties.getToDir().toString());
         }
     }
 
     @FXML
     private void handleFromButtonAction() {
-        File file = StaticTools.getDir(getFromDir());
+        File file = StaticTools.getDir(commonProperties.getFromDir());
         if (file != null) {
-            fromDir = file;
-            setFromText(getFromDir().toString());
+            commonProperties.setFromDir(file);
+            setFromText(commonProperties.getFromDir().toString());
         }
     }
     // </editor-fold>
@@ -451,7 +432,7 @@ public class MainController implements Initializable {
     // <editor-fold defaultstate="collapsed" desc="View Update">
     @FXML
     private void handleTimeZoneComboBoxAction() {
-        zone = ZoneId.of(TimeZone.getSelectionModel().getSelectedItem().toString());
+        commonProperties.setZone(ZoneId.of(TimeZone.getSelectionModel().getSelectedItem().toString()));
     }
 
     private void setFromText(String text) {
@@ -463,25 +444,28 @@ public class MainController implements Initializable {
     }
 
     //Sets the center view to table format
-    private void listOnScreen(TableView tableView) {
-        mainPane.setCenter(tableView);
+    private void listOnScreen(List<String> directories) {
+        BorderPane tablePane = null;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(
+                    "/fxml/mediaFileTableView.fxml"));
+            tablePane = (BorderPane) loader.load();
+            MediaFileTableViewController ctrl = loader.getController();
+            ctrl.setMediaFileSet(new MediaFileSet(directories));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mainPane.setCenter(tablePane);
         StaticTools.beep();
     }
 
     //Sets the center view to pic stripes
     private void stripesOnScreen(File dir){
-        TimeLine timeLine = new TimeLine(dir, this.getZone());
-        root.setCenter(timeLine.getStripeBox());
+        TimeLine timeLine = new TimeLine(dir, commonProperties.getZone());
+        //TODO replace with load FXML
+        mainPane.setCenter(timeLine.getStripeBox());
         timeLine.resetView();
     }
-
-
-
-    public void setProgress(double percent) {
-        progressIndicator.setProgress(percent < 1 ? percent : 1);
-    }
-
-
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Model Notify">
@@ -490,9 +474,9 @@ public class MainController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="Model Update">
     private void createList() {
-        File file = StaticTools.getDir(getFromDir());
-        File output = StaticTools.getFile(getFromDir());
-        int start = -1;
+        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File output = StaticTools.getFile(commonProperties.getFromDir());
+        int start;
         do {
             String result= JOptionPane.showInputDialog("Last record value: ");
             try {start = Integer.parseInt(result);} catch (NumberFormatException e) {start = -1;}
@@ -523,16 +507,18 @@ public class MainController implements Initializable {
         */
     }
 
+
+
     private void sortToDateDirectories(ArrayList<String> directories) {
-        Iterator<String> iter = directories.iterator();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
+        for (String directory : directories) {
+            File dir1 = new File(directory);
+            if (dir1.isDirectory()) {
                 File[] content = dir1.listFiles(new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
                         return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
-                    }});
+                    }
+                });
                 if (content.length > 0) {
                     Path target = null;
                     String oldName = "";
@@ -545,13 +531,13 @@ public class MainController implements Initializable {
                         String fileName = content1.getName().substring(1, 12);
                         fileName = fileName.substring(0, 4) + fileName.substring(5, 7) + fileName.substring(8, 9) + fileName.substring(10, 11);
                         if (!fileName.equals(oldName)) {
-                            int fY = Integer.parseInt(fileName.substring(0, 4)), fM = Integer.parseInt(fileName.substring(4, 6))-1, fD = Integer.parseInt(fileName.substring(6, 8));
+                            int fY = Integer.parseInt(fileName.substring(0, 4)), fM = Integer.parseInt(fileName.substring(4, 6)) - 1, fD = Integer.parseInt(fileName.substring(6, 8));
                             File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
                             for (int j = 0; j < dirs.length; j++) {
                                 String actDir = dirs[j].getName();
-                                int sY = Integer.parseInt(actDir.substring(0, 4)), sM = Integer.parseInt(actDir.substring(5, 7))-1, sD = Integer.parseInt(actDir.substring(8, 10));
-                                int eY = Integer.parseInt(actDir.substring(13, 17)), eM = Integer.parseInt(actDir.substring(18, 20))-1, eD = Integer.parseInt(actDir.substring(21, 23));
-                                if ((fY*10000 + fM*100 + fD >= sY*10000 + sM*100 + sD) && (fY*10000 + fM*100 + fD <= eY*10000 + eM*100 + eD)) {
+                                int sY = Integer.parseInt(actDir.substring(0, 4)), sM = Integer.parseInt(actDir.substring(5, 7)) - 1, sD = Integer.parseInt(actDir.substring(8, 10));
+                                int eY = Integer.parseInt(actDir.substring(13, 17)), eM = Integer.parseInt(actDir.substring(18, 20)) - 1, eD = Integer.parseInt(actDir.substring(21, 23));
+                                if ((fY * 10000 + fM * 100 + fD >= sY * 10000 + sM * 100 + sD) && (fY * 10000 + fM * 100 + fD <= eY * 10000 + eM * 100 + eD)) {
                                     target = dirs[j].toPath();
                                     files.add(new WritableMediaFile(source.toString(), target + "\\"));
                                     System.out.println(source.toString() + " -> " + target);
@@ -565,7 +551,7 @@ public class MainController implements Initializable {
                         oldName = fileName;
                         i++;
                         progressBar.setValue(i);
-                        this.setProgress((i)/content.length);
+                        this.setProgress((i) / content.length);
                     }
                     progressDialog.dispose();
                     listOnScreen(createMediafileTable(files));

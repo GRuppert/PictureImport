@@ -1,31 +1,48 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.chart.AreaChart?>
-<?import javafx.scene.chart.NumberAxis?>
-
-
+<?import javafx.scene.control.cell.PropertyValueFactory?>
 <BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Rename.MediaFileTableViewController">
     <top>
         <HBox>
-            <Button text="All" onAction="#handleAllButtonAction" fx:id="btnAll" />
-            <Button text="None" onAction="#handleNoneButtonAction" fx:id="btnNone" />
-            <Button text="Invert" onAction="#handleInvertButtonAction" fx:id="btnInvert" />
+            <Button fx:id="btnAll" text="All" onAction="#handleAllButtonAction"/>
+            <Button fx:id="btnNone" text="None" onAction="#handleNoneButtonAction"/>
+            <Button fx:id="btnInvert" text="Invert" onAction="#handleInvertButtonAction"/>
         </HBox>
     </top>
     <center>
-        <TableView>
+        <TableView editable="true" items="${controller.dataModel}">
+            <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/></columnResizePolicy>
+            <columns>
+                <TableColumn fx:id="processingCol" text="Ok" prefWidth="50" resizable="false" editable="true">
+                    <cellValueFactory><PropertyValueFactory property="processing" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="oldNameCol" text="Current Filename">
+                    <cellValueFactory><PropertyValueFactory property="firstName" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="newNameCol" text="After Rename">
+                    <cellValueFactory><PropertyValueFactory property="newName" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="noteCol" text="Remarks">
+                    <cellValueFactory><PropertyValueFactory property="note" />
+                    </cellValueFactory>
+                </TableColumn>
+                <TableColumn fx:id="xmpCol" text="xmp" prefWidth="50" resizable="false">
+                    <cellValueFactory><PropertyValueFactory property="xmpMissing" />
+                    </cellValueFactory>
+                </TableColumn>
+            </columns>
         </TableView>
     </center>
     <bottom>
         <HBox>
-            <Button text="Go" onAction="#handleGoButtonAction" fx:id="btnGo" />
-            <Button text="Abort" onAction="#handleAbortButtonAction" fx:id="btnAbort" />
-            <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefresh" />
+            <Button fx:id="btnGo" text="Go" onAction="#handleGoButtonAction"/>
+            <Button fx:id="btnAbort" text="Abort" onAction="#handleAbortButtonAction"/>
+            <Button fx:id="btnRefresh" text="Refresh" onAction="#handleRefreshButtonAction"/>
         </HBox>
     </bottom>
 </BorderPane>
