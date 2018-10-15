@@ -2,18 +2,14 @@ package org.nyusziful.Rename;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Tab;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.control.cell.PropertyValueFactory;
 import org.nyusziful.Main.CommonProperties;
 
 import java.net.URL;
-import java.util.List;
 import java.util.ResourceBundle;
 
-public class MediaFileTableViewController {
+public class TablePanelController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
@@ -34,7 +30,7 @@ public class MediaFileTableViewController {
 
     private MediaFileSet mediaFileSet;
 
-    public MediaFileTableViewController() {
+    public TablePanelController() {
     }
 
 
@@ -56,6 +52,32 @@ public class MediaFileTableViewController {
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;
     }
+
+    @FXML
+    private void handleAllButtonAction() {
+        mediaFileSet.selectAll();
+    }
+
+    @FXML
+    private void handleNoneButtonAction() {
+        mediaFileSet.selectNone();
+    }
+
+    @FXML
+    private void handleInvertButtonAction() {
+        mediaFileSet.invertSelection();
+    }
+
+    @FXML
+    private void handleGoButtonAction() {
+        mediaFileSet.applyChanges(CommonProperties.getInstance().getCopyOrMove());
+    }
+
+    @FXML
+    private void handleAbortButtonAction() { mediaFileSet.removeAll(); }
+
+    @FXML
+    private void handleRefreshButtonAction() { mediaFileSet.updatePaths(CommonProperties.getInstance().getToDir().toString()); }
 
 
 }

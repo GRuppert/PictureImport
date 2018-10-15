@@ -19,45 +19,7 @@ public class MediaFileSet {
 //    ArrayList<WritableMediaFile> files = new ArrayList<>();
     private final ObservableList<WritableMediaFile> dataModel = FXCollections.observableArrayList();
 
-    public MediaFileSet(ArrayList<WritableMediaFile> files) {
-        fillData(files);
-    }
-
-    /**
-     * Creates a WritableMediaFile object for each media file in the directories non-recursive
-     * @param directories list of the directories to process
-     */
-    public MediaFileSet(List<String> directories) {
-        Iterator<String> iter = directories.iterator();
-        ArrayList<WritableMediaFile> files = new ArrayList<>();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-                JProgressBar progressBar = new JProgressBar(0, content.length);
-                JDialog progressDialog = progressDiag(progressBar);
-                for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> fileList = new ArrayList<>();
-                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
-                        fileList.add(content[j*chunkSize + f].getName());
-                    }
-                    List<meta> exifToMeta = readFileMeta(fileList, dir1, commonProperties.getZone());
-                    Iterator<meta> iterator = exifToMeta.iterator();
-                    int i = 0;
-                    while (iterator.hasNext()) {
-                        meta next = iterator.next();
-                        files.add(new WritableMediaFile(next));
-                        progressBar.setValue(i + j*chunkSize);
-                        this.setProgress((i + j*chunkSize)/content.length);
-                    }
-                }
-                progressDialog.dispose();
-            }
-        }
-
-
-        //Todo implement from the controller
+    public MediaFileSet(List<WritableMediaFile> files) {
         fillData(files);
     }
 

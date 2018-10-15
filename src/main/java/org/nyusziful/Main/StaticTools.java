@@ -17,9 +17,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
@@ -230,99 +228,89 @@ public class StaticTools {
         return chooser.showSaveDialog(null);
     }
 
-    public static List<DirectoryElement> getDirectoryElements(Path path, boolean recursive) {
-        if (recursive) return getDirectoryElementsRecursive(path);
-        else return getDirectoryElementsNonRecursive(path);
+    public static List<DirectoryElement> getDirectoryElements(Path path, boolean recursive, FilenameFilter filenameFilter) {
+        if (recursive) return getDirectoryElementsRecursive(path, filenameFilter);
+        else return getDirectoryElementsNonRecursive(path.toFile(), filenameFilter);
     }
 
+    /**
+     * Returns all the files excluding directories
+     * @param path
+     * @return
+     */
     public static List<DirectoryElement> getDirectoryElementsRecursive(Path path) {
+        return getDirectoryElementsRecursive(path, new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return (!new File(dir + "\\" + name).isDirectory());
+            }});
+    }
+
+    public static List<DirectoryElement> getDirectoryElementsRecursive(Path path, FilenameFilter filenameFilter) {
         final ArrayList<DirectoryElement> elements = new ArrayList();
         try
         {
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
-                @Override public FileVisitResult
-                visitFile(Path file, BasicFileAttributes attrs) {
-                    if (!attrs.isDirectory() && attrs.isRegularFile()) {
-                        elements.add(new DirectoryElement(file.toFile()));
-                    }
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override public FileVisitResult
-                visitFileFailed(Path file, IOException exc) {
-                    StaticTools.errorOut(file.toString(), exc);
-                    // Skip folders that can't be traversed
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override public FileVisitResult
-                postVisitDirectory (Path dir, IOException exc) {
-                    if (exc != null)
-                        StaticTools.errorOut(dir.toString(), exc);
-                    // Ignore errors traversing a folder
+                @Override
+                public FileVisitResult preVisitDirectory(Path file, BasicFileAttributes attrs) {
+                    File[] content = file.toFile().listFiles(filenameFilter);
+                    if (content != null)
+                        Arrays.stream(content).map(DirectoryElement::new).forEach(elements::add);
                     return FileVisitResult.CONTINUE;
                 }
             });
         }
-        catch (IOException e)
-        {
+        catch (IOException e) {
+            StaticTools.errorOut("FileVisitor", e);
             throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
         }
         return elements;
 
     }
 
-    public static List<DirectoryElement> getDirectoryElementsNonRecursive(Path path) {
+    public static List<DirectoryElement> getDirectoryElementsNonRecursive(File directory, FilenameFilter filenameFilter) {
         final ArrayList<DirectoryElement> elements = new ArrayList();
-        File dir1 = path.toFile();
-        if(dir1.isDirectory()) {
-            File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-            for (File file:content) {
-                elements.add(new DirectoryElement(file));
-            }
-        }
-        return  elements;
-    }
-
-    public static List<DirectoryElement> getDirectoryElementsNonRecursive(List<String> directories) {
-        Iterator<String> iter = directories.iterator();
-        ArrayList<DirectoryElement> elements = new ArrayList<>();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
+        if(directory != null && directory.isDirectory()) {
+            File[] content = directory.listFiles(filenameFilter);
+            if (content != null) {
                 for (File file:content) {
                     elements.add(new DirectoryElement(file));
                 }
             }
         }
-        return  elements;
+        return elements;
+    }
+
+    public static List<DirectoryElement> getDirectoryElementsNonRecursive(List<String> directories, FilenameFilter filenameFilter) {
+        Iterator<String> iter = directories.iterator();
+        ArrayList<DirectoryElement> elements = new ArrayList<>();
+        while(iter.hasNext()) {
+            elements.addAll(getDirectoryElementsNonRecursive(new File(iter.next()), filenameFilter));
+        }
+        return elements;
     }
 
 
     //remove 5/41MP Nokia "duplicates"
     private static void removeFiles(File file) {
         File[] directories = file.listFiles((File dir, String name) -> dir.isDirectory());
-        for (File dir1 : directories) {
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles(new FilenameFilter() {
-                    public boolean accept(File dir, String name) {
-                            name = name.toLowerCase();
-                        return name.endsWith("__highres.jpg");
-                    }});
-                if (content.length > 0) {
-                    for(int i = 0; i < content.length; i++) {
-                        String absolutePath = content[i].getAbsolutePath();
-                        try {
-                            Files.deleteIfExists(Paths.get(absolutePath.substring(0, absolutePath.length()-13) + ".jpg"));
-                        } catch (IOException e) {
-                            errorOut(content[i].getName(), e);         
+        if (directories != null) {
+            for (File dir1 : directories) {
+                if(dir1.isDirectory()) {
+                    File[] content = dir1.listFiles((dir, name) -> name.toLowerCase().endsWith("__highres.jpg"));
+                    if (Objects.requireNonNull(content).length > 0) {
+                        for (File aContent : content) {
+                            String absolutePath = aContent.getAbsolutePath();
+                            try {
+                                Files.deleteIfExists(Paths.get(absolutePath.substring(0, absolutePath.length() - 13) + ".jpg"));
+                            } catch (IOException e) {
+                                errorOut(aContent.getName(), e);
+                            }
                         }
                     }
                 }
-            }				
+            }
         }
 
     }
-    
+
 }

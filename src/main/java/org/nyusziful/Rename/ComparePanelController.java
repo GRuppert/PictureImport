@@ -2,39 +2,28 @@ package org.nyusziful.Rename;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Tab;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.control.cell.PropertyValueFactory;
+import org.apache.commons.io.FileUtils;
 import org.nyusziful.Main.CommonProperties;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
-import java.util.List;
 import java.util.ResourceBundle;
 
-public class MediaFileTableViewController {
+import static org.nyusziful.Main.StaticTools.errorOut;
+
+public class ComparePanelController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
-    @FXML
-    private TableColumn< WritableMediaFile, Boolean > processingCol;
-
-    @FXML
-    private TableColumn oldNameCol;
-
-    @FXML
-    private TableColumn newNameCol;
-
-    @FXML
-    private TableColumn noteCol;
-
     @FXML
     private TableColumn< WritableMediaFile, Boolean > xmpCol;
     // </editor-fold>
 
     private MediaFileSet mediaFileSet;
 
-    public MediaFileTableViewController() {
+    public ComparePanelController() {
     }
 
 
@@ -55,6 +44,36 @@ public class MediaFileTableViewController {
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;
+    }
+
+    @FXML
+    private void handleSingleButtonAction() {
+        try {
+            FileUtils.writeStringToFile(new File("e:\\single.txt"), single.toString(), "ISO-8859-1");
+        } catch (IOException ex) {
+            errorOut("Write to file", ex);
+        }
+
+    }
+
+    @FXML
+    private void handlePairsToButtonAction() {
+        try {
+            FileUtils.writeStringToFile(new File("e:\\pairTo.txt"), pairTo.toString(), "ISO-8859-1");
+        } catch (IOException ex) {
+            errorOut("Write to file", ex);
+        }
+
+    }
+
+    @FXML
+    private void handlePairsFromButtonAction() {
+        try {
+            FileUtils.writeStringToFile(new File("e:\\pairFrom.txt"), pairFrom.toString(), "ISO-8859-1");
+        } catch (IOException ex) {
+            errorOut("Write to file", ex);
+        }
+
     }
 
 

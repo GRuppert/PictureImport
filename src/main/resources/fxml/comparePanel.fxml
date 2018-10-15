@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<TabPane  xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Rename.ComparePanelController">
+    <Tab fx:id="tab1" text="Pairs">
+        <ListView items="${controller.pairs}"></ListView>
+    </Tab>
+    <Tab fx:id="tab2" text="Duplicates">
+
+    </Tab>
+    <Tab fx:id="tab3" text="Modified pic">
+
+    </Tab>
+    <Tab fx:id="tab4" text="Singles">
+        <ListView items="${controller.single}"></ListView>
+    </Tab>
+</TabPane>

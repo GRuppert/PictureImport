@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.cell.PropertyValueFactory?>
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Rename.TablePanelController">
+    <top>
+        <HBox>
+            <Button fx:id="btnAll" text="All" onAction="#handleAllButtonAction"/>
+            <Button fx:id="btnNone" text="None" onAction="#handleNoneButtonAction"/>
+            <Button fx:id="btnInvert" text="Invert" onAction="#handleInvertButtonAction"/>
+        </HBox>
+    </top>
+    <bottom>
+        <HBox>
+            <Button fx:id="btnGo" text="Go" onAction="#handleGoButtonAction"/>
+            <Button fx:id="btnAbort" text="Abort" onAction="#handleAbortButtonAction"/>
+            <Button fx:id="btnRefresh" text="Refresh" onAction="#handleRefreshButtonAction"/>
+        </HBox>
+    </bottom>
+</BorderPane>

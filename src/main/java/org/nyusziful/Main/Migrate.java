@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
+import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
 import static org.nyusziful.Rename.WritableMediaFile.MOVE;
 
 public class Migrate {
@@ -396,5 +397,33 @@ public class Migrate {
         {
             throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
         }
+    }
+
+    /**
+     * Renames each @supportedMediaFileType to "hash + name"
+     * @param dir
+     * @param str
+     * @return the string log of "hash + name" data
+     */
+    private StringBuffer getDirHash(File dir, StringBuffer str) {
+        if(dir.isDirectory()) {
+            File[] dirs = dir.listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return (new File(dir + "\\" + name).isDirectory());
+                }});
+            for(int i = 0; i < dirs.length; i++) {
+                str = getDirHash(dirs[i], str);
+            }
+            File[] content = dir.listFiles(new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return supportedMediaFileType(name);
+                }});
+            for(int i = 0; i < content.length; i++) {
+                String hash = getHash(content[i]);
+                str.append(hash + "\t" + content[i] + "\n");
+                content[i].renameTo(new File(content[i].getParentFile() + "\\" + hash + content[i].getName()));
+            }
+        }
+        return str;
     }
 }
