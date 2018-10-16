@@ -1,6 +1,7 @@
 package org.nyusziful.Main;
 
 import javafx.fxml.FXMLLoader;
+import javafx.scene.control.*;
 import org.nyusziful.Comparison.Listing;
 import org.nyusziful.Comparison.comparableMediaFile;
 import org.nyusziful.Rename.*;
@@ -37,16 +38,6 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.ProgressIndicator;
-import javafx.scene.control.TableCell;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.Toggle;
-import javafx.scene.control.ToggleGroup;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
@@ -85,9 +76,6 @@ public class MainController implements Initializable {
     // </editor-fold>
 
     private Task currentTask;
-    private final ObservableList<metaProp> meta = FXCollections.observableArrayList();
-    private final ObservableList<duplicate> duplicates = FXCollections.observableArrayList();
-    private final ObservableList<duplicate> modpic = FXCollections.observableArrayList();
 
     private CommonProperties commonProperties;
 
@@ -140,7 +128,7 @@ public class MainController implements Initializable {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
             Path tempDir = Paths.get(commonProperties.getToDir().toString() + "\\" + file.getName());
-            listOnScreen(createMetaTable(fileMetaList(directories, tempDir)));
+            createMetaTable(fileMetaList(directories, tempDir));
         }
     }
 
@@ -219,6 +207,38 @@ public class MainController implements Initializable {
         to.setText(text);
     }
 
+    //Sets the center view to comparison format
+    private void compare() {
+        TabPane comparePane = null;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(
+                    "/fxml/comparePanel.fxml"));
+            comparePane = (TabPane) loader.load();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mainPane.setCenter(comparePane);
+        StaticTools.beep();
+
+    }
+
+    private void createMetaTable(ArrayList<meta> newData) {
+        TableView tableView = null;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(
+                    "/fxml/meta2TableView.fxml"));
+            tableView = (TableView) loader.load();
+            Meta2TableViewController ctrl = loader.getController();
+            ObservableList<metaProp> meta = FXCollections.observableArrayList();
+            meta.removeAll(meta);
+            newData.stream().forEach((obj) -> {meta.add(new metaProp(obj));});
+            ctrl.setMeta(meta);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mainPane.setCenter(tableView);
+        StaticTools.beep();
+    }
 
 
     //Sets the center view to table format
@@ -282,7 +302,7 @@ public class MainController implements Initializable {
                     String oldName = "";
                     ArrayList<WritableMediaFile> files = new ArrayList<>();
                     JProgressBar progressBar = new JProgressBar(0, content.length);
-                    JDialog progressDialog = progressDiag(progressBar);
+//                    JDialog progressDialog = progressDiag(progressBar);
                     int i = 0;
                     for (File content1 : content) {
                         Path source = content1.toPath();
@@ -297,22 +317,22 @@ public class MainController implements Initializable {
                                 int eY = parseInt(actDir.substring(13, 17)), eM = parseInt(actDir.substring(18, 20)) - 1, eD = parseInt(actDir.substring(21, 23));
                                 if ((fY * 10000 + fM * 100 + fD >= sY * 10000 + sM * 100 + sD) && (fY * 10000 + fM * 100 + fD <= eY * 10000 + eM * 100 + eD)) {
                                     target = dirs[j].toPath();
-                                    files.add(new WritableMediaFile(source.toString(), target + "\\"));
+//                                    files.add(new WritableMediaFile(source.toString(), target + "\\"));
                                     System.out.println(source.toString() + " -> " + target);
                                     j = dirs.length;
                                 }
                             }
                         } else {
-                            files.add(new WritableMediaFile(source.toString(), target + "\\"));
+//                            files.add(new WritableMediaFile(source.toString(), target + "\\"));
                             System.out.println(source.toString() + " -> " + target);
                         }
                         oldName = fileName;
                         i++;
                         progressBar.setValue(i);
-                        this.setProgress((i) / content.length);
+//                        this.setProgress((i) / content.length);
                     }
-                    progressDialog.dispose();
-                    listOnScreen(createMediafileTable(files));
+//                    progressDialog.dispose();
+//                    listOnScreen(createMediafileTable(files));
                 }
             }
         }
@@ -329,7 +349,7 @@ public class MainController implements Initializable {
                 File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
                 int chunkSize = 100;//At least 2, exiftool has a different output format for single files
                 JProgressBar progressBar = new JProgressBar(0, content.length);
-                JDialog progressDialog = progressDiag(progressBar);
+//                JDialog progressDialog = progressDiag(progressBar);
                 for (int j = 0; j*chunkSize < content.length; j++) {
                     ArrayList<String> fileList = new ArrayList<>();
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
@@ -340,41 +360,15 @@ public class MainController implements Initializable {
                     int i = 0;
                     while (iterator.hasNext()) {
                         meta next = iterator.next();
-                        files.add(new WritableMediaFile(next));
+//                        files.add(new WritableMediaFile(next));
                         progressBar.setValue(i + j*chunkSize);
-                        this.setProgress((i + j*chunkSize)/content.length);
+//                        this.setProgress((i + j*chunkSize)/content.length);
                     }
                 }
-                progressDialog.dispose();
+//                progressDialog.dispose();
             }
         }
         return files;
-    }
-
-    //no mediafile, creates a list of meta
-    private ArrayList<meta> fileMetaList(ArrayList<String> directories, Path target) {
-        Iterator<String> iter = directories.iterator();
-        ArrayList<meta> metas = new ArrayList<>();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-                JProgressBar progressBar = new JProgressBar(0, content.length);
-                JDialog progressDialog = progressDiag(progressBar);
-                for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> fileList = new ArrayList<>();
-                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
-                        fileList.add(content[j*chunkSize + f].getName());
-                    }
-                    metas.addAll(readFileMeta(fileList, dir1, commonProperties.getZone()));
-                    progressBar.setValue(j*chunkSize);
-                    this.setProgress((j*chunkSize)/content.length);
-                }
-                progressDialog.dispose();
-            }
-        }
-        return metas;
     }
 
     //import and rename are basically the same
@@ -390,195 +384,33 @@ public class MainController implements Initializable {
         return itWasImport(directories);
     }
 
-
-
-
-
-    //TODO need to move to FXML
-    private void compare() {
-        ArrayList<comparableMediaFile> fromFiles = readsDirectoryToComparableMediaFile(commonProperties.getFromDir().toPath());
-        ArrayList<comparableMediaFile> toFiles = readsDirectoryToComparableMediaFile(commonProperties.getToDir());
-        ArrayList<comparableMediaFile> singles = new ArrayList<>();
-        ObservableList<String> pairs =FXCollections.observableArrayList ();
-        StringBuilder pairTo = new StringBuilder();
-        StringBuilder pairFrom = new StringBuilder();
-        StringBuilder singleStr = new StringBuilder();
-        fromFiles.stream().forEach((file) -> singles.add(file));
-        toFiles.stream().forEach((file) -> singles.add(file));
-        this.duplicates.clear();
-        this.modpic.clear();
-        toFiles.stream().forEach((file) -> {
-            fromFiles.stream().forEach((baseFile) -> {
-                if (file.meta != null && baseFile.meta != null && FilenameUtils.getExtension(file.file.getName()).equals(FilenameUtils.getExtension(baseFile.file.getName()))) {
-                    if (file.meta.iID != null && baseFile.meta.iID != null && file.meta.iID.equals(baseFile.meta.iID)) {
-                        pairs.add(baseFile.file.getName() + " : " + file.file.getName() + "\n");
-                        pairTo.append(file.file.getAbsolutePath()).append("\n");
-                        pairFrom.append(baseFile.file.getAbsolutePath()).append("\n");
-                        singles.remove(baseFile);
-                        singles.remove(file);
-                    } else if (file.meta.dID != null && baseFile.meta.dID != null && file.meta.dID.equals(baseFile.meta.dID)) {
-                        this.duplicates.add(new duplicate(baseFile, file, true));
-                        singles.remove(baseFile);
-                        singles.remove(file);
-                    } else if (file.meta.odID != null && baseFile.meta.odID != null && file.meta.odID.equals(baseFile.meta.odID)) {
-                        this.modpic.add(new duplicate(baseFile, file, false));
-                        singles.remove(baseFile);
-                        singles.remove(file);
+    //no mediafile, creates a list of meta
+    private ArrayList<meta> fileMetaList(ArrayList<String> directories, Path target) {
+        Iterator<String> iter = directories.iterator();
+        ArrayList<meta> metas = new ArrayList<>();
+        while(iter.hasNext()) {
+            File dir1 = new File(iter.next());
+            if(dir1.isDirectory()) {
+                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
+                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
+                JProgressBar progressBar = new JProgressBar(0, content.length);
+//                JDialog progressDialog = progressDiag(progressBar);
+                for (int j = 0; j*chunkSize < content.length; j++) {
+                    ArrayList<String> fileList = new ArrayList<>();
+                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
+                        fileList.add(content[j*chunkSize + f].getName());
                     }
+                    metas.addAll(readFileMeta(fileList, dir1, commonProperties.getZone()));
+                    progressBar.setValue(j*chunkSize);
+//                    this.setProgress((j*chunkSize)/content.length);
                 }
-            });
-        });
-        ArrayList<metaChanges> metaChange = new ArrayList();
-        ArrayList<String> metaTags = new ArrayList();
-        dupFor:
-        for (duplicate dup : duplicates) {
-            for (String item : dup.footprint) {
-                if (!metaTags.contains(item)) metaTags.add(item);
+//                progressDialog.dispose();
             }
-            for (metaChanges change : metaChange) {
-                if (change.compare(dup.footprint, dup.getDir())) {
-                    continue dupFor;
-                }
-            }
-            metaChange.add(new metaChanges(dup.footprint, dup.getDir()));
         }
-        for (metaChanges change : metaChange) {
-            System.out.println(change.getChanges());
-            System.out.println(change.getCount());
-            System.out.println(change.getDirs());
-            System.out.println();
-        }
-        metaTags.stream().forEach((tag) -> {System.out.println(tag);});
-        tab2.setContent(createDuplicateTable(duplicates));
-        tab3.setContent(createDuplicateTable(modpic));
-        ListView<String> listSingle = new ListView<String>();
-        ObservableList<String> single = FXCollections.observableArrayList ();
-        singles.stream().forEach((file) -> single.add(file.file.getName() + "\n"));
-        singles.stream().forEach((file) -> singleStr.append(file.file.getAbsolutePath()).append("\n"));
-        listSingle.setItems(single);
-
-        StaticTools.beep();
+        return metas;
     }
 
-    //TODO need to move to FXML
-    private TableView createDuplicateTable(ObservableList<duplicate> input) {
-        TableView<duplicate> table = new TableView<>();
-        table.setEditable(true);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        TableColumn< duplicate, Boolean > processingCol = new TableColumn<>( "Ok" );
-        processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
-        processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
-        processingCol.setPrefWidth(50);
-        processingCol.setResizable(false);
-        processingCol.setEditable(true);
-        TableColumn firstNameCol = new TableColumn("Left Filename");
-        firstNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("firstName"));
-        TableColumn buttonCol = new TableColumn("Metadata");
-        buttonCol.setMinWidth(150);
-        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("meta"));
-        buttonCol.setCellFactory(new Callback<TableColumn<duplicate, String>, TableCell<duplicate, String>>() {
-            @Override
-            public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {
-                return new TableCell<duplicate, String>() {
-                    final Button button = new Button(); {
-                        button.setMinWidth(130);
-                    }
-                    @Override
-                    public void updateItem(final String object, boolean empty) {
-                        super.updateItem(object, empty);
-                        int index = this.getIndex();
-                        setGraphic(button);
-                        if (object != null) {
-                            button.setText(object);
-                            button.setOnAction(new EventHandler<ActionEvent>() {
-                                @Override public void handle(ActionEvent event) {
-                                    StackPane pane = new StackPane();
-                                    Scene scene = new Scene(pane);
-                                    Stage stage = new Stage();
-                                    stage.setScene(scene);
-                                    TableView table = new TableView();
-                                    table.setEditable(false);
 
-                                    TableColumn nameCol = new TableColumn("Field");
-                                    TableColumn firstCol = new TableColumn("Left Value");
-                                    TableColumn secondCol = new TableColumn("Right Value");
-                                    nameCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                                        @Override
-                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                            String[] x = p.getValue();
-                                            if (x != null && x.length>0) {
-                                                return new SimpleStringProperty(x[0]);
-                                            } else {
-                                                return new SimpleStringProperty("<no name>");
-                                            }
-                                        }
-                                    });
-                                    firstCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                                        @Override
-                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                            String[] x = p.getValue();
-                                            if (x != null && x.length>0) {
-                                                return new SimpleStringProperty(x[1]);
-                                            } else {
-                                                return new SimpleStringProperty("<no name>");
-                                            }
-                                        }
-                                    });
-                                    secondCol.setCellValueFactory(new Callback<TableColumn.CellDataFeatures<String[], String>, ObservableValue<String>>() {
-                                        @Override
-                                        public ObservableValue<String> call(TableColumn.CellDataFeatures<String[], String> p) {
-                                            String[] x = p.getValue();
-                                            if (x != null && x.length>0) {
-                                                return new SimpleStringProperty(x[2]);
-                                            } else {
-                                                return new SimpleStringProperty("<no name>");
-                                            }
-                                        }
-                                    });
-                                    table.getItems().addAll(input.get(index).getConflicts().toArray());
-                                    table.getColumns().addAll(nameCol, firstCol, secondCol);
-                                    pane.getChildren().add(table);
-                                    stage.show();
-                                }
-                            });
-                        } else {
-                            button.setText("");
-                        }
-                    }
-                };
-            }
-        });
-
-
-        TableColumn secondNameCol = new TableColumn("Right Filename");
-        secondNameCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("secondName"));
-        table.setItems(input);
-        table.getColumns().addAll(processingCol, firstNameCol, buttonCol, secondNameCol);
-        return table;
-    }
-
-    //TODO need to move to FXML
-    private TableView createMetaTable(ArrayList<meta> newData) {
-        meta.removeAll(meta);
-        newData.stream().forEach((obj) -> {meta.add(new metaProp(obj));});
-        TableView<metaProp> table = new TableView<>();
-        table.setEditable(true);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        TableColumn< metaProp, Boolean > dateFormatCol = new TableColumn<>( "dateFormat" );
-        dateFormatCol.setCellValueFactory( f -> f.getValue().dateFormatProperty());
-        dateFormatCol.setCellFactory(CheckBoxTableCell.forTableColumn(dateFormatCol));
-        dateFormatCol.setPrefWidth(50);
-        dateFormatCol.setResizable(false);
-        TableColumn nameCol = new TableColumn("Filename");
-        nameCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("originalFilename"));
-        TableColumn dateCol = new TableColumn("Date");
-        dateCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("date"));
-        TableColumn modelCol = new TableColumn("Model");
-        modelCol.setCellValueFactory(new PropertyValueFactory<metaProp, String>("model"));
-        table.setItems(meta);
-        table.getColumns().addAll(nameCol, dateCol, dateFormatCol, modelCol);
-        return table;
-    }
 
 
 
@@ -659,12 +491,5 @@ public class MainController implements Initializable {
             }
         }
         return sb.toString();
-    }
-
-    private ArrayList<comparableMediaFile> readsDirectoryToComparableMediaFile(Path path) {
-        List<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsRecursive(path);
-        final ArrayList<comparableMediaFile> files = new ArrayList();
-        directoryElements.stream().forEach((de) -> files.add(new comparableMediaFile(de.file, getV(de.file.getName()))));
-        return files;
     }
 }

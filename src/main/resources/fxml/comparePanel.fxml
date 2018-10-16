@@ -2,7 +2,7 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<TabPane  xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Rename.ComparePanelController">
+<TabPane  xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Comparison.ComparePanelController">
     <Tab fx:id="tab1" text="Pairs">
         <ListView items="${controller.pairs}"></ListView>
     </Tab>
@@ -13,6 +13,6 @@
 
     </Tab>
     <Tab fx:id="tab4" text="Singles">
-        <ListView items="${controller.single}"></ListView>
+        <ListView items="${controller.singles}"></ListView>
     </Tab>
 </TabPane>

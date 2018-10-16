@@ -1,0 +1,62 @@
+package org.nyusziful.Main;
+
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.fxml.FXML;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.cell.CheckBoxTableCell;
+import org.nyusziful.Rename.MediaFileSet;
+import org.nyusziful.Rename.WritableMediaFile;
+import org.nyusziful.Rename.metaProp;
+
+import java.net.URL;
+import java.util.ResourceBundle;
+
+public class MetaTableViewController {
+
+    // <editor-fold defaultstate="collapsed" desc="FXML variables">
+    @FXML
+    private TableColumn< WritableMediaFile, Boolean > processingCol;
+
+    @FXML
+    private TableColumn oldNameCol;
+
+    @FXML
+    private TableColumn newNameCol;
+
+    @FXML
+    private TableColumn noteCol;
+
+    @FXML
+    private TableColumn< WritableMediaFile, Boolean > xmpCol;
+    // </editor-fold>
+
+    private ObservableList<metaProp> meta;
+
+    public MetaTableViewController() {
+    }
+
+
+    public void initialize(URL url, ResourceBundle rb) {
+
+/*        oldNameCol.setCellValueFactory(new PropertyValueFactory<tableViewMediaFile, String>("currentName"));
+        newNameCol.setCellValueFactory(new PropertyValueFactory<tableViewMediaFile, String>("newName"));
+        noteCol.setCellValueFactory(new PropertyValueFactory<tableViewMediaFile, String>("note"));
+*/
+//        processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
+        processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
+
+//        xmpCol.setCellValueFactory( f -> f.getValue().xmpMissingProperty());
+        xmpCol.setCellFactory(CheckBoxTableCell.forTableColumn(xmpCol));
+    }
+
+
+
+    public ObservableList<metaProp> getMeta() {
+        return meta;
+    }
+
+    public void setMeta(ObservableList<metaProp> meta) {
+        this.meta = meta;
+    }
+}
