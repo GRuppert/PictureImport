@@ -5,31 +5,26 @@ import javafx.collections.ObservableList;
 import org.nyusziful.Main.Progress;
 import org.nyusziful.Main.StaticTools;
 
-import javax.swing.*;
-import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
-import static org.nyusziful.Main.StaticTools.supportedFileType;
 
 public class MediaFileSet {
-//    ArrayList<WritableMediaFile> files = new ArrayList<>();
-    private final ObservableList<WritableMediaFile> dataModel = FXCollections.observableArrayList();
+//    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
+    private final ObservableList<tableViewMediaFile> dataModel = FXCollections.observableArrayList();
 
-    public MediaFileSet(List<WritableMediaFile> files) {
+    public MediaFileSet(List<tableViewMediaFile> files) {
         fillData(files);
     }
 
-    private void fillData(List<WritableMediaFile> files) {
+    private void fillData(List<tableViewMediaFile> files) {
 //        this.files = files;
         dataModel.removeAll(dataModel);
         files.stream().forEach((obj) -> {dataModel.add(obj);});
     }
 
-    public ObservableList<WritableMediaFile> getDataModel() {
+    public ObservableList<tableViewMediaFile> getDataModel() {
         return dataModel;
     }
 
@@ -46,7 +41,7 @@ public class MediaFileSet {
     }
 
     public void updatePaths(String replacePath) {
-        for(WritableMediaFile paths: getDataModel()) {
+        for(tableViewMediaFile paths: getDataModel()) {
             Path newPath = paths.getNewPath();
             String fileName = newPath.getFileName().toString();
             String replacement =  replacePath + "\\" + fileName;
@@ -66,7 +61,7 @@ public class MediaFileSet {
                 }
             }
             progress.setGoal(getDataModel().size());
-            for (WritableMediaFile record : getDataModel()) {
+            for (tableViewMediaFile record : getDataModel()) {
                 record.write(copyOrMove);
                 getDataModel().remove(record);
                 i++;

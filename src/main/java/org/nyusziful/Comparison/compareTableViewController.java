@@ -16,8 +16,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import org.nyusziful.Rename.MediaFileSet;
-import org.nyusziful.Rename.WritableMediaFile;
+import org.nyusziful.Rename.AnalyzingMediaFile;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -26,7 +25,7 @@ public class compareTableViewController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableColumn< WritableMediaFile, Boolean > processingCol;
+    private TableColumn<AnalyzingMediaFile, Boolean > processingCol;
 
     @FXML
     private TableColumn buttonCol;
@@ -41,7 +40,7 @@ public class compareTableViewController {
     public void initialize(URL url, ResourceBundle rb) {
         processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
         processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
-        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("meta"));
+        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("Meta"));
         buttonCol.setCellFactory(new Callback<TableColumn<duplicate, String>, TableCell<duplicate, String>>() {
             @Override
             public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {

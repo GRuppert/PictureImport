@@ -13,7 +13,7 @@ import java.time.ZonedDateTime;
  *
  * @author gabor
  */
-public class meta{
+public class Meta {
     public String originalFilename;
     public ZonedDateTime date;
     public String model;
@@ -36,7 +36,7 @@ public class meta{
      * @param note
      * @param orig
      */
-    public meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig) {
+    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig) {
         this.originalFilename = originalFilename;
         this.date = date;
         this.dateFormat = dateFormat;
@@ -71,7 +71,7 @@ public class meta{
         return sb.toString();
     }
     
-/*    public meta(String originalFilename, String date, String model, String iID, String dID, String odID) {
+/*    public Meta(String originalFilename, String date, String model, String iID, String dID, String odID) {
         this.originalFilename = originalFilename;
         this.date = date;
         this.model = model;

@@ -7,10 +7,10 @@ package org.nyusziful.ExifUtils;
 
 import static org.nyusziful.Main.StaticTools.ExifDateFormat;
 import static org.nyusziful.Main.StaticTools.XmpDateFormatTZ;
-import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.getTimeFromStr;
 import static org.nyusziful.Main.StaticTools.getZonedTimeFromStr;
-import org.nyusziful.Rename.meta;
+
+import org.nyusziful.Rename.Meta;
 import com.adobe.xmp.XMPException;
 import com.adobe.xmp.XMPIterator;
 import com.adobe.xmp.XMPMeta;
@@ -22,19 +22,16 @@ import com.drew.metadata.Directory;
 import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.drew.metadata.xmp.XmpDirectory;
-import java.io.BufferedReader;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.io.FilenameUtils;
 
@@ -47,9 +44,9 @@ public class ExifReadWriteIMR implements ifMetaLink {
      * Reads the standard metadata from the specified files in the given directory
      * @param file file to be read
      * @param zone Timezone used if it is not presented in the exif
-     * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
+     * @return a list of the <code> Meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public meta exifToMeta(File file, ZoneId zone) {
+    public Meta exifToMeta(File file, ZoneId zone) {
         ArrayList<String[]> tags;
         String model = null;
         String note = "";
@@ -62,7 +59,7 @@ public class ExifReadWriteIMR implements ifMetaLink {
         try {
             tags = readMeta(file);
         } catch (ImageProcessingException | IOException ex) {
-            meta meta = new meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), null);
+            Meta meta = new Meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), null);
             System.out.println(meta);
             return meta;
         }
@@ -106,7 +103,7 @@ public class ExifReadWriteIMR implements ifMetaLink {
         } else if (wTZ != null) {
             OrigDT = wTZ;
         }
-        meta meta = new meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, null);
+        Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, null);
         return meta;
     }
     

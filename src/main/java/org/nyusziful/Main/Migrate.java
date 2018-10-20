@@ -1,7 +1,7 @@
 package org.nyusziful.Main;
 
-import org.nyusziful.Rename.WritableMediaFile;
-import org.nyusziful.Rename.meta;
+import org.nyusziful.Rename.AnalyzingMediaFile;
+import org.nyusziful.Rename.Meta;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,7 +21,7 @@ import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
-import static org.nyusziful.Rename.WritableMediaFile.MOVE;
+import static org.nyusziful.Rename.AnalyzingMediaFile.MOVE;
 
 public class Migrate {
     private long fileSizeCountTotal = 0;
@@ -59,14 +59,14 @@ public class Migrate {
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         files.add(content[j*chunkSize + f].getName());
                     }
-                    List<meta> exifToMeta = readFileMeta(files, dir1, zone);
-                    Iterator<meta> iterator = exifToMeta.iterator();
+                    List<Meta> exifToMeta = readFileMeta(files, dir1, zone);
+                    Iterator<Meta> iterator = exifToMeta.iterator();
                     int i = 0;
                     while (iterator.hasNext()) {
-                        meta next = iterator.next();
+                        Meta next = iterator.next();
                         //TODO null!
-                        WritableMediaFile media = null;
-//                        WritableMediaFile media = new WritableMediaFile(next);
+                        AnalyzingMediaFile media = null;
+//                        AnalyzingMediaFile media = new AnalyzingMediaFile(next);
                         if (media.getProcessing()) {
                             media.write(copyOrMove);
                         } else {
@@ -89,9 +89,9 @@ public class Migrate {
         try {
             ArrayList<String[]> readMeta = ExifReadWrite.readMeta(new File("e:\\Képek\\Dev\\ExifDamage\\orig\\DSC07620.JPG"));
             ArrayList<String[]> readMeta1 = ExifReadWrite.readMeta(new File("e:\\Képek\\Dev\\ExifDamage\\digi\\DSC07620.JPG"));
-            readMeta.stream().forEach((meta) -> System.out.println(meta[0] + " : " + meta[1]));
+            readMeta.stream().forEach((Meta) -> System.out.println(Meta[0] + " : " + Meta[1]));
             System.out.println("-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-");
-            readMeta1.stream().forEach((meta) -> System.out.println(meta[0] + " : " + meta[1]));
+            readMeta1.stream().forEach((Meta) -> System.out.println(Meta[0] + " : " + Meta[1]));
         } catch (ImageProcessingException | IOException ex) {
             Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
         }

@@ -2,22 +2,17 @@ package org.nyusziful.Rename;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.control.Tab;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.control.cell.PropertyValueFactory;
-import org.nyusziful.Main.CommonProperties;
 
 import java.net.URL;
-import java.util.List;
 import java.util.ResourceBundle;
 
 public class MediaFileTableViewController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableColumn< WritableMediaFile, Boolean > processingCol;
+    private TableColumn<AnalyzingMediaFile, Boolean > processingCol;
 
     @FXML
     private TableColumn oldNameCol;
@@ -29,7 +24,7 @@ public class MediaFileTableViewController {
     private TableColumn noteCol;
 
     @FXML
-    private TableColumn< WritableMediaFile, Boolean > xmpCol;
+    private TableColumn<AnalyzingMediaFile, Boolean > xmpCol;
     // </editor-fold>
 
     private MediaFileSet mediaFileSet;
@@ -51,7 +46,7 @@ public class MediaFileTableViewController {
         xmpCol.setCellFactory(CheckBoxTableCell.forTableColumn(xmpCol));
     }
 
-    public ObservableList<WritableMediaFile> getDataModel() { return mediaFileSet.getDataModel(); }
+    public ObservableList<AnalyzingMediaFile> getDataModel() { return mediaFileSet.getDataModel(); }
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;

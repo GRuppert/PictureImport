@@ -8,7 +8,9 @@ package org.nyusziful.TimeShift;
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 import static org.nyusziful.ExifUtils.ExifReadWrite.exifTool;
 import static org.nyusziful.Main.StaticTools.errorOut;
-import org.nyusziful.Rename.meta;
+
+import org.nyusziful.Rename.Meta;
+
 import java.io.File;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -39,11 +41,11 @@ public class StaticTools {
 //            ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -Model " + fileNames, dir);
             ArrayList<String> files = new ArrayList<>();
             files.add(".");
-            List<meta> exifToMeta = readFileMeta(files, dir, ZoneId.systemDefault());
-            Iterator<meta> iterator = exifToMeta.iterator();
+            List<Meta> exifToMeta = readFileMeta(files, dir, ZoneId.systemDefault());
+            Iterator<Meta> iterator = exifToMeta.iterator();
             String errors = "";
             while (iterator.hasNext()) {
-                meta next = iterator.next();
+                Meta next = iterator.next();
                 String model = next.model;
                 ZonedDateTime dateZ = next.date;
                 if (dateZ != null) {

@@ -40,10 +40,10 @@ public class fileRenamer {
     /**
      * 
      * @param filename
-     * @return meta with information from the fileName, null if no compatible format found, unknown values are null 
+     * @return Meta with information from the fileName, null if no compatible format found, unknown values are null
      */
-    public static meta getV(String filename) {
-        meta metaFile = null;
+    public static Meta getV(String filename) {
+        Meta metaFile = null;
         if (filename.startsWith("V") && filename.substring(2, 3).equals("_")) {
             switch (filename.substring(1, 2)) {
                 case "5":
@@ -65,17 +65,17 @@ public class fileRenamer {
         return metaFile;
     }
     
-    private static meta getV1(String filename) {//20160924_144402_ILCE-5100-DSC00615.JPG
+    private static Meta getV1(String filename) {//20160924_144402_ILCE-5100-DSC00615.JPG
         if (filename.length() > 17+4+1) {
             try {
                 ZonedDateTime captureDate = LocalDateTime.parse(filename.substring(0, 15), dfV1).atZone(ZoneId.systemDefault());
                 String[] parts = filename.substring(15 + 1).split("-");
                 if (parts.length == 2)
-                    return new meta(parts[1], captureDate, null, parts[0], null, null, null, null, null);
+                    return new Meta(parts[1], captureDate, null, parts[0], null, null, null, null, null);
                 if (parts.length > 2)
                     for (String camera : CAMERAS)
                         if (filename.substring(15 + 1).startsWith(camera)) {
-                            return new meta(filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null, null, null);
+                            return new Meta(filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null, null, null);
                         }
                 errorOut("Not recognized camera", new Exception());
             } catch (Exception e) {
@@ -85,11 +85,11 @@ public class fileRenamer {
         return null;
     }
 
-    private static meta getV2(String filename) {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-" UTC???
+    private static Meta getV2(String filename) {// "K2016-11-0_3@07-5_0-24_Thu(p0100)-" UTC???
         if (filename.length() > 34+1+4) {
             try {
                 ZonedDateTime captureDate = ZonedDateTime.parse(filename.substring(1, 10) + filename.substring(11, 17) + filename.substring(18, 22) + (filename.substring(27, 28).equals("p") ? "+" : "-") + filename.substring(28, 32), dfV2);
-                return new meta(filename.substring(34), captureDate, null, null, null, null, null, null, null);
+                return new Meta(filename.substring(34), captureDate, null, null, null, null, null, null, null);
             } catch (Exception e) {
                 return null;
             }
@@ -97,7 +97,7 @@ public class fileRenamer {
         return null;
     }
 
-    private static meta getV3(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-
+    private static Meta getV3(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-
         if (filename.length() > 34+1+4) {
             try {
                 String dateString = 
@@ -112,7 +112,7 @@ public class fileRenamer {
                 ;
                 ZonedDateTime captureDate = LocalDateTime.parse(dateString, dfV3).atZone(ZoneOffset.UTC);
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
-                return new meta(filename.substring(35), captureDate, null, null, null, null, null, null, null);
+                return new Meta(filename.substring(35), captureDate, null, null, null, null, null, null, null);
             } catch (Exception e) {
                 return null;
             }
@@ -120,7 +120,7 @@ public class fileRenamer {
         return null;
     }
 
-    private static meta getV4(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
+    private static Meta getV4(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
         if (filename.length() > 34+1+4+32+32) {
             try {
                 String dateString = 
@@ -137,7 +137,7 @@ public class fileRenamer {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
                 
                 if (filename.substring(34, 35).equals("-") && filename.substring(67, 68).equals("-")) {
-                    return new meta(filename.substring(101), captureDate, null, null, null, filename.substring(35, 67), filename.substring(68, 100), null, null);
+                    return new Meta(filename.substring(101), captureDate, null, null, null, filename.substring(35, 67), filename.substring(68, 100), null, null);
                     
                 }
             } catch (Exception e) {
@@ -147,7 +147,7 @@ public class fileRenamer {
         return null;
     }
 
-    private static meta getV5(String filename) {//V5_K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
+    private static Meta getV5(String filename) {//V5_K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-
         int offsetV = 3;
         if (filename.length() > offsetV+34+1+4+32+32) {
             try {
@@ -165,7 +165,7 @@ public class fileRenamer {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
                 
                 if (filename.substring(34 + offsetV, 35 + offsetV).equals("-") && filename.substring(67 + offsetV, 68 + offsetV).equals("-")) {
-                    return new meta(filename.substring(101 + offsetV), captureDate, null, null, filename.substring(35 + offsetV, 67 + offsetV), filename.substring(68 + offsetV, 100 + offsetV), null, null, null);
+                    return new Meta(filename.substring(101 + offsetV), captureDate, null, null, filename.substring(35 + offsetV, 67 + offsetV), filename.substring(68 + offsetV, 100 + offsetV), null, null, null);
                     
                 }
             } catch (Exception e) {
@@ -175,7 +175,7 @@ public class fileRenamer {
         return null;
     }
 
-    private static meta getV6(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-0-
+    private static Meta getV6(String filename) {//K2016_11!0_4@15_1_0_38(+0100)(Fri)-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-0-
         int offsetV = 3;
         if (filename.length() > offsetV+34+1+4+32+2) {
             try {
@@ -193,7 +193,7 @@ public class fileRenamer {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
                 
                 if (filename.substring(34 + offsetV, 35 + offsetV).equals("-") && filename.substring(67 + offsetV, 68 + offsetV).equals("-")) {
-                    return new meta(filename.substring(70 + offsetV), captureDate, null, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, filename.substring(68 + offsetV, 69 + offsetV));
+                    return new Meta(filename.substring(70 + offsetV), captureDate, null, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, filename.substring(68 + offsetV, 69 + offsetV));
                     
                 }
             } catch (Exception e) {

@@ -10,7 +10,8 @@ import static org.nyusziful.Main.StaticTools.XmpDateFormatTZ;
 import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Main.StaticTools.getTimeFromStr;
 import static org.nyusziful.Main.StaticTools.getZonedTimeFromStr;
-import org.nyusziful.Rename.meta;
+
+import org.nyusziful.Rename.Meta;
 import com.adobe.xmp.XMPException;
 import com.adobe.xmp.XMPIterator;
 import com.adobe.xmp.XMPMeta;
@@ -43,11 +44,11 @@ import org.apache.commons.io.FilenameUtils;
  * @author gabor
  */
 public class ExifReadWrite {
-    public static meta readFileMeta(File fileMeta, ZoneId defaultTZ) {
-        ArrayList<String> files = new ArrayList<>();
-        files.add(fileMeta.getName());
-        List<meta> exifToMeta = readFileMeta(files, fileMeta.getParentFile(), defaultTZ);
-        Iterator<meta> iterator = exifToMeta.iterator();
+    public static Meta readFileMeta(File fileMeta, ZoneId defaultTZ) {
+        ArrayList<File> files = new ArrayList<>();
+        files.add(fileMeta);
+        List<Meta> exifToMeta = readFileMeta(files, defaultTZ);
+        Iterator<Meta> iterator = exifToMeta.iterator();
         if (iterator.hasNext()) {
             return iterator.next();
         }
@@ -56,25 +57,24 @@ public class ExifReadWrite {
 
     /**
      * Reads the standard metadata from the specified files in the given directory
-     * @param filenames String list of the representation of the file names
-     * @param dir the directory where the files are
+     * @param files list of the files
      * @param defaultTZ default time zone in case it can't be read from the filename
-     * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
+     * @return a list of the <code> Meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public static List<meta> readFileMeta(ArrayList<String> filenames, File dir, ZoneId defaultTZ) {
+    public static ArrayList<Meta> readFileMeta(List<File> files, ZoneId defaultTZ) {
 /*        long startTime = System.nanoTime();
         exifToMetaIMR(filenames, dir);
         System.out.println("IMR:" + (System.nanoTime() - startTime)/1000000);
         startTime = System.nanoTime();
-        List<meta> exifToMetaET = exifToMetaET(filenames, dir);
+        List<Meta> exifToMetaET = exifToMetaET(filenames, dir);
         System.out.println("ET:" + (System.nanoTime() - startTime)/1000000);
         return exifToMetaET;*/
-        return exifToMetaIMR(filenames, dir, defaultTZ);
+        return exifToMetaIMR(files, defaultTZ);
     }
 
-    private static List<meta> exifToMetaIMR(ArrayList<String> filenames, File dir, ZoneId defaultTZ) {
-        List<meta> results = new ArrayList<>();      
-        for (String filename : filenames) {
+    private static ArrayList<Meta> exifToMetaIMR(List<File> files, ZoneId defaultTZ) {
+        List<Meta> results = new ArrayList<>();
+        for (File file : files) {
             ArrayList<String[]> tags;
             String model = null;
             String note = "";
@@ -85,9 +85,9 @@ public class ExifReadWrite {
             ZonedDateTime wTZ = null;
             Boolean dateFormat = false;
             try {
-                tags = readMeta(new File(dir + "\\" + filename));
+                tags = readMeta(file);
             } catch (ImageProcessingException | IOException ex) {
-                meta meta = new meta(dir + "\\" + filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), null);
+                Meta meta = new Meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), null);
                 System.out.println(meta);
                 results.add(meta);
                 continue;
@@ -124,7 +124,7 @@ public class ExifReadWrite {
                         try {
                             wTZ = ZonedDateTime.parse(tag[1], XmpDateFormatTZ);
                             if ((captureDate != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
-                                || FilenameUtils.getExtension(filename.toLowerCase()).equals("xmp"))
+                                || FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp"))
                                 dateFormat = true;
                         }
                         catch (DateTimeParseException exc) {
@@ -139,93 +139,113 @@ public class ExifReadWrite {
             } else if (wTZ != null) {
                 OrigDT = wTZ;
             }
-            meta meta = new meta(dir + "\\" + filename, OrigDT, dateFormat, model, iID, dID, odID, note, null);
+            Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, null);
             System.out.println(meta);
             results.add(meta);
         }
         return results;
     }
     
-    private static List<meta> exifToMetaET(ArrayList<String> filenames, File dir) {
+    private static ArrayList<Meta> exifToMetaET(List<File> files, ZoneId defaultTZ) {
         String filename = null;
-        if (filenames.size() == 1 && filenames.get(0).length() > 5) {filename = dir + "\\" + filenames.get(0);}
-        filenames.add(0, "-OriginalDocumentID");
-        filenames.add(0, "-DocumentID");
-        filenames.add(0, "-InstanceID");
-        filenames.add(0, "-DateTimeOriginal");
-        filenames.add(0, "-xmp:DateTimeOriginal");
-        filenames.add(0, "-Model");
-        filenames.add(0, "exiftool");
-        ArrayList<String> exifTool = exifTool(filenames.toArray(new String[0]), dir);
-        Iterator<String> iterator = exifTool.iterator();
-        ArrayList<meta> results = new ArrayList<>();
-        int i = -1;
-        String model = null;
-        String note = "";
-        String iID = null;
-        String dID = null;
-        String odID = null;
-        String captureDate = null;
-        Boolean dateFormat = null;
-        while (iterator.hasNext()) {
-            String line = iterator.next();
-            if (line.startsWith("========")) {
-                if (i > -1) {
-                    meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
-                    System.out.println(meta);
-                    results.add(meta);
-                }
-                i++;
-                String fileTemp = line.substring(9).replaceAll("./", "").replaceAll("/", "\\");
-                filename = dir + "\\" + fileTemp;
-                model = null;
-                captureDate = null;
-                dID = null;
-                odID = null;
-                note = "";
-                dateFormat = false;
 
-            //End of exiftool output
-            } else if (line.contains("image files read")){
-                if (!line.contains(" 0 image files read")) {
-                }
-            } else if (line.contains("files could not be read")){
-                            
-            } else {
-                String tagValue = "";
-                if (line.length() > 34) tagValue = line.substring(34);
-                switch (line.substring(0, 4)) {
-                    case "Date":
-                        if (captureDate == null)
-                            captureDate = tagValue;
-                        else {
-                            if (Math.abs(captureDate.length()-tagValue.length()) == 6) dateFormat = true;
-                            captureDate = tagValue;
-                        }
-                        break;
-                    case "Came":
-                        model = tagValue;
-                        break;
-                    case "Orig":
-                        odID = tagValue;
-                        break;
-                    case "Docu":
-                        dID = tagValue;
-                        break;
-                    case "Inst":
-                        iID = tagValue;
-                        break;
-                    case "Warn":
-                        note = line;
-                        break;
+        ArrayList<String> filenames = new ArrayList<>();
+        File[] content = (File[])files.toArray();
+        //TODO handle it!
+        int chunkSize = 100;//At least 2, exiftool has a different output format for single files
+        int done = 0;
+        ArrayList<Meta> results = new ArrayList<>();
+        while ( done < content.length) {
+            File dir = null;
+            ArrayList<String> fileList = new ArrayList<>();
+            for (int f = 0; (f < chunkSize) && (done + f < content.length); f++) {
+                if (dir == null) dir = content[done + f].getParentFile();
+                if (!dir.equals(content[done + f].getParentFile())) break;
+                fileList.add(content[done + f].getName());
+                done++;
+            }
+
+
+            if (filenames.size() == 1 && filenames.get(0).length() > 5) {
+                filename = dir + "\\" + filenames.get(0);
+            }
+            filenames.add(0, "-OriginalDocumentID");
+            filenames.add(0, "-DocumentID");
+            filenames.add(0, "-InstanceID");
+            filenames.add(0, "-DateTimeOriginal");
+            filenames.add(0, "-xmp:DateTimeOriginal");
+            filenames.add(0, "-Model");
+            filenames.add(0, "exiftool");
+            ArrayList<String> exifTool = exifTool(filenames.toArray(new String[0]), dir);
+            Iterator<String> iterator = exifTool.iterator();
+            int i = -1;
+            String model = null;
+            String note = "";
+            String iID = null;
+            String dID = null;
+            String odID = null;
+            String captureDate = null;
+            Boolean dateFormat = null;
+            while (iterator.hasNext()) {
+                String line = iterator.next();
+                if (line.startsWith("========")) {
+                    if (i > -1) {
+                        Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
+                        System.out.println(meta);
+                        results.add(meta);
+                    }
+                    i++;
+                    String fileTemp = line.substring(9).replaceAll("./", "").replaceAll("/", "\\");
+                    filename = dir + "\\" + fileTemp;
+                    model = null;
+                    captureDate = null;
+                    dID = null;
+                    odID = null;
+                    note = "";
+                    dateFormat = false;
+
+                    //End of exiftool output
+                } else if (line.contains("image files read")) {
+                    if (!line.contains(" 0 image files read")) {
+                    }
+                } else if (line.contains("files could not be read")) {
+
+                } else {
+                    String tagValue = "";
+                    if (line.length() > 34) tagValue = line.substring(34);
+                    switch (line.substring(0, 4)) {
+                        case "Date":
+                            if (captureDate == null)
+                                captureDate = tagValue;
+                            else {
+                                if (Math.abs(captureDate.length() - tagValue.length()) == 6) dateFormat = true;
+                                captureDate = tagValue;
+                            }
+                            break;
+                        case "Came":
+                            model = tagValue;
+                            break;
+                        case "Orig":
+                            odID = tagValue;
+                            break;
+                        case "Docu":
+                            dID = tagValue;
+                            break;
+                        case "Inst":
+                            iID = tagValue;
+                            break;
+                        case "Warn":
+                            note = line;
+                            break;
+                    }
                 }
             }
-        }
-        if (filename != null) {
-            meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
-            System.out.println(meta);
-            results.add(meta);
-//            results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
+            if (filename != null) {
+                Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
+                System.out.println(meta);
+                results.add(meta);
+//            results.add(new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
+            }
         }
         return results;
     }

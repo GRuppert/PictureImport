@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 
 public class CommonProperties {
-    private static CommonProperties instance = new CommonProperties();;
+    private static CommonProperties instance;
 
     private int copyOrMove;
     private ZoneId zone;
@@ -23,6 +23,9 @@ public class CommonProperties {
     }
 
     public static CommonProperties getInstance() {
+        if (CommonProperties.instance == null) {
+            CommonProperties.instance = new CommonProperties();
+        }
         return CommonProperties.instance;
     }
 

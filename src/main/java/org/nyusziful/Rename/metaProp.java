@@ -22,7 +22,7 @@ public class metaProp {
     private final SimpleBooleanProperty dateFormat;
     
     
-    public metaProp(meta metaIn) {
+    public metaProp(Meta metaIn) {
         originalFilename = new SimpleStringProperty(metaIn.originalFilename == null ? "" : metaIn.originalFilename);
         date = new SimpleStringProperty(metaIn.date == null ? "" : metaIn.date.format(ExifDateFormatTZ));
         dateFormat = new SimpleBooleanProperty(metaIn.dateFormat == null ? false : metaIn.dateFormat);

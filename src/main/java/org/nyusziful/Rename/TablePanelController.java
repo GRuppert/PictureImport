@@ -13,7 +13,7 @@ public class TablePanelController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableColumn< WritableMediaFile, Boolean > processingCol;
+    private TableColumn<AnalyzingMediaFile, Boolean > processingCol;
 
     @FXML
     private TableColumn oldNameCol;
@@ -25,7 +25,7 @@ public class TablePanelController {
     private TableColumn noteCol;
 
     @FXML
-    private TableColumn< WritableMediaFile, Boolean > xmpCol;
+    private TableColumn<AnalyzingMediaFile, Boolean > xmpCol;
     // </editor-fold>
 
     private MediaFileSet mediaFileSet;
@@ -47,7 +47,7 @@ public class TablePanelController {
         xmpCol.setCellFactory(CheckBoxTableCell.forTableColumn(xmpCol));
     }
 
-    public ObservableList<WritableMediaFile> getDataModel() { return mediaFileSet.getDataModel(); }
+    public ObservableList<AnalyzingMediaFile> getDataModel() { return mediaFileSet.getDataModel(); }
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;

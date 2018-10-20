@@ -27,12 +27,7 @@ import static org.nyusziful.Rename.fileRenamer.getV;
  *
  * @author gabor
  */
-public class WritableMediaFile implements tableViewMediaFile {
-    // <editor-fold defaultstate="collapsed" desc="Static variables">
-    public static int MOVE = 1;
-    public static int COPY = 0;
-    // </editor-fold>
-
+public class AnalyzingMediaFile implements tableViewMediaFile {
     private static String Version = "6";
     
     private final SimpleBooleanProperty processing;
@@ -65,24 +60,25 @@ public class WritableMediaFile implements tableViewMediaFile {
     }
     
 /*
-    public WritableMediaFile(String fileIn) {
+    public AnalyzingMediaFile(String fileIn) {
         this(new File(fileIn));
     }
 
-    public WritableMediaFile(String fileIn, String targetDir) {
+    public AnalyzingMediaFile(String fileIn, String targetDir) {
         this(fileIn);
         targetDirectory = targetDir;
     }
 
-    public WritableMediaFile(File fileIn) {
+    public AnalyzingMediaFile(File fileIn) {
         this(fileIn, null, true);
     }
-    
-    public WritableMediaFile(meta metaExif) {
+
+    public AnalyzingMediaFile(Meta metaExif) {
         this(new File(metaExif.originalFilename), metaExif, true);
     }
  */
-    public WritableMediaFile(File fileIn, meta metaExif, boolean forceRewrite, ZoneId zone, String pictureSet, String targetDirectory) {
+
+    public AnalyzingMediaFile(File fileIn, Meta metaExif, boolean forceRewrite, ZoneId zone, String pictureSet, String targetDirectory) {
         this.file = fileIn;
         this.zone = zone;
         this.pictureSet = pictureSet;
@@ -111,7 +107,7 @@ public class WritableMediaFile implements tableViewMediaFile {
             }
             
             //read data from filename
-            meta metaFile;
+            Meta metaFile;
             metaFile = getV(getFile().getName());
             
             //Set original filename, orig if possible from filename
@@ -119,7 +115,7 @@ public class WritableMediaFile implements tableViewMediaFile {
             if (metaFile != null && metaFile.orig != null) orig = metaFile.orig;
             
             //read External sidecars
-            meta metaXmp = null;
+            Meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
                 if (fileXmp.exists()) metaXmp = readFileMeta(fileXmp, zone);
@@ -148,7 +144,7 @@ public class WritableMediaFile implements tableViewMediaFile {
         }
     }
 
-    private void compareModel(meta metaExif, meta metaFile) {
+    private void compareModel(Meta metaExif, Meta metaFile) {
         if (metaFile.model != null) model = metaFile.model;
         if (metaExif.model != null) {
             if (model != null) {
@@ -167,7 +163,7 @@ public class WritableMediaFile implements tableViewMediaFile {
         }
     }
     
-    private void compareHash(meta metaExif, meta metaFile) {
+    private void compareHash(Meta metaExif, Meta metaFile) {
         if (!forceRewrite) {//version change
            if (metaExif.dID != null) {
                this.dID = metaExif.dID;
@@ -222,7 +218,7 @@ public class WritableMediaFile implements tableViewMediaFile {
         }
     }
 
-    private void compareDate(meta metaExif, meta metaFile) {            
+    private void compareDate(Meta metaExif, Meta metaFile) {
         if (metaFile.date != null) date = metaFile.date;
         if (metaExif.date != null) {
             if (date != null) {
@@ -249,29 +245,29 @@ public class WritableMediaFile implements tableViewMediaFile {
         if (date != null && !date.isEqual(date.withZoneSameInstant(zone))) {addNote("TZ different", false);}
     }
     
-    private void compareXMP(meta metaXmp) {
+    private void compareXMP(Meta metaXmp) {
         if (metaXmp.date != null && !metaXmp.date.isEqual(date)) addNote("XMP date wrong", false);
         if (metaXmp.model != null && !metaXmp.model.equals(model)) addNote("XMP model wrong", false);
         if (metaXmp.dID != null && !metaXmp.dID.equals(dID)) addNote("XMP dID wrong", false);
         if (metaXmp.odID != null && !metaXmp.odID.equals(odID)) addNote("XMP odID wrong", false);
     }
     
-    private void compareMeta(meta metaExifFile, meta metaFile, meta metaExifXmp) {
-        meta metaExif;
-        meta metaSec = null;
+    private void compareMeta(Meta metaExifFile, Meta metaFile, Meta metaExifXmp) {
+        Meta metaExif;
+        Meta metaSec = null;
         if (supportedRAWFileType(getFile().getName())) {
             if (metaExifXmp != null) metaExif = metaExifXmp;
             else {
                 if (metaExifFile != null) metaExif = metaExifFile;
-                else metaExif = new meta(null, null, null, null, null, null, null, null, null);
+                else metaExif = new Meta(null, null, null, null, null, null, null, null, null);
             }
             if (metaExifFile != null && metaExifFile.dID != null) notOrig();
         } else {
-            if (metaExifFile == null) metaExif = new meta(null, null, null, null, null, null, null, null, null);
+            if (metaExifFile == null) metaExif = new Meta(null, null, null, null, null, null, null, null, null);
             else metaExif = metaExifFile;
             if (metaExifXmp != null) metaSec  = metaExifXmp;
         }
-        if (metaFile == null) metaFile = new meta(null, null, null, null, null, null, null, null, null);
+        if (metaFile == null) metaFile = new Meta(null, null, null, null, null, null, null, null, null);
         
         compareModel(metaExif, metaFile);
         compareHash(metaExif, metaFile);
@@ -289,7 +285,7 @@ public class WritableMediaFile implements tableViewMediaFile {
         File[] listFiles = targetDir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
-                meta v = getV(name);
+                Meta v = getV(name);
                 if (v != null) {
                     name = v.originalFilename;
                 }
@@ -307,7 +303,7 @@ public class WritableMediaFile implements tableViewMediaFile {
             rawFile = checkDir(targetDirectory);
         } 
         if  (rawFile != null && rawFile.exists()) {
-            meta v = getV(rawFile.getName());
+            Meta v = getV(rawFile.getName());
             if (v != null && v.odID != null) odID = v.odID;
             else if (v != null && v.dID != null) odID = v.dID;
             else odID = getHash(rawFile);
@@ -378,7 +374,7 @@ public class WritableMediaFile implements tableViewMediaFile {
         if (critical) processing.set(false);
     }
 
-    private meta repairMP4(meta metaExif) {
+    private Meta repairMP4(Meta metaExif) {
         ArrayList<String> meta = getExif(new String[]{"-DateTimeOriginal", "-DeviceManufacturer", "-DeviceModelName", "-CreationDateValue"}, getFile());
         Iterator<String> iterator = meta.iterator();
         String dto = null;
@@ -470,6 +466,10 @@ public class WritableMediaFile implements tableViewMediaFile {
     public Path getNewPath() {
         return Paths.get(targetDirectory + "\\" + this.getNewName());
     }
+
+    public String getTargetDirectory() {return targetDirectory;}
+
+    public void setTargetDirectory(String targetDirectory) {this.targetDirectory = targetDirectory;}
     // </editor-fold>
     
 }

@@ -1,30 +1,15 @@
 package org.nyusziful.Comparison;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
-import javafx.util.Callback;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.Main.CommonProperties;
 import org.nyusziful.Main.DirectoryElement;
 import org.nyusziful.Main.StaticTools;
-import org.nyusziful.Rename.MediaFileSet;
-import org.nyusziful.Rename.WritableMediaFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
@@ -32,7 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import static org.nyusziful.Main.StaticTools.errorOut;
 import static org.nyusziful.Rename.fileRenamer.getV;
 
 public class ComparePanelController {

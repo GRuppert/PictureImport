@@ -1,12 +1,10 @@
 package org.nyusziful.Main;
 
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import org.nyusziful.Rename.MediaFileSet;
-import org.nyusziful.Rename.WritableMediaFile;
+import org.nyusziful.Rename.AnalyzingMediaFile;
 import org.nyusziful.Rename.metaProp;
 
 import java.net.URL;
@@ -16,7 +14,7 @@ public class MetaTableViewController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableColumn< WritableMediaFile, Boolean > processingCol;
+    private TableColumn<AnalyzingMediaFile, Boolean > processingCol;
 
     @FXML
     private TableColumn oldNameCol;
@@ -28,7 +26,7 @@ public class MetaTableViewController {
     private TableColumn noteCol;
 
     @FXML
-    private TableColumn< WritableMediaFile, Boolean > xmpCol;
+    private TableColumn<AnalyzingMediaFile, Boolean > xmpCol;
     // </editor-fold>
 
     private ObservableList<metaProp> meta;

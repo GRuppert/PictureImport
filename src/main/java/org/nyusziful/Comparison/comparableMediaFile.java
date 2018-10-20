@@ -1,7 +1,8 @@
 package org.nyusziful.Comparison;
 
 
-import org.nyusziful.Rename.meta;
+import org.nyusziful.Rename.Meta;
+
 import java.io.File;
 
 /*
@@ -16,9 +17,9 @@ import java.io.File;
  */
 public class comparableMediaFile{
     public File file;
-    public meta meta;
+    public Meta meta;
 
-    public comparableMediaFile(File fileIn, meta metaIn) {
+    public comparableMediaFile(File fileIn, Meta metaIn) {
         this.file = fileIn;
         this.meta = metaIn;
     }

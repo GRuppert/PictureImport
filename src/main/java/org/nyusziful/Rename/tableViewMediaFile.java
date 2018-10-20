@@ -4,6 +4,11 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 public interface tableViewMediaFile {
+    // <editor-fold defaultstate="collapsed" desc="Static variables">
+    public static int MOVE = 1;
+    public static int COPY = 0;
+    // </editor-fold>
+
     public String getNewName();
     public void setNewName(String fName);
     public SimpleStringProperty newNameProperty();
@@ -23,5 +28,11 @@ public interface tableViewMediaFile {
     public String getNote();
     public void setNote(String fName);
     public SimpleStringProperty noteProperty();
-    
+
+    public String getTargetDirectory();
+    public void setTargetDirectory(String targetDirectory);
+
+    public void write(int copy);
+
+
 }

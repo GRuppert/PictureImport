@@ -1,7 +1,7 @@
 package org.nyusziful.ExifUtils;
 
 
-import org.nyusziful.Rename.meta;
+import org.nyusziful.Rename.Meta;
 import com.drew.imaging.ImageProcessingException;
 import java.io.File;
 import java.io.IOException;
@@ -24,9 +24,9 @@ public interface ifMetaLink {
      * Reads the standard metadata from the specified files in the given directory
      * @param filenames String list of the representation of the file names
      * @param dir the directory where the files are
-     * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
+     * @return a list of the <code> Meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public meta exifToMeta(File file, ZoneId zone);
+    public Meta exifToMeta(File file, ZoneId zone);
 
     public ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException;
 

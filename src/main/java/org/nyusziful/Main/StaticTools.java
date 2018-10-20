@@ -290,6 +290,7 @@ public class StaticTools {
     }
 
 
+
     //remove 5/41MP Nokia "duplicates"
     private static void removeFiles(File file) {
         File[] directories = file.listFiles((File dir, String name) -> dir.isDirectory());

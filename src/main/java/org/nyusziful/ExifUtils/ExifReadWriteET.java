@@ -17,7 +17,7 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.drew.metadata.xmp.XmpDirectory;
 import org.apache.commons.io.FilenameUtils;
-import org.nyusziful.Rename.meta;
+import org.nyusziful.Rename.Meta;
 
 import java.io.*;
 import java.time.ZoneId;
@@ -31,11 +31,11 @@ import static org.nyusziful.Main.StaticTools.getZonedTimeFromStr;
  * @author gabor
  */
 public class ExifReadWriteET implements ifMetaLink {
-    public meta exifToMeta(File fileMeta, ZoneId zone) {
+    public Meta exifToMeta(File fileMeta, ZoneId zone) {
         ArrayList<String> files = new ArrayList<>();
         files.add(fileMeta.getName());
-        List<meta> exifToMeta = exifToMeta(files, fileMeta.getParentFile());
-        Iterator<meta> iterator = exifToMeta.iterator();
+        List<Meta> exifToMeta = exifToMeta(files, fileMeta.getParentFile());
+        Iterator<Meta> iterator = exifToMeta.iterator();
         if (iterator.hasNext()) {
             return iterator.next();
         }
@@ -46,9 +46,9 @@ public class ExifReadWriteET implements ifMetaLink {
      * Reads the standard metadata from the specified files in the given directory
      * @param filenames String list of the representation of the file names
      * @param dir the directory where the files are
-     * @return a list of the <code> meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
+     * @return a list of the <code> Meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public static List<meta> exifToMeta(ArrayList<String> filenames, File dir) {
+    public static List<Meta> exifToMeta(ArrayList<String> filenames, File dir) {
         String filename = null;
         if (filenames.size() == 1 && filenames.get(0).length() > 5) {filename = dir + "\\" + filenames.get(0);}
         filenames.add(0, "-OriginalDocumentID");
@@ -60,7 +60,7 @@ public class ExifReadWriteET implements ifMetaLink {
         filenames.add(0, "exiftool");
         ArrayList<String> exifTool = exifTool(filenames.toArray(new String[0]), dir);
         Iterator<String> iterator = exifTool.iterator();
-        ArrayList<meta> results = new ArrayList<>();
+        ArrayList<Meta> results = new ArrayList<>();
         int i = -1;
         String model = null;
         String note = "";
@@ -73,7 +73,7 @@ public class ExifReadWriteET implements ifMetaLink {
             String line = iterator.next();
             if (line.startsWith("========")) {
                 if (i > -1) {
-                    meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
+                    Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
                     System.out.println(meta);
                     results.add(meta);
                 }
@@ -124,10 +124,10 @@ public class ExifReadWriteET implements ifMetaLink {
             }
         }
         if (filename != null) {
-            meta meta = new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
+            Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
             System.out.println(meta);
             results.add(meta);
-//            results.add(new meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
+//            results.add(new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
         }
         return results;
     }

@@ -15,7 +15,8 @@ import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 import static org.junit.Assert.*;
-import org.nyusziful.Rename.meta;
+
+import org.nyusziful.Rename.Meta;
 
 /**
  *
@@ -31,8 +32,8 @@ public class ExifReadWriteTest {
         System.out.println("readFileMeta");
         String fileName = "V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-4f0f7fe2fabb83c399af967ccf860d88-47e0be579ef91106cdd6c818b2976ce2-DSC09459.ARW";
         File fileMeta = new File(this.getClass().getClassLoader().getResource(fileName).getFile());
-        meta expResult = new meta("", ZonedDateTime.of(2015, 07, 25, 14, 32, 29, 00, ZoneId.systemDefault()), true, "ILCE-5100", null, "47e0be579ef91106cdd6c818b2976ce2", "47e0be579ef91106cdd6c818b2976ce2", "", null);
-        meta result = ExifReadWrite.readFileMeta(fileMeta, ZoneId.systemDefault());
+        Meta expResult = new Meta("", ZonedDateTime.of(2015, 07, 25, 14, 32, 29, 00, ZoneId.systemDefault()), true, "ILCE-5100", null, "47e0be579ef91106cdd6c818b2976ce2", "47e0be579ef91106cdd6c818b2976ce2", "", null);
+        Meta result = ExifReadWrite.readFileMeta(fileMeta, ZoneId.systemDefault());
         assert result.originalFilename.endsWith(fileName);
         result.originalFilename = "";
         assertEquals("Meta of file(" + fileName + ") counted: \n" + result + "\n awaited: \n" + expResult, expResult.toString(), result.toString());

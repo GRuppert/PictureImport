@@ -3,19 +3,16 @@ package org.nyusziful.Main;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import org.nyusziful.Comparison.Listing;
-import org.nyusziful.Comparison.comparableMediaFile;
 import org.nyusziful.Rename.*;
-import org.nyusziful.Comparison.duplicate;
-import org.nyusziful.Comparison.metaChanges;
 
 import static java.lang.Integer.*;
 import static org.nyusziful.Main.StaticTools.*;
-import static org.nyusziful.Rename.fileRenamer.getV;
-import static org.nyusziful.Hash.MediaFileHash.getHash;
 
 import org.nyusziful.TimeShift.TimeLine;
+
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -27,29 +24,17 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.ResourceBundle;
 
-import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Scene;
 import javafx.scene.chart.AreaChart;
-import javafx.scene.control.cell.CheckBoxTableCell;
-import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.StackPane;
-import javafx.stage.Stage;
-import javafx.util.Callback;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.JProgressBar;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
+import javax.swing.JOptionPane;
+
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 
 //Exiftool must be in PATH
@@ -80,6 +65,7 @@ public class MainController implements Initializable {
     private CommonProperties commonProperties;
 
     public MainController() {
+        commonProperties = CommonProperties.getInstance();
     }
 
     @Override
@@ -148,7 +134,7 @@ public class MainController implements Initializable {
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
-            sortToDateDirectories(directories);
+            listOnScreen(sortToDateDirectories(directories));
         }
     }
 
@@ -222,7 +208,7 @@ public class MainController implements Initializable {
 
     }
 
-    private void createMetaTable(ArrayList<meta> newData) {
+    private void createMetaTable(ArrayList<Meta> newData) {
         TableView tableView = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
@@ -242,14 +228,14 @@ public class MainController implements Initializable {
 
 
     //Sets the center view to table format
-    private void listOnScreen(List<WritableMediaFile> writableMediaFiles) {
+    private void listOnScreen(List<tableViewMediaFile> analyzingMediaFiles) {
         BorderPane tablePane = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
                     "/fxml/mediaFileTableView.fxml"));
             tablePane = (BorderPane) loader.load();
             MediaFileTableViewController ctrl = loader.getController();
-            ctrl.setMediaFileSet(new MediaFileSet(writableMediaFiles));
+            ctrl.setMediaFileSet(new MediaFileSet(analyzingMediaFiles));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -279,100 +265,52 @@ public class MainController implements Initializable {
 
     //TODO reads dir:
     //Input processed mediafiles Output dated directory+old filename
-    private void sortToDateDirectories(ArrayList<String> directories) {
+    private List<SimpleMediaFile> sortToDateDirectories(ArrayList<String> directories) {
         List<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
                         return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
-                    }}
-        );
+                    }});
+        List<File> fileList = new ArrayList<>();
+        directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
+        ArrayList<SimpleMediaFile> files = new ArrayList<>();
+        Path target = null;
+        ZonedDateTime previousFileDate = ZonedDateTime.now();
 
-        for (String directory : directories) {
-            File dir1 = new File(directory);
-            if (dir1.isDirectory()) {
-                File[] content = dir1.listFiles(
-                        new FilenameFilter() {
-                    public boolean accept(File dir, String name) {
-                        name = name.toLowerCase();
-                        return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
+        for (File file : fileList) {
+            ZonedDateTime fileDate = fileRenamer.getV(file.getName()).date;
+            if (!fileDate.truncatedTo(ChronoUnit.DAYS).equals(previousFileDate.truncatedTo(ChronoUnit.DAYS))) {
+                previousFileDate = fileDate;
+                File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
+                for (int j = 0; j < dirs.length; j++) {
+                    MediaDirectory mediaDirectory = new MediaDirectory(dirs[j].getName());
+                    if ((fileDate.isAfter(mediaDirectory.from)) && (fileDate.isAfter(mediaDirectory.to))) {
+                        target = dirs[j].toPath();
+                        j = dirs.length;
                     }
-                });
-                if (content.length > 0) {
-                    Path target = null;
-                    String oldName = "";
-                    ArrayList<WritableMediaFile> files = new ArrayList<>();
-                    JProgressBar progressBar = new JProgressBar(0, content.length);
-//                    JDialog progressDialog = progressDiag(progressBar);
-                    int i = 0;
-                    for (File content1 : content) {
-                        Path source = content1.toPath();
-                        String fileName = content1.getName().substring(1, 12);
-                        fileName = fileName.substring(0, 4) + fileName.substring(5, 7) + fileName.substring(8, 9) + fileName.substring(10, 11);
-                        if (!fileName.equals(oldName)) {
-                            int fY = parseInt(fileName.substring(0, 4)), fM = parseInt(fileName.substring(4, 6)) - 1, fD = parseInt(fileName.substring(6, 8));
-                            File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
-                            for (int j = 0; j < dirs.length; j++) {
-                                String actDir = dirs[j].getName();
-                                int sY = parseInt(actDir.substring(0, 4)), sM = parseInt(actDir.substring(5, 7)) - 1, sD = parseInt(actDir.substring(8, 10));
-                                int eY = parseInt(actDir.substring(13, 17)), eM = parseInt(actDir.substring(18, 20)) - 1, eD = parseInt(actDir.substring(21, 23));
-                                if ((fY * 10000 + fM * 100 + fD >= sY * 10000 + sM * 100 + sD) && (fY * 10000 + fM * 100 + fD <= eY * 10000 + eM * 100 + eD)) {
-                                    target = dirs[j].toPath();
-//                                    files.add(new WritableMediaFile(source.toString(), target + "\\"));
-                                    System.out.println(source.toString() + " -> " + target);
-                                    j = dirs.length;
-                                }
-                            }
-                        } else {
-//                            files.add(new WritableMediaFile(source.toString(), target + "\\"));
-                            System.out.println(source.toString() + " -> " + target);
-                        }
-                        oldName = fileName;
-                        i++;
-                        progressBar.setValue(i);
-//                        this.setProgress((i) / content.length);
-                    }
-//                    progressDialog.dispose();
-//                    listOnScreen(createMediafileTable(files));
                 }
             }
+            files.add(new SimpleMediaFile(file.toPath(), Paths.get(target + "\\" + file.getName())));
+//            System.out.println(file.toString() + " -> " + target);
         }
-
+        return files;
     }
 
     //Input mediafiles Output standard
-    public List<WritableMediaFile> itWasImport(List<String> directories) {
-        Iterator<String> iter = directories.iterator();
-        ArrayList<WritableMediaFile> files = new ArrayList<>();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-                JProgressBar progressBar = new JProgressBar(0, content.length);
-//                JDialog progressDialog = progressDiag(progressBar);
-                for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> fileList = new ArrayList<>();
-                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
-                        fileList.add(content[j*chunkSize + f].getName());
-                    }
-                    List<meta> exifToMeta = readFileMeta(fileList, dir1, commonProperties.getZone());
-                    Iterator<meta> iterator = exifToMeta.iterator();
-                    int i = 0;
-                    while (iterator.hasNext()) {
-                        meta next = iterator.next();
-//                        files.add(new WritableMediaFile(next));
-                        progressBar.setValue(i + j*chunkSize);
-//                        this.setProgress((i + j*chunkSize)/content.length);
-                    }
-                }
-//                progressDialog.dispose();
-            }
+    public List<AnalyzingMediaFile> itWasImport(List<String> directories) {
+        List<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
+        List<File> fileList = new ArrayList<>();
+        directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
+        List<Meta> exifToMeta = readFileMeta(fileList, commonProperties.getZone());
+        ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
+        for (Meta next : exifToMeta) {
+            files.add(new AnalyzingMediaFile(next));
         }
         return files;
     }
 
     //import and rename are basically the same
-    private List<WritableMediaFile> importFiles() {
+    private List<AnalyzingMediaFile> importFiles() {
         List<String> directories = StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
         Path backupdrive = null;
             if ((backupdrive = Services.backupMounted()) == null) {
@@ -384,30 +322,12 @@ public class MainController implements Initializable {
         return itWasImport(directories);
     }
 
-    //no mediafile, creates a list of meta
-    private ArrayList<meta> fileMetaList(ArrayList<String> directories, Path target) {
-        Iterator<String> iter = directories.iterator();
-        ArrayList<meta> metas = new ArrayList<>();
-        while(iter.hasNext()) {
-            File dir1 = new File(iter.next());
-            if(dir1.isDirectory()) {
-                File[] content = dir1.listFiles((File dir, String name) -> supportedFileType(name));
-                int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-                JProgressBar progressBar = new JProgressBar(0, content.length);
-//                JDialog progressDialog = progressDiag(progressBar);
-                for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> fileList = new ArrayList<>();
-                    for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
-                        fileList.add(content[j*chunkSize + f].getName());
-                    }
-                    metas.addAll(readFileMeta(fileList, dir1, commonProperties.getZone()));
-                    progressBar.setValue(j*chunkSize);
-//                    this.setProgress((j*chunkSize)/content.length);
-                }
-//                progressDialog.dispose();
-            }
-        }
-        return metas;
+    //no mediafile, creates a list of Meta
+    private ArrayList<Meta> fileMetaList(ArrayList<String> directories, Path target) {
+        List<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
+        ArrayList<File> fileList = new ArrayList<>();
+        directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
+        return readFileMeta(fileList, commonProperties.getZone());
     }
 
 
