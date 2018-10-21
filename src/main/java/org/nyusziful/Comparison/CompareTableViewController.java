@@ -21,7 +21,7 @@ import org.nyusziful.Rename.AnalyzingMediaFile;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class compareTableViewController {
+public class CompareTableViewController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
@@ -31,20 +31,20 @@ public class compareTableViewController {
     private TableColumn buttonCol;
     // </editor-foldY
 
-    private ObservableList<duplicate> input;
+    private ObservableList<Duplicate> input;
 
-    public compareTableViewController() {
+    public CompareTableViewController() {
     }
 
 
     public void initialize(URL url, ResourceBundle rb) {
         processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
         processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));
-        buttonCol.setCellValueFactory(new PropertyValueFactory<duplicate, String>("Meta"));
-        buttonCol.setCellFactory(new Callback<TableColumn<duplicate, String>, TableCell<duplicate, String>>() {
+        buttonCol.setCellValueFactory(new PropertyValueFactory<Duplicate, String>("Meta"));
+        buttonCol.setCellFactory(new Callback<TableColumn<Duplicate, String>, TableCell<Duplicate, String>>() {
             @Override
-            public TableCell<duplicate, String> call(TableColumn<duplicate, String> buttonCol) {
-                return new TableCell<duplicate, String>() {
+            public TableCell<Duplicate, String> call(TableColumn<Duplicate, String> buttonCol) {
+                return new TableCell<Duplicate, String>() {
                     final Button button = new Button(); {
                         button.setMinWidth(130);
                     }
@@ -115,11 +115,11 @@ public class compareTableViewController {
         });
     }
 
-    public ObservableList<duplicate> getInput() {
+    public ObservableList<Duplicate> getInput() {
         return input;
     }
 
-    public void setInput(ObservableList<duplicate> input) {
+    public void setInput(ObservableList<Duplicate> input) {
         this.input = input;
     }
 }

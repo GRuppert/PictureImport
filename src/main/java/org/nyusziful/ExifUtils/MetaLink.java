@@ -19,11 +19,10 @@ import java.util.List;
  *
  * @author gabor
  */
-public interface ifMetaLink {
+public interface MetaLink {
     /**
      * Reads the standard metadata from the specified files in the given directory
-     * @param filenames String list of the representation of the file names
-     * @param dir the directory where the files are
+     * @param file List of the files
      * @return a list of the <code> Meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
     public Meta exifToMeta(File file, ZoneId zone);

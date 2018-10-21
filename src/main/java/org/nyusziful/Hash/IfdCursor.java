@@ -13,12 +13,12 @@ import java.io.File;
  *
  * @author gabor
  */
-public class ifdCursor {
+public class IfdCursor {
     private final File file;
     private final Boolean endian;
     private long pointer;
     
-    public ifdCursor(File file, Boolean endian, long pointer) {
+    public IfdCursor(File file, Boolean endian, long pointer) {
         this.file = file;
         this.endian = endian;
         this.pointer = pointer;

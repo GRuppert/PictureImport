@@ -15,14 +15,14 @@ import javafx.beans.property.SimpleStringProperty;
  *
  * @author gabor
  */
-public class metaProp {
+public class MetaProp {
     private final SimpleStringProperty originalFilename;
     private final SimpleStringProperty date;
     private final SimpleStringProperty model;
     private final SimpleBooleanProperty dateFormat;
     
     
-    public metaProp(Meta metaIn) {
+    public MetaProp(Meta metaIn) {
         originalFilename = new SimpleStringProperty(metaIn.originalFilename == null ? "" : metaIn.originalFilename);
         date = new SimpleStringProperty(metaIn.date == null ? "" : metaIn.date.format(ExifDateFormatTZ));
         dateFormat = new SimpleBooleanProperty(metaIn.dateFormat == null ? false : metaIn.dateFormat);

@@ -12,17 +12,17 @@ import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static org.nyusziful.Hash.basicFileReader.readBytes;
-import static org.nyusziful.Hash.basicFileReader.readEndianValue;
-import static org.nyusziful.Hash.basicFileReader.skipBytes;
+import static org.nyusziful.Hash.BasicFileReader.readBytes;
+import static org.nyusziful.Hash.BasicFileReader.readEndianValue;
+import static org.nyusziful.Hash.BasicFileReader.skipBytes;
 
 
 /**
  *
  * @author gabor
  */
-public class mp4Hash implements hasher {
-    private static final Logger LOG = LogManager.getLogger(mp4Hash.class);
+public class MP4Hash implements Hasher {
+    private static final Logger LOG = LogManager.getLogger(MP4Hash.class);
 
     public static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
         byte[] buffer = new byte[4096];

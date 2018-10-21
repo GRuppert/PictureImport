@@ -30,7 +30,7 @@ import static org.nyusziful.Main.StaticTools.getZonedTimeFromStr;
  *
  * @author gabor
  */
-public class ExifReadWriteET implements ifMetaLink {
+public class ExifReadWriteET implements MetaLink {
     public Meta exifToMeta(File fileMeta, ZoneId zone) {
         ArrayList<String> files = new ArrayList<>();
         files.add(fileMeta.getName());

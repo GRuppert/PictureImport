@@ -47,7 +47,7 @@ public class TablePanelController {
         xmpCol.setCellFactory(CheckBoxTableCell.forTableColumn(xmpCol));
     }
 
-    public ObservableList<AnalyzingMediaFile> getDataModel() { return mediaFileSet.getDataModel(); }
+    public ObservableList<? extends tableViewMediaFile> getDataModel() { return mediaFileSet.getDataModel(); }
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;

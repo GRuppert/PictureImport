@@ -39,7 +39,7 @@ import org.apache.commons.io.FilenameUtils;
  *
  * @author gabor
  */
-public class ExifReadWriteIMR implements ifMetaLink {
+public class ExifReadWriteIMR implements MetaLink {
     /**
      * Reads the standard metadata from the specified files in the given directory
      * @param file file to be read

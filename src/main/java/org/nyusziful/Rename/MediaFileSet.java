@@ -6,6 +6,7 @@ import org.nyusziful.Main.Progress;
 import org.nyusziful.Main.StaticTools;
 
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
@@ -14,11 +15,11 @@ public class MediaFileSet {
 //    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
     private final ObservableList<tableViewMediaFile> dataModel = FXCollections.observableArrayList();
 
-    public MediaFileSet(List<tableViewMediaFile> files) {
+    public MediaFileSet(Collection<? extends tableViewMediaFile> files) {
         fillData(files);
     }
 
-    private void fillData(List<tableViewMediaFile> files) {
+    private void fillData(Collection<? extends tableViewMediaFile> files) {
 //        this.files = files;
         dataModel.removeAll(dataModel);
         files.stream().forEach((obj) -> {dataModel.add(obj);});
@@ -41,12 +42,7 @@ public class MediaFileSet {
     }
 
     public void updatePaths(String replacePath) {
-        for(tableViewMediaFile paths: getDataModel()) {
-            Path newPath = paths.getNewPath();
-            String fileName = newPath.getFileName().toString();
-            String replacement =  replacePath + "\\" + fileName;
-            paths.setNewName(replacement);
-        }
+        getDataModel().stream().forEach(file -> file.setTargetDirectory(replacePath));
     }
 
     public void applyChanges(int copyOrMove) {

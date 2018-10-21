@@ -1,17 +1,30 @@
 package org.nyusziful.Rename;
 
+import org.nyusziful.Main.CommonProperties;
+
 import java.time.ZonedDateTime;
 
 import static java.lang.Integer.parseInt;
 
 public class MediaDirectory {
-    public ZonedDateTime from;
-    public ZonedDateTime to;
+    public ZonedDateTime from = null;
+    public ZonedDateTime to = null;
 
     public MediaDirectory(String directoryName) {
-        int sY = parseInt(directoryName.substring(0, 4)), sM = parseInt(directoryName.substring(5, 7)) - 1, sD = parseInt(directoryName.substring(8, 10));
-        int eY = parseInt(directoryName.substring(13, 17)), eM = parseInt(directoryName.substring(18, 20)) - 1, eD = parseInt(directoryName.substring(21, 23));
+        try {
+            from = ZonedDateTime.of(
+                    parseInt(directoryName.substring(0, 4)),
+                    parseInt(directoryName.substring(5, 7)) - 1,
+                    parseInt(directoryName.substring(8, 10)),
+                    0, 0, 0, 0, CommonProperties.getInstance().getZone());
+            to = ZonedDateTime.of(
+                    parseInt(directoryName.substring(13, 17)),
+                    parseInt(directoryName.substring(18, 20)) - 1,
+                    parseInt(directoryName.substring(21, 23)),
+                    23, 59, 59, 999999999, CommonProperties.getInstance().getZone());
+        } catch (Exception e) {
 
+        }
     }
 
 }

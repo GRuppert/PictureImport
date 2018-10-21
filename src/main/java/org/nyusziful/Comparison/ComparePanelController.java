@@ -14,16 +14,16 @@ import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.ResourceBundle;
 
 import static org.nyusziful.Rename.fileRenamer.getV;
 
 public class ComparePanelController {
     private ObservableList<String> pairs = FXCollections.observableArrayList ();
-    private ObservableList<comparableMediaFile> singles = FXCollections.observableArrayList ();
-    private ObservableList<duplicate> duplicates = FXCollections.observableArrayList();
-    private ObservableList<duplicate> modpic = FXCollections.observableArrayList();
+    private ObservableList<ComparableMediaFile> singles = FXCollections.observableArrayList ();
+    private ObservableList<Duplicate> duplicates = FXCollections.observableArrayList();
+    private ObservableList<Duplicate> modpic = FXCollections.observableArrayList();
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
@@ -37,17 +37,17 @@ public class ComparePanelController {
     }
 
 
-    private ArrayList<comparableMediaFile> readsDirectoryToComparableMediaFile(Path path) {
-        List<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsRecursive(path);
-        final ArrayList<comparableMediaFile> files = new ArrayList();
-        directoryElements.stream().forEach((de) -> files.add(new comparableMediaFile(de.file, getV(de.file.getName()))));
+    private Collection<ComparableMediaFile> readsDirectoryToComparableMediaFile(Path path) {
+        Collection<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsRecursive(path);
+        final ArrayList<ComparableMediaFile> files = new ArrayList();
+        directoryElements.stream().forEach((de) -> files.add(new ComparableMediaFile(de.file, getV(de.file.getName()))));
         return files;
     }
 
     public void initialize(URL url, ResourceBundle rb) {
         CommonProperties commonProperties = CommonProperties.getInstance();
-        ArrayList<comparableMediaFile> fromFiles = readsDirectoryToComparableMediaFile(commonProperties.getFromDir().toPath());
-        ArrayList<comparableMediaFile> toFiles = readsDirectoryToComparableMediaFile(commonProperties.getToDir());
+        Collection<ComparableMediaFile> fromFiles = readsDirectoryToComparableMediaFile(commonProperties.getFromDir().toPath());
+        Collection<ComparableMediaFile> toFiles = readsDirectoryToComparableMediaFile(commonProperties.getToDir());
         StringBuilder pairTo = new StringBuilder();
         StringBuilder pairFrom = new StringBuilder();
         StringBuilder singleStr = new StringBuilder();
@@ -57,40 +57,40 @@ public class ComparePanelController {
         this.modpic.clear();
         toFiles.stream().forEach((file) -> {
             fromFiles.stream().forEach((baseFile) -> {
-                if (file.meta != null && baseFile.meta != null && FilenameUtils.getExtension(file.file.getName()).equals(FilenameUtils.getExtension(baseFile.file.getName()))) {
-                    if (file.meta.iID != null && baseFile.meta.iID != null && file.meta.iID.equals(baseFile.meta.iID)) {
+                if (FilenameUtils.getExtension(file.file.getName()).equals(FilenameUtils.getExtension(baseFile.file.getName()))) {
+                    if (file.iID != null && baseFile.iID != null && file.iID.equals(baseFile.iID)) {
                         pairs.add(baseFile.file.getName() + " : " + file.file.getName() + "\n");
                         pairTo.append(file.file.getAbsolutePath()).append("\n");
                         pairFrom.append(baseFile.file.getAbsolutePath()).append("\n");
                         singles.remove(baseFile);
                         singles.remove(file);
-                    } else if (file.meta.dID != null && baseFile.meta.dID != null && file.meta.dID.equals(baseFile.meta.dID)) {
-                        this.duplicates.add(new duplicate(baseFile, file, true));
+                    } else if (file.dID != null && baseFile.dID != null && file.dID.equals(baseFile.dID)) {
+                        this.duplicates.add(new Duplicate(baseFile, file, true));
                         singles.remove(baseFile);
                         singles.remove(file);
-                    } else if (file.meta.odID != null && baseFile.meta.odID != null && file.meta.odID.equals(baseFile.meta.odID)) {
-                        this.modpic.add(new duplicate(baseFile, file, false));
+                    } else if (file.odID != null && baseFile.odID != null && file.odID.equals(baseFile.odID)) {
+                        this.modpic.add(new Duplicate(baseFile, file, false));
                         singles.remove(baseFile);
                         singles.remove(file);
                     }
                 }
             });
         });
-        ArrayList<metaChanges> metaChange = new ArrayList();
+        ArrayList<MetaChanges> metaChange = new ArrayList();
         ArrayList<String> metaTags = new ArrayList();
         dupFor:
-        for (duplicate dup : duplicates) {
+        for (Duplicate dup : duplicates) {
             for (String item : dup.footprint) {
                 if (!metaTags.contains(item)) metaTags.add(item);
             }
-            for (metaChanges change : metaChange) {
+            for (MetaChanges change : metaChange) {
                 if (change.compare(dup.footprint, dup.getDir())) {
                     continue dupFor;
                 }
             }
-            metaChange.add(new metaChanges(dup.footprint, dup.getDir()));
+            metaChange.add(new MetaChanges(dup.footprint, dup.getDir()));
         }
-        for (metaChanges change : metaChange) {
+        for (MetaChanges change : metaChange) {
             System.out.println(change.getChanges());
             System.out.println(change.getCount());
             System.out.println(change.getDirs());
@@ -108,13 +108,13 @@ public class ComparePanelController {
         StaticTools.beep();
     }
 
-    private TableView createDuplicateTable(ObservableList<duplicate> input) {
+    private TableView createDuplicateTable(ObservableList<Duplicate> input) {
         TableView tableView = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
                     "/fxml/mediaFileTableView.fxml"));
             tableView = (TableView) loader.load();
-            compareTableViewController ctrl = loader.getController();
+            CompareTableViewController ctrl = loader.getController();
             ctrl.setInput(input);
         } catch (IOException e) {
             e.printStackTrace();
@@ -127,7 +127,7 @@ public class ComparePanelController {
         return pairs;
     }
 
-    public ObservableList<comparableMediaFile> getSingles() {
+    public ObservableList<ComparableMediaFile> getSingles() {
         return singles;
     }
 }

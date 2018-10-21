@@ -46,7 +46,18 @@ public class Meta {
         this.iID = iID;
         this.orig = orig;
     }
-    
+
+    public Meta(Meta meta) {
+        this.originalFilename = meta.originalFilename;
+        this.date = meta.date;
+        this.dateFormat = meta.dateFormat;
+        this.model = meta.model;
+        this.odID = meta.odID;
+        this.dID = meta.dID;
+        this.iID = meta.iID;
+        this.orig = meta.orig;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

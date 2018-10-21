@@ -13,12 +13,16 @@ import java.util.HashMap;
  *
  * @author gabor
  */
-public class ifdNames {
+public class IfdField {
+    int tag;
+    int type;
+    long count; 
+    long offset;
     HashMap<Integer, String> tagDesc;
     HashMap<Integer, String> typeDesc;
 
 
-    public ifdNames() {
+    public IfdField() {
         this.tagDesc = new HashMap<>();
 /*
 tagDesc.put(	254	, "	NewSubfileType      "); //must
@@ -421,15 +425,47 @@ typeDesc.put(5, "RATIONAL"); // Two LONGs: the first represents the numerator of
 
 
     }
-
-    public String getTag(int tag) {
+    
+    public String getTag() {
         if (tagDesc.containsKey(tag))
             return tagDesc.get(tag);
         else return Integer.toString(tag);
     }
-    
-    public String getType(int type) {
+
+    public String getType() {
             return typeDesc.get(type);
-    }  
+    }
+    
+    public int getTypeLength() {
+        switch (type) {
+            case 1:
+                return 1;
+            case 2:
+                return 1;
+            case 3:
+                return 2;
+            case 4:
+                return 4;
+            case 5:
+                return 8;
+            default:
+                return 0;
+        }
+    }
+    
+    public long getCount() {
+        return count;
+    }
+    
+    public long getValue() {
+        if (count < 4) return offset;
+        else return -1;
+    }
+    
+    public long getPointer() {
+        if (count > 3) return offset;
+        else return -1;
+        
+    }
     
 }

@@ -25,9 +25,6 @@ import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileSystemView;
 
 import org.apache.commons.io.FilenameUtils;
-import org.nyusziful.Comparison.comparableMediaFile;
-
-import static org.nyusziful.Rename.fileRenamer.getV;
 
 /**
  *
@@ -116,7 +113,7 @@ public class StaticTools {
      * Creates a List with the predefined standard directories on recognized volumes
      * @return a List of String which are the default on the recognized media
      */
-    public static List<String> defaultImportDirectories(File nonExt) {
+    public static Collection<String> defaultImportDirectories(File nonExt) {
         ArrayList<File> drives = new ArrayList<>();
         ArrayList<String> list = new ArrayList<>();
         File[] paths;
@@ -228,7 +225,7 @@ public class StaticTools {
         return chooser.showSaveDialog(null);
     }
 
-    public static List<DirectoryElement> getDirectoryElements(Path path, boolean recursive, FilenameFilter filenameFilter) {
+    public static Collection<DirectoryElement> getDirectoryElements(Path path, boolean recursive, FilenameFilter filenameFilter) {
         if (recursive) return getDirectoryElementsRecursive(path, filenameFilter);
         else return getDirectoryElementsNonRecursive(path.toFile(), filenameFilter);
     }
@@ -238,14 +235,14 @@ public class StaticTools {
      * @param path
      * @return
      */
-    public static List<DirectoryElement> getDirectoryElementsRecursive(Path path) {
+    public static Collection<DirectoryElement> getDirectoryElementsRecursive(Path path) {
         return getDirectoryElementsRecursive(path, new FilenameFilter() {
             public boolean accept(File dir, String name) {
                 return (!new File(dir + "\\" + name).isDirectory());
             }});
     }
 
-    public static List<DirectoryElement> getDirectoryElementsRecursive(Path path, FilenameFilter filenameFilter) {
+    public static Collection<DirectoryElement> getDirectoryElementsRecursive(Path path, FilenameFilter filenameFilter) {
         final ArrayList<DirectoryElement> elements = new ArrayList();
         try
         {
@@ -267,7 +264,7 @@ public class StaticTools {
 
     }
 
-    public static List<DirectoryElement> getDirectoryElementsNonRecursive(File directory, FilenameFilter filenameFilter) {
+    public static Collection<DirectoryElement> getDirectoryElementsNonRecursive(File directory, FilenameFilter filenameFilter) {
         final ArrayList<DirectoryElement> elements = new ArrayList();
         if(directory != null && directory.isDirectory()) {
             File[] content = directory.listFiles(filenameFilter);
@@ -280,7 +277,7 @@ public class StaticTools {
         return elements;
     }
 
-    public static List<DirectoryElement> getDirectoryElementsNonRecursive(List<String> directories, FilenameFilter filenameFilter) {
+    public static Collection<DirectoryElement> getDirectoryElementsNonRecursive(Collection<String> directories, FilenameFilter filenameFilter) {
         Iterator<String> iter = directories.iterator();
         ArrayList<DirectoryElement> elements = new ArrayList<>();
         while(iter.hasNext()) {

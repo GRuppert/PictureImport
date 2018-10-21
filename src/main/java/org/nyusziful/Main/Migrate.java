@@ -12,13 +12,13 @@ import java.io.PrintWriter;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
-import java.util.ArrayList;
-import java.util.Iterator;
+import java.util.*;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 import static org.nyusziful.Hash.MediaFileHash.getHash;
+import static org.nyusziful.Main.StaticTools.getDirectoryElementsNonRecursive;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
 import static org.nyusziful.Rename.AnalyzingMediaFile.MOVE;
@@ -34,16 +34,19 @@ public class Migrate {
     }
 
     private void osNev() {
-        ZoneId zone = ZoneId.systemDefault();
+/*        ZoneId zone = ZoneId.systemDefault();
         int copyOrMove = MOVE;
         File dirRoot = new File("G:\\Pictures\\Photos\\Régi képek\\Dupla\\Képek");
         Path toDir = Paths.get("G:\\Pictures\\Photos\\V5");
 //        File dirRoot = new File("G:\\Pictures\\Photos\\Új");
         System.out.println("---- " + dirRoot.getName() + " ----\n\n");
+
         File[] dirs = dirRoot.listFiles(new FilenameFilter() {
             public boolean accept(File dir, String name) {
                 return (new File(dir + "\\" + name).isDirectory());
             }});
+        Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(Arrays.asList(dirs), (File dir, String name) -> supportedFileType(name));
+
         JProgressBar progressBar;
         JDialog progressDialog;
         for(int k = 0; k < dirs.length; k++) {
@@ -55,7 +58,7 @@ public class Migrate {
                 progressBar = new JProgressBar(0, content.length);
                 progressDialog = progressDiag(progressBar);
                 for (int j = 0; j*chunkSize < content.length; j++) {
-                    ArrayList<String> files = new ArrayList<>();
+                    ArrayList<File> files = new ArrayList<>();
                     for (int f = 0; (f < chunkSize) && (j*chunkSize + f < content.length); f++) {
                         files.add(content[j*chunkSize + f].getName());
                     }
@@ -78,7 +81,7 @@ public class Migrate {
                 }
                 progressDialog.dispose();
             }
-        }
+        }*/
     }
 
     public void test() {
@@ -95,8 +98,8 @@ public class Migrate {
         } catch (ImageProcessingException | IOException ex) {
             Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
         }
-        /*        ArrayList<comparableMediaFile> readDirectoryContent = readDirectoryContent(Paths.get("E:\\temp\\compare\\"));
-        for (comparableMediaFile mFile : readDirectoryContent) {
+        /*        ArrayList<ComparableMediaFile> readDirectoryContent = readDirectoryContent(Paths.get("E:\\temp\\compare\\"));
+        for (ComparableMediaFile mFile : readDirectoryContent) {
         System.out.println(mFile.file.getName());
         System.out.println("-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-");
         ArrayList<String[]> readMeta = StaticTools.readMeta(mFile.file);
@@ -194,8 +197,8 @@ public class Migrate {
 //            compare();
 
 
-            /*        ArrayList<comparableMediaFile> readDirectoryContent = readDirectoryContent(Paths.get("E:\\temp\\compare\\"));
-            for (comparableMediaFile mFile : readDirectoryContent) {
+            /*        ArrayList<ComparableMediaFile> readDirectoryContent = readDirectoryContent(Paths.get("E:\\temp\\compare\\"));
+            for (ComparableMediaFile mFile : readDirectoryContent) {
             System.out.println(mFile.file.getName());
             System.out.println("-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-o-");
             ArrayList<String[]> readMeta = StaticTools.readMeta(mFile.file);

@@ -12,7 +12,7 @@ import java.io.InputStream;
  *
  * @author gabor
  */
-public class basicFileReader {
+public class BasicFileReader {
     public static boolean BIGENDIAN = true;
     public static boolean LITTLEENDIAN = true;
     

@@ -13,12 +13,12 @@ import java.util.ArrayList;
  *
  * @author gabor
  */
-public class metaChanges {
+public class MetaChanges {
     private ArrayList<String> diffs;
     private int count;
     private ArrayList<String> dirs;
     
-    public metaChanges (ArrayList<String> inList, String dir) {
+    public MetaChanges(ArrayList<String> inList, String dir) {
         diffs = inList;
         count = 1;
         dirs = new ArrayList();

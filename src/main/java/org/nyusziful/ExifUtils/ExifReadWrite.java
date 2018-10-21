@@ -44,16 +44,6 @@ import org.apache.commons.io.FilenameUtils;
  * @author gabor
  */
 public class ExifReadWrite {
-    public static Meta readFileMeta(File fileMeta, ZoneId defaultTZ) {
-        ArrayList<File> files = new ArrayList<>();
-        files.add(fileMeta);
-        List<Meta> exifToMeta = readFileMeta(files, defaultTZ);
-        Iterator<Meta> iterator = exifToMeta.iterator();
-        if (iterator.hasNext()) {
-            return iterator.next();
-        }
-        return null;
-    }
 
     /**
      * Reads the standard metadata from the specified files in the given directory
@@ -61,7 +51,7 @@ public class ExifReadWrite {
      * @param defaultTZ default time zone in case it can't be read from the filename
      * @return a list of the <code> Meta </code> objects for every file if the read was unsuccessful the note field of the object will contain the error message
      */
-    public static ArrayList<Meta> readFileMeta(List<File> files, ZoneId defaultTZ) {
+    public static Collection<Meta> readFileMeta(File[] files, ZoneId defaultTZ) {
 /*        long startTime = System.nanoTime();
         exifToMetaIMR(filenames, dir);
         System.out.println("IMR:" + (System.nanoTime() - startTime)/1000000);
@@ -72,8 +62,8 @@ public class ExifReadWrite {
         return exifToMetaIMR(files, defaultTZ);
     }
 
-    private static ArrayList<Meta> exifToMetaIMR(List<File> files, ZoneId defaultTZ) {
-        List<Meta> results = new ArrayList<>();
+    private static Collection<Meta> exifToMetaIMR(File[] files, ZoneId defaultTZ) {
+        ArrayList<Meta> results = new ArrayList<>();
         for (File file : files) {
             ArrayList<String[]> tags;
             String model = null;
@@ -146,22 +136,21 @@ public class ExifReadWrite {
         return results;
     }
     
-    private static ArrayList<Meta> exifToMetaET(List<File> files, ZoneId defaultTZ) {
+    private static Collection<Meta> exifToMetaET(File[] files, ZoneId defaultTZ) {
         String filename = null;
 
         ArrayList<String> filenames = new ArrayList<>();
-        File[] content = (File[])files.toArray();
         //TODO handle it!
         int chunkSize = 100;//At least 2, exiftool has a different output format for single files
         int done = 0;
         ArrayList<Meta> results = new ArrayList<>();
-        while ( done < content.length) {
+        while ( done < files.length) {
             File dir = null;
             ArrayList<String> fileList = new ArrayList<>();
-            for (int f = 0; (f < chunkSize) && (done + f < content.length); f++) {
-                if (dir == null) dir = content[done + f].getParentFile();
-                if (!dir.equals(content[done + f].getParentFile())) break;
-                fileList.add(content[done + f].getName());
+            for (int f = 0; (f < chunkSize) && (done + f < files.length); f++) {
+                if (dir == null) dir = files[done + f].getParentFile();
+                if (!dir.equals(files[done + f].getParentFile())) break;
+                fileList.add(files[done + f].getName());
                 done++;
             }
 

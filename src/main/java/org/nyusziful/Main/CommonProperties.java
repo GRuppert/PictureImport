@@ -1,5 +1,7 @@
 package org.nyusziful.Main;
 
+import org.nyusziful.Rename.tableViewMediaFile;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -8,8 +10,8 @@ import java.time.ZoneId;
 public class CommonProperties {
     private static CommonProperties instance;
 
-    private int copyOrMove;
-    private ZoneId zone;
+    private int copyOrMove = tableViewMediaFile.COPY;
+    private ZoneId zone = ZoneId.systemDefault();
     private String pictureSet = "K";
     private Path toDir = Paths.get("G:\\Pictures\\Photos\\Új\\SzandranakUj");
     private File fromDir = new File("G:\\Pictures\\Photos\\Új\\Szandranak");

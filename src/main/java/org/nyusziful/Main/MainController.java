@@ -1,5 +1,6 @@
 package org.nyusziful.Main;
 
+import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import org.nyusziful.Comparison.Listing;
@@ -12,7 +13,7 @@ import org.nyusziful.TimeShift.TimeLine;
 
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
+import java.util.*;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -20,9 +21,6 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
-import java.util.Comparator;
-import java.util.List;
-import java.util.ResourceBundle;
 
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -79,14 +77,10 @@ public class MainController implements Initializable {
         ac.getData().addAll(Progress.getInstance().getSpeeds());
         progressIndicator.progressProperty().bindBidirectional(Progress.getInstance().getProgressProperty());
         
-        ObservableList<String> timeZones = FXCollections.observableArrayList(ZoneId.getAvailableZoneIds()).sorted(new Comparator() {
-            @Override
-            public int compare(Object o1, Object o2) {
-                String o1trim = o1.toString().replaceAll("[^A-Za-z0-9]", "").toLowerCase();
-                String o2trim = o2.toString().replaceAll("[^A-Za-z0-9]", "").toLowerCase();
-                return o1trim.compareTo(o2trim);
-            }
-            
+        SortedList timeZones = FXCollections.observableArrayList(ZoneId.getAvailableZoneIds()).sorted((Comparator) (o1, o2) -> {
+            String o1trim = o1.toString().replaceAll("[^A-Za-z0-9]", "").toLowerCase();
+            String o2trim = o2.toString().replaceAll("[^A-Za-z0-9]", "").toLowerCase();
+            return o1trim.compareTo(o2trim);
         });
         TimeZone.getItems().addAll(timeZones);
         commonProperties.setZone(ZoneId.systemDefault());
@@ -122,7 +116,7 @@ public class MainController implements Initializable {
     private void handleRenameButtonAction() {
         File file = StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
-            List<String> directories = new ArrayList<>();
+            ArrayList<String> directories = new ArrayList<>();
             directories.add(file.toString());
             listOnScreen(itWasImport(directories));
         }
@@ -208,16 +202,16 @@ public class MainController implements Initializable {
 
     }
 
-    private void createMetaTable(ArrayList<Meta> newData) {
+    private void createMetaTable(Collection<Meta> newData) {
         TableView tableView = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
                     "/fxml/meta2TableView.fxml"));
             tableView = (TableView) loader.load();
             Meta2TableViewController ctrl = loader.getController();
-            ObservableList<metaProp> meta = FXCollections.observableArrayList();
+            ObservableList<MetaProp> meta = FXCollections.observableArrayList();
             meta.removeAll(meta);
-            newData.stream().forEach((obj) -> {meta.add(new metaProp(obj));});
+            newData.stream().forEach((obj) -> {meta.add(new MetaProp(obj));});
             ctrl.setMeta(meta);
         } catch (IOException e) {
             e.printStackTrace();
@@ -228,7 +222,7 @@ public class MainController implements Initializable {
 
 
     //Sets the center view to table format
-    private void listOnScreen(List<tableViewMediaFile> analyzingMediaFiles) {
+    private void listOnScreen(Collection<? extends tableViewMediaFile> analyzingMediaFiles) {
         BorderPane tablePane = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
@@ -265,13 +259,13 @@ public class MainController implements Initializable {
 
     //TODO reads dir:
     //Input processed mediafiles Output dated directory+old filename
-    private List<SimpleMediaFile> sortToDateDirectories(ArrayList<String> directories) {
-        List<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
+    private Collection<SimpleMediaFile> sortToDateDirectories(Collection<String> directories) {
+        Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
                         return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
                     }});
-        List<File> fileList = new ArrayList<>();
+        ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
         ArrayList<SimpleMediaFile> files = new ArrayList<>();
         Path target = null;
@@ -284,6 +278,7 @@ public class MainController implements Initializable {
                 File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
                 for (int j = 0; j < dirs.length; j++) {
                     MediaDirectory mediaDirectory = new MediaDirectory(dirs[j].getName());
+                    if (mediaDirectory.from == null) continue;
                     if ((fileDate.isAfter(mediaDirectory.from)) && (fileDate.isAfter(mediaDirectory.to))) {
                         target = dirs[j].toPath();
                         j = dirs.length;
@@ -297,21 +292,25 @@ public class MainController implements Initializable {
     }
 
     //Input mediafiles Output standard
-    public List<AnalyzingMediaFile> itWasImport(List<String> directories) {
-        List<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
-        List<File> fileList = new ArrayList<>();
+    public Collection<AnalyzingMediaFile> itWasImport(Collection<String> directories) {
+        Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
+        ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
+        directoryElements.stream().forEach((directoryElement) -> {files.add(new AnalyzingMediaFile(directoryElement.file, commonProperties.getZone(), commonProperties.getPictureSet(), commonProperties.getToDir().toString(), false));});
+/*
+        ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
-        List<Meta> exifToMeta = readFileMeta(fileList, commonProperties.getZone());
+        Collection<Meta> exifToMeta = readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
         ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
         for (Meta next : exifToMeta) {
             files.add(new AnalyzingMediaFile(next));
         }
+        */
         return files;
     }
 
     //import and rename are basically the same
-    private List<AnalyzingMediaFile> importFiles() {
-        List<String> directories = StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
+    private Collection<AnalyzingMediaFile> importFiles() {
+        Collection<String> directories = StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
         Path backupdrive = null;
             if ((backupdrive = Services.backupMounted()) == null) {
             StaticTools.errorOut("No backup Drive", new Exception("Attach a backup drive!"));
@@ -323,11 +322,11 @@ public class MainController implements Initializable {
     }
 
     //no mediafile, creates a list of Meta
-    private ArrayList<Meta> fileMetaList(ArrayList<String> directories, Path target) {
-        List<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
+    private Collection<Meta> fileMetaList(Collection<String> directories, Path target) {
+        Collection<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
-        return readFileMeta(fileList, commonProperties.getZone());
+        return readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
     }
 
 

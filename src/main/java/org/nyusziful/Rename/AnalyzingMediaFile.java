@@ -59,31 +59,13 @@ public class AnalyzingMediaFile implements tableViewMediaFile {
         newName.set(getNewFileName("5"));
     }
     
-/*
-    public AnalyzingMediaFile(String fileIn) {
-        this(new File(fileIn));
-    }
-
-    public AnalyzingMediaFile(String fileIn, String targetDir) {
-        this(fileIn);
-        targetDirectory = targetDir;
-    }
-
-    public AnalyzingMediaFile(File fileIn) {
-        this(fileIn, null, true);
-    }
-
-    public AnalyzingMediaFile(Meta metaExif) {
-        this(new File(metaExif.originalFilename), metaExif, true);
-    }
- */
-
-    public AnalyzingMediaFile(File fileIn, Meta metaExif, boolean forceRewrite, ZoneId zone, String pictureSet, String targetDirectory) {
+    public AnalyzingMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
         this.file = fileIn;
         this.zone = zone;
         this.pictureSet = pictureSet;
         this.forceRewrite = forceRewrite;
-        this.targetDirectory = targetDirectory + "\\" + file.getParentFile().getName();
+        this.targetDirectory = targetDirectory;
+        Meta metaExif = null;
 
         processing = new SimpleBooleanProperty(true);
         currentName = new SimpleStringProperty(fileIn.getName());
@@ -94,11 +76,11 @@ public class AnalyzingMediaFile implements tableViewMediaFile {
         originalName = file.getName();
 
         if (!supportedMediaFileType(currentName.get())) {
-            newName = new SimpleStringProperty(/*targetDirectory + "\\" + */originalName);
+            newName = new SimpleStringProperty(originalName);
         } else {
             String ext = FilenameUtils.getExtension(originalName.toLowerCase());
             if (metaExif == null) {//if it hasn't been batch readed in the caller function
-                metaExif = readFileMeta(file, zone);
+                metaExif = readFileMeta(new File[] {file}, zone).iterator().next();
             }
 
             //standardizes data in Sony mp4 
@@ -118,7 +100,7 @@ public class AnalyzingMediaFile implements tableViewMediaFile {
             Meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
-                if (fileXmp.exists()) metaXmp = readFileMeta(fileXmp, zone);
+                if (fileXmp.exists()) metaXmp = readFileMeta(new File[] {fileXmp}, zone).iterator().next();
             }
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
@@ -279,9 +261,8 @@ public class AnalyzingMediaFile implements tableViewMediaFile {
     private void notOrig() {
         if (orig.matches("[0-9x-zX-Z]")) orig = "a";
     }
-    
-    private File checkDir(String targetDirectory) {
-        File targetDir = new File(targetDirectory);
+
+    private File checkDir(File targetDir) {
         File[] listFiles = targetDir.listFiles(new FilenameFilter() {
             @Override
             public boolean accept(File dir, String name) {
@@ -298,9 +279,9 @@ public class AnalyzingMediaFile implements tableViewMediaFile {
     
     private void checkRAW() {
         File rawFile;
-        rawFile = checkDir(file.getParent());
+        rawFile = checkDir(file.getParentFile());
         if  (rawFile != null && !rawFile.exists()) {
-            rawFile = checkDir(targetDirectory);
+            rawFile = checkDir(this.getNewPath().getParent().toFile());
         } 
         if  (rawFile != null && rawFile.exists()) {
             Meta v = getV(rawFile.getName());
@@ -463,8 +444,12 @@ public class AnalyzingMediaFile implements tableViewMediaFile {
         return getFile().toPath();
     }
 
+    /**
+     * Target directory\Parent directory\New filename
+     * @return
+     */
     public Path getNewPath() {
-        return Paths.get(targetDirectory + "\\" + this.getNewName());
+        return Paths.get(targetDirectory + "\\" + file.getParentFile().getName() + "\\" + this.getNewName());
     }
 
     public String getTargetDirectory() {return targetDirectory;}

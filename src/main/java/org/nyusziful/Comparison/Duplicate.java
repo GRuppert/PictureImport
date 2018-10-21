@@ -18,9 +18,9 @@ import javafx.beans.property.SimpleStringProperty;
  *
  * @author gabor
  */
-public class duplicate {
-    private final comparableMediaFile first; 
-    private final comparableMediaFile second; 
+public class Duplicate {
+    private final ComparableMediaFile first;
+    private final ComparableMediaFile second;
     private ArrayList<String[]> conflicts;
     public ArrayList<String> footprint;
     private final ArrayList<String> unimportant;
@@ -31,7 +31,7 @@ public class duplicate {
     private final SimpleStringProperty secondName;
     private final SimpleStringProperty meta;
     
-    public duplicate(comparableMediaFile first, comparableMediaFile second, boolean sameImage) {
+    public Duplicate(ComparableMediaFile first, ComparableMediaFile second, boolean sameImage) {
         unimportant = new ArrayList();
         unimportant.add("Date/Time");
         unimportant.add("Thumbnail Offset");
@@ -78,9 +78,9 @@ public class duplicate {
             FileType test = FileTypeDetector.detectFileType(new BufferedInputStream(new FileInputStream("E:\\temp\\ARWproof\\DSC01962.ARW")));
             System.out.println(test);
         } catch (FileNotFoundException ex) {
-            Logger.getLogger(duplicate.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Duplicate.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
-            Logger.getLogger(duplicate.class.getName()).log(Level.SEVERE, null, ex);
+            Logger.getLogger(Duplicate.class.getName()).log(Level.SEVERE, null, ex);
         }*/
         meta.setValue(compareMeta());
     }

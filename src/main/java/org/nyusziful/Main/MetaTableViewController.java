@@ -5,7 +5,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import org.nyusziful.Rename.AnalyzingMediaFile;
-import org.nyusziful.Rename.metaProp;
+import org.nyusziful.Rename.MetaProp;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -29,7 +29,7 @@ public class MetaTableViewController {
     private TableColumn<AnalyzingMediaFile, Boolean > xmpCol;
     // </editor-fold>
 
-    private ObservableList<metaProp> meta;
+    private ObservableList<MetaProp> meta;
 
     public MetaTableViewController() {
     }
@@ -50,11 +50,11 @@ public class MetaTableViewController {
 
 
 
-    public ObservableList<metaProp> getMeta() {
+    public ObservableList<MetaProp> getMeta() {
         return meta;
     }
 
-    public void setMeta(ObservableList<metaProp> meta) {
+    public void setMeta(ObservableList<MetaProp> meta) {
         this.meta = meta;
     }
 }

@@ -18,8 +18,8 @@ import org.apache.logging.log4j.Logger;
  *
  * @author gabor
  */
-public class jpegHash implements hasher {
-    private static final Logger LOG = LogManager.getLogger(jpegHash.class);
+public class JPGHash implements Hasher {
+    private static final Logger LOG = LogManager.getLogger(JPGHash.class);
     
     private static long startOfImageJPG(BufferedInputStream in) throws IOException {
         int c;

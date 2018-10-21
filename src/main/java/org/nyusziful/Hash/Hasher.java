@@ -9,7 +9,7 @@ package org.nyusziful.Hash;
  *
  * @author gabor
  */
-public interface hasher {
+public interface Hasher {
 
     /**
      * 

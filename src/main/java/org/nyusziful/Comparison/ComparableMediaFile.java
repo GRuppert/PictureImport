@@ -15,13 +15,12 @@ import java.io.File;
  *
  * @author gabor
  */
-public class comparableMediaFile{
+public class ComparableMediaFile extends Meta {
     public File file;
-    public Meta meta;
 
-    public comparableMediaFile(File fileIn, Meta metaIn) {
+    public ComparableMediaFile(File fileIn, Meta metaIn) {
+        super(metaIn);
         this.file = fileIn;
-        this.meta = metaIn;
     }
 }              
 

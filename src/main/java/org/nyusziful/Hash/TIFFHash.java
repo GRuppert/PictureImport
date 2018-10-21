@@ -16,18 +16,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import static org.nyusziful.Hash.basicFileReader.readEndianValue;
-import static org.nyusziful.Hash.basicFileReader.skipBytes;
+import static org.nyusziful.Hash.BasicFileReader.readEndianValue;
+import static org.nyusziful.Hash.BasicFileReader.skipBytes;
 
 
 /**
  *
  * @author gabor
  */
-public class tiffHash implements hasher {
-    private static final Logger LOG = LogManager.getLogger(tiffHash.class);
+public class TIFFHash implements Hasher {
+    private static final Logger LOG = LogManager.getLogger(TIFFHash.class);
     
-    private static byte[] getPointers(ArrayList<ifdField> imageLocationFields, File file, boolean endian) throws IOException {
+    private static byte[] getPointers(ArrayList<IfdField> imageLocationFields, File file, boolean endian) throws IOException {
 /*      RawImageDigest
         Tag 50972 (C71C.H)
         Type BYTE
@@ -49,9 +49,9 @@ public class tiffHash implements hasher {
         long pieceByteCounts = 0;
         long pieceByteCountsCount = 0;
         int pieceByteLength = 0;
-        Iterator<ifdField> iterator = imageLocationFields.iterator();
+        Iterator<IfdField> iterator = imageLocationFields.iterator();
         while (iterator.hasNext()) {
-            ifdField field = iterator.next();
+            IfdField field = iterator.next();
             switch (field.tag) {
                 case 256:
                     imageWidth = field.offset;
@@ -155,7 +155,7 @@ public class tiffHash implements hasher {
         }
     }
     
-    private static byte[] readSubIFDirectory(ifdCursor cursor, BufferedInputStream in) throws IOException {
+    private static byte[] readSubIFDirectory(IfdCursor cursor, BufferedInputStream in) throws IOException {
         in.reset();
         if (!skipBytes(in, cursor.getPointer())) return null;
         int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
@@ -163,9 +163,9 @@ public class tiffHash implements hasher {
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
         boolean mainImage = false;
-        ArrayList<ifdField> imageLocationFields = new ArrayList<>();
+        ArrayList<IfdField> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
-            ifdField field = new ifdField();
+            IfdField field = new IfdField();
             field.tag = (int) readEndianValue(in, 2, cursor.getEndian());
             field.type = (int) readEndianValue(in, 2, cursor.getEndian());
             field.count = readEndianValue(in, 4, cursor.getEndian());
@@ -201,7 +201,7 @@ public class tiffHash implements hasher {
         return null;
     }
     
-    private static byte[] readIFDirectory(ifdCursor cursor, BufferedInputStream in) throws IOException {
+    private static byte[] readIFDirectory(IfdCursor cursor, BufferedInputStream in) throws IOException {
         in.reset();
         if (!skipBytes(in, cursor.getPointer())) return null;
         int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
@@ -210,9 +210,9 @@ public class tiffHash implements hasher {
         int subIFDsPointerLength = 0;
         long nextIFD = 0;
         boolean mainImage = false;
-        ArrayList<ifdField> imageLocationFields = new ArrayList<>();
+        ArrayList<IfdField> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
-            ifdField field = new ifdField();
+            IfdField field = new IfdField();
             field.tag = (int) readEndianValue(in, 2, cursor.getEndian());
             field.type = (int) readEndianValue(in, 2, cursor.getEndian());
             field.count = readEndianValue(in, 4, cursor.getEndian());
@@ -265,7 +265,7 @@ public class tiffHash implements hasher {
         if (endian == null) {return null;}
         long tiffCheck = readEndianValue(in, 2, endian);
         if (tiffCheck != 42) {return null;}
-        ifdCursor cursor = new ifdCursor(file, endian, readEndianValue(in, 4, endian));
+        IfdCursor cursor = new IfdCursor(file, endian, readEndianValue(in, 4, endian));
         if (cursor.getPointer() == -1) {return null;}
         if (cursor.getPointer() == 0) {return null;}
         return readIFDirectory(cursor, fileStream);

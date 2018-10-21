@@ -63,13 +63,13 @@ public class MediaFileHash {
         try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {            
             switch (getType(file)) {
                 case "tiff":
-                    digest = tiffHash.readDigest(file, fileStream, md5Digest, in);
+                    digest = TIFFHash.readDigest(file, fileStream, md5Digest, in);
                     break;
                 case "jpeg":
-                    digest = jpegHash.readDigest(file, fileStream, md5Digest, in);
+                    digest = JPGHash.readDigest(file, fileStream, md5Digest, in);
                     break;
                 case "mp4":
-                    digest = mp4Hash.readDigest(file, fileStream, md5Digest, in);
+                    digest = MP4Hash.readDigest(file, fileStream, md5Digest, in);
                     break;
             }
         }  catch(IOException e) {

@@ -14,10 +14,7 @@ import org.nyusziful.Rename.Meta;
 import java.io.File;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 /**
  *
@@ -41,7 +38,7 @@ public class StaticTools {
 //            ArrayList<String> exifTool = exifTool(" -DateTimeOriginal -Model " + fileNames, dir);
             ArrayList<String> files = new ArrayList<>();
             files.add(".");
-            List<Meta> exifToMeta = readFileMeta(files, dir, ZoneId.systemDefault());
+            Collection<Meta> exifToMeta = readFileMeta(files.toArray(new File[0]), ZoneId.systemDefault());
             Iterator<Meta> iterator = exifToMeta.iterator();
             String errors = "";
             while (iterator.hasNext()) {
