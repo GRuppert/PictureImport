@@ -1,15 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import java.lang.*?>
-<?import java.util.*?>
-<?import javafx.scene.*?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.chart.AreaChart?>
 <?import javafx.scene.chart.NumberAxis?>
 
 
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" id="mainPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.MainController">
+<BorderPane fx:id="mainPane" xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.MainController">
     <top>
         <VBox>
             <Label text="Functions" alignment="CENTER"/>
@@ -45,8 +42,8 @@
             <fx:define>
                 <ToggleGroup fx:id="group"/>  
             </fx:define>
-            <RadioButton text="Copy" selected="false" toggleGroup="$group"/>
-            <RadioButton text="Move" selected="true" toggleGroup="$group"/>
+            <RadioButton text="Copy" userData="COPY" toggleGroup="$group"/>
+            <RadioButton text="Move" userData="MOVE" toggleGroup="$group"/>
         </VBox>
     </left>
     <center>

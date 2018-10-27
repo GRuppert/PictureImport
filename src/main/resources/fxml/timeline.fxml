@@ -9,6 +9,6 @@
 <?import javafx.scene.chart.NumberAxis?>
 
 
-<VBox xmlns:fx="http://javafx.com/fxml/1" id="BorderPane" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.TimeShift.TimeLineController">
+<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.TimeShift.TimeLineController">
 
 </VBox>

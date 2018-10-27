@@ -34,11 +34,11 @@ import javafx.scene.layout.BorderPane;
 import javax.swing.JOptionPane;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
+import  org.nyusziful.Rename.tableViewMediaFile.WriteMethod;
 
 //Exiftool must be in PATH
 // <2GB file support
 public class MainController implements Initializable {
-
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
     private ToggleGroup group;
@@ -68,9 +68,10 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        group.getToggles().stream().forEach(toggle -> toggle.setSelected(WriteMethod.valueOf((String) toggle.getUserData()).equals(commonProperties.getCopyOrMove())));
         group.selectedToggleProperty().addListener((ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) -> {
             if (group.getSelectedToggle() != null) {
-                commonProperties.setCopyOrMove((int) group.getSelectedToggle().getUserData());
+                commonProperties.setCopyOrMove(WriteMethod.valueOf((String) group.getSelectedToggle().getUserData()));
             }
         });
 
@@ -85,12 +86,14 @@ public class MainController implements Initializable {
         TimeZone.getItems().addAll(timeZones);
         commonProperties.setZone(ZoneId.systemDefault());
         TimeZone.getSelectionModel().select(ZoneId.systemDefault().getId());
+        from.setText(commonProperties.getFromDir().toString());
+        to.setText(commonProperties.getToDir().toString());
     }
 
     // <editor-fold defaultstate="collapsed" desc="View Action">
     @FXML
     private void handleImportButtonAction() {
-        listOnScreen(importFiles());
+        showTablePane(importFiles(), "/fxml/mediaFileTableView.fxml");
     }
 
     @FXML
@@ -118,7 +121,7 @@ public class MainController implements Initializable {
         if(file != null) {
             ArrayList<String> directories = new ArrayList<>();
             directories.add(file.toString());
-            listOnScreen(itWasImport(directories));
+            showTablePane(itWasImport(directories), "/fxml/mediaFileTableView.fxml");
         }
     }
 
@@ -128,7 +131,7 @@ public class MainController implements Initializable {
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
-            listOnScreen(sortToDateDirectories(directories));
+            showTablePane(sortToDateDirectories(directories), "/fxml/mediaFileTableView.fxml");
         }
     }
 
@@ -222,14 +225,21 @@ public class MainController implements Initializable {
 
 
     //Sets the center view to table format
-    private void listOnScreen(Collection<? extends tableViewMediaFile> analyzingMediaFiles) {
+    private void showTablePane(Collection<? extends tableViewMediaFile> mediaFiles, String tableViewFXML) {
+        MediaFileSet mediaFileSet = new MediaFileSet(mediaFiles);
         BorderPane tablePane = null;
+        TableView table = null;
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(
-                    "/fxml/mediaFileTableView.fxml"));
+            FXMLLoader loaderTable = new FXMLLoader(getClass().getResource(tableViewFXML));
+            table = (TableView) loaderTable.load();
+            MediaFileSetTableViewController ctrlTable = loaderTable.getController();
+            ctrlTable.setMediaFileSet(mediaFileSet);
+
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/tablePanel.fxml"));
             tablePane = (BorderPane) loader.load();
-            MediaFileTableViewController ctrl = loader.getController();
-            ctrl.setMediaFileSet(new MediaFileSet(analyzingMediaFiles));
+            tablePane.setCenter(table);
+            TablePanelController ctrl = loader.getController();
+            ctrl.setMediaFileSet(mediaFileSet);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -295,7 +305,10 @@ public class MainController implements Initializable {
     public Collection<AnalyzingMediaFile> itWasImport(Collection<String> directories) {
         Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
         ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
-        directoryElements.stream().forEach((directoryElement) -> {files.add(new AnalyzingMediaFile(directoryElement.file, commonProperties.getZone(), commonProperties.getPictureSet(), commonProperties.getToDir().toString(), false));});
+        Progress instance = Progress.getInstance();
+        instance.reset();
+        instance.setGoal(directoryElements.size());
+        directoryElements.stream().forEach((directoryElement) -> {files.add(new AnalyzingMediaFile(directoryElement.file, commonProperties.getZone(), commonProperties.getPictureSet(), commonProperties.getToDir().toString(), false)); instance.increaseProgress();});
 /*
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});

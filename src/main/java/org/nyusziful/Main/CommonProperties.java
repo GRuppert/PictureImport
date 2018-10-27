@@ -6,17 +6,18 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
+import org.nyusziful.Rename.tableViewMediaFile.WriteMethod;
 
 public class CommonProperties {
     private static CommonProperties instance;
 
-    private int copyOrMove = tableViewMediaFile.COPY;
+    private WriteMethod copyOrMove = WriteMethod.COPY;
     private ZoneId zone = ZoneId.systemDefault();
     private String pictureSet = "K";
-    private Path toDir = Paths.get("G:\\Pictures\\Photos\\Új\\SzandranakUj");
-    private File fromDir = new File("G:\\Pictures\\Photos\\Új\\Szandranak");
-//    private Path toDir = Paths.get("E:\\temp\\compare\\1");
-//    private File fromDir = new File("E:\\temp\\compare\\2");
+//    private Path toDir = Paths.get("G:\\Pictures\\Photos\\Új\\SzandranakUj");
+//    private File fromDir = new File("G:\\Pictures\\Photos\\Új\\Szandranak");
+    private Path toDir = Paths.get("E:\\temp\\delete");
+    private File fromDir = new File("E:\\Képek\\200");
 //    private Path toDir = Paths.get("G:\\Pictures\\Photos\\V5\\Közös");
 //    private File fromDir = new File("G:\\Pictures\\Photos\\Új");
 
@@ -31,11 +32,11 @@ public class CommonProperties {
         return CommonProperties.instance;
     }
 
-    public int getCopyOrMove() {
+    public WriteMethod getCopyOrMove() {
         return copyOrMove;
     }
 
-    public void setCopyOrMove(int copyOrMove) {
+    public void setCopyOrMove(WriteMethod copyOrMove) {
         this.copyOrMove = copyOrMove;
     }
 

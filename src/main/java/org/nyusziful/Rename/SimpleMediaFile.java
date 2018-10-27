@@ -34,21 +34,26 @@ public class SimpleMediaFile implements tableViewMediaFile {
         }
     }
 
-    public void write(int copy) {
+    public boolean write(WriteMethod writeMethod) {
         if (processing.get()) {
             try {
                 validPath(this.newPath.getParent());
-                if (copy == COPY) {
-                    Files.copy(this.path, this.newPath);
-                } else if (copy == MOVE) {
-                    Files.move(this.path, this.newPath);
+                switch (writeMethod) {
+                    case COPY:
+                        Files.copy(this.path, this.newPath);
+                        break;
+                    case MOVE:
+                        Files.move(this.path, this.newPath);
+                        break;
                 }
+                return true;
             } catch (IOException e) {
                 System.out.println(e);
                 //Todo logging, All for error OK
 //                errorOut(this.getNewName(), e);
             }
         }
+        return false;
     }
 
 

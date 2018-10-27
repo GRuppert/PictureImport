@@ -1,5 +1,6 @@
 package org.nyusziful.Rename;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.nyusziful.Main.Progress;
@@ -7,6 +8,7 @@ import org.nyusziful.Main.StaticTools;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
@@ -45,27 +47,30 @@ public class MediaFileSet {
         getDataModel().stream().forEach(file -> file.setTargetDirectory(replacePath));
     }
 
-    public void applyChanges(int copyOrMove) {
-        Runnable r = () -> {
-            int i = 0;
-            Progress progress = Progress.getInstance();
-            while (progress.timeToReady() != 0) {
-                try {
-                    wait(progress.timeToReady());
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
+    public void applyChanges(tableViewMediaFile.WriteMethod copyOrMove) {
+        Platform.runLater(new Runnable() {
+            @Override
+            public void run() {
+                Progress progress = Progress.getInstance();
+                while (progress.timeToReady() != 0) {
+                    try {
+                        wait(progress.timeToReady());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
                 }
+                progress.setGoal(getDataModel().size());
+                Iterator<tableViewMediaFile> iter = getDataModel().iterator();
+                while (iter.hasNext()) {
+                    tableViewMediaFile record = iter.next();
+                    if (record.write(copyOrMove)) {
+//                        getDataModel().remove(record);
+                    }
+                    progress.increaseProgress();
+                }
+                StaticTools.beep();
             }
-            progress.setGoal(getDataModel().size());
-            for (tableViewMediaFile record : getDataModel()) {
-                record.write(copyOrMove);
-                getDataModel().remove(record);
-                i++;
-                progress.setProgress(i);
-            }
-            StaticTools.beep();
-        };
-        new Thread(r).start();
+        });
     }
 
     public void removeAll() {

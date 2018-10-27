@@ -17,6 +17,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+import org.nyusziful.Rename.tableViewMediaFile.WriteMethod;
 import static org.nyusziful.ExifUtils.ExifReadWrite.*;
 import static org.nyusziful.Hash.MediaFileHash.*;
 import static org.nyusziful.Main.StaticTools.*;
@@ -327,27 +328,32 @@ public class AnalyzingMediaFile implements tableViewMediaFile {
         }
     }
     
-    public void write(int copy) {
+    public boolean write(WriteMethod writeMethod) {
         if (processing.get()) {
             try {        
                 validPath(this.getNewPath());
                 updateExif();
 //                if (iID == null && supportedMediaFileType(currentName.get())) setiID();
-                if (copy == COPY) {
-                    Files.copy(this.getOldPath(), this.getNewPath());                               
-                    if (fileXmp != null && fileXmp.exists())
-                        Files.copy(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
-                } else if (copy == MOVE) {
-                    Files.move(this.getOldPath(), this.getNewPath());                               
-                    if (fileXmp != null && fileXmp.exists())
-                        Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));                               
+                switch (writeMethod) {
+                    case COPY:
+                        Files.copy(this.getOldPath(), this.getNewPath());
+                        if (fileXmp != null && fileXmp.exists())
+                            Files.copy(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));
+                        break;
+                    case MOVE:
+                        Files.move(this.getOldPath(), this.getNewPath());
+                        if (fileXmp != null && fileXmp.exists())
+                            Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));
+                        break;
                 }
+                return true;
             } catch (IOException e) {
                 System.out.println(e);
                 //Todo logging, All for error OK
-//                errorOut(this.getNewName(), e);         
-            }                      
+//                errorOut(this.getNewName(), e);
+            }
         }
+        return false;
     }
 
     private void addNote(String addition, Boolean critical) {

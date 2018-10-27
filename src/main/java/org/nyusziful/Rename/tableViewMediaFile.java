@@ -4,9 +4,12 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 
 public interface tableViewMediaFile {
+    public enum WriteMethod {
+        MOVE, COPY
+    }
     // <editor-fold defaultstate="collapsed" desc="Static variables">
-    public static int MOVE = 1;
-    public static int COPY = 0;
+//    public static int MOVE = 1;
+//    public static int COPY = 0;
     // </editor-fold>
 
     public String getNewName();
@@ -32,7 +35,7 @@ public interface tableViewMediaFile {
     public String getTargetDirectory();
     public void setTargetDirectory(String targetDirectory);
 
-    public void write(int copy);
+    public boolean write(WriteMethod writeMethod);
 
 
 }

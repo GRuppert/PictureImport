@@ -33,6 +33,10 @@ public class Progress {
         setProgress(0);
     }
 
+    public void increaseProgress() {
+        this.setProgress(progress + 1);
+    }
+
     public void setProgress(long progress) {
         this.progress = progress;
         assert(goal != 0 || progress == 0);
