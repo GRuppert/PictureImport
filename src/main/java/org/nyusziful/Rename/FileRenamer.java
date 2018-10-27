@@ -18,7 +18,7 @@ import static org.nyusziful.Main.StaticTools.errorOut;
  *
  * @author gabor
  */
-public class fileRenamer {
+public class FileRenamer {
     public static DateTimeFormatter dfV1 = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");//20161124_200546
     public static DateTimeFormatter dfV2 = DateTimeFormatter.ofPattern("yyyy-MM-dd@HH-mm-ssZ");//2016-11-24@20-05-46+0200
     public static DateTimeFormatter dfV3 = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");//20161124200546

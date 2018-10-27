@@ -73,11 +73,11 @@ public class fileVersionTest {
     
     
     /**
-     * Test of getV method, of class fileRenamer.
+     * Test of getV method, of class FileRenamer.
      */
     @Test
     public void testGetV() {
-        Meta result = fileRenamer.getV(filename);
+        Meta result = FileRenamer.getV(filename);
         assertEquals("Meta of file(" + filename + ") result: " + result + " awaited: " + expResult, expResult.toString(), result.toString());
     }
 }

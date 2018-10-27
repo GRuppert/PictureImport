@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.ResourceBundle;
 
-import static org.nyusziful.Rename.fileRenamer.getV;
+import static org.nyusziful.Rename.FileRenamer.getV;
 
 public class ComparePanelController {
     private ObservableList<String> pairs = FXCollections.observableArrayList ();

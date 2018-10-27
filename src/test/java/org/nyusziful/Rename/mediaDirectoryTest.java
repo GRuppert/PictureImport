@@ -65,7 +65,7 @@ public class mediaDirectoryTest {
     
     
     /**
-     * Test of getV method, of class fileRenamer.
+     * Test of getV method, of class FileRenamer.
      */
     @Test
     public void testMediaDirectory() {

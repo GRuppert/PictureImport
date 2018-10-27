@@ -9,7 +9,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
+
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
@@ -64,12 +64,12 @@ public class fileRenamerTest {
 
     
     /**
-     * Test of getFileName method, of class fileRenamer.
+     * Test of getFileName method, of class FileRenamer.
      */
     @Test
     public void testGetFileName() {
         System.out.println("getFileName");
-        String result = fileRenamer.getFileName(ver, pictureSet, originalName, date, iID, dID, original);
+        String result = FileRenamer.getFileName(ver, pictureSet, originalName, date, iID, dID, original);
         assertEquals("Rename of file(" + originalName + ") result: " + result + " awaited: " + expResult, expResult, result);
     }
     

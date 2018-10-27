@@ -34,7 +34,7 @@ import javafx.scene.layout.BorderPane;
 import javax.swing.JOptionPane;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
-import  org.nyusziful.Rename.tableViewMediaFile.WriteMethod;
+import  org.nyusziful.Rename.TableViewMediaFile.WriteMethod;
 
 //Exiftool must be in PATH
 // <2GB file support
@@ -225,7 +225,7 @@ public class MainController implements Initializable {
 
 
     //Sets the center view to table format
-    private void showTablePane(Collection<? extends tableViewMediaFile> mediaFiles, String tableViewFXML) {
+    private void showTablePane(Collection<? extends TableViewMediaFile> mediaFiles, String tableViewFXML) {
         MediaFileSet mediaFileSet = new MediaFileSet(mediaFiles);
         BorderPane tablePane = null;
         TableView table = null;
@@ -282,7 +282,7 @@ public class MainController implements Initializable {
         ZonedDateTime previousFileDate = ZonedDateTime.now();
 
         for (File file : fileList) {
-            ZonedDateTime fileDate = fileRenamer.getV(file.getName()).date;
+            ZonedDateTime fileDate = FileRenamer.getV(file.getName()).date;
             if (!fileDate.truncatedTo(ChronoUnit.DAYS).equals(previousFileDate.truncatedTo(ChronoUnit.DAYS))) {
                 previousFileDate = fileDate;
                 File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());

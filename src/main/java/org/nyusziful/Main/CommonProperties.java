@@ -1,12 +1,10 @@
 package org.nyusziful.Main;
 
-import org.nyusziful.Rename.tableViewMediaFile;
-
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
-import org.nyusziful.Rename.tableViewMediaFile.WriteMethod;
+import org.nyusziful.Rename.TableViewMediaFile.WriteMethod;
 
 public class CommonProperties {
     private static CommonProperties instance;

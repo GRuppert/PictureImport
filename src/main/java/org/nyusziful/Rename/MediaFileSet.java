@@ -3,31 +3,31 @@ package org.nyusziful.Rename;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import org.nyusziful.Main.Progress;
 import org.nyusziful.Main.StaticTools;
 
-import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-
-import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
 
 public class MediaFileSet {
 //    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
-    private final ObservableList<tableViewMediaFile> dataModel = FXCollections.observableArrayList();
+    private final ObservableList<TableViewMediaFile> dataModel = FXCollections.observableArrayList();
 
-    public MediaFileSet(Collection<? extends tableViewMediaFile> files) {
+    public MediaFileSet(Collection<? extends TableViewMediaFile> files) {
         fillData(files);
     }
 
-    private void fillData(Collection<? extends tableViewMediaFile> files) {
+    private void fillData(Collection<? extends TableViewMediaFile> files) {
 //        this.files = files;
         dataModel.removeAll(dataModel);
         files.stream().forEach((obj) -> {dataModel.add(obj);});
     }
 
-    public ObservableList<tableViewMediaFile> getDataModel() {
+    public ObservableList<TableViewMediaFile> getDataModel() {
         return dataModel;
     }
 
@@ -47,30 +47,46 @@ public class MediaFileSet {
         getDataModel().stream().forEach(file -> file.setTargetDirectory(replacePath));
     }
 
-    public void applyChanges(tableViewMediaFile.WriteMethod copyOrMove) {
-        Platform.runLater(new Runnable() {
+    public Task<Collection<TableViewMediaFile>> applyChanges(TableViewMediaFile.WriteMethod copyOrMove) {
+        Task<Collection<TableViewMediaFile>> task = new Task<Collection<TableViewMediaFile>>() {
+            ArrayList<TableViewMediaFile> tableViewMediaFile = new ArrayList();
+
             @Override
-            public void run() {
+            public Collection<TableViewMediaFile> call() {
+                int iterations = 0;
                 Progress progress = Progress.getInstance();
                 while (progress.timeToReady() != 0) {
+                    if (isCancelled()) {
+                        return tableViewMediaFile;
+                    }
                     try {
-                        wait(progress.timeToReady());
+                        MediaFileSet.this.wait(progress.timeToReady());
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
                 }
-                progress.setGoal(getDataModel().size());
-                Iterator<tableViewMediaFile> iter = getDataModel().iterator();
+                int size = MediaFileSet.this.getDataModel().size();
+                progress.setGoal(size);
+                Iterator<TableViewMediaFile> iter = MediaFileSet.this.getDataModel().iterator();
                 while (iter.hasNext()) {
-                    tableViewMediaFile record = iter.next();
-                    if (record.write(copyOrMove)) {
-//                        getDataModel().remove(record);
+                    if (isCancelled()) {
+                        return tableViewMediaFile;
                     }
+                    TableViewMediaFile record = iter.next();
+                    if (record.write(copyOrMove)) {
+                        tableViewMediaFile.add(record);
+                    }
+                    iterations++;
+                    updateProgress(iterations, size);
                     progress.increaseProgress();
                 }
                 StaticTools.beep();
+                return tableViewMediaFile;
             }
-        });
+        };
+
+        task.setOnSucceeded(workerStateEvent -> getDataModel().removeAll(task.getValue()));
+        return task;
     }
 
     public void removeAll() {

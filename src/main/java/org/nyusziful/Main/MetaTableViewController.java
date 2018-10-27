@@ -37,9 +37,9 @@ public class MetaTableViewController {
 
     public void initialize(URL url, ResourceBundle rb) {
 
-/*        oldNameCol.setCellValueFactory(new PropertyValueFactory<tableViewMediaFile, String>("currentName"));
-        newNameCol.setCellValueFactory(new PropertyValueFactory<tableViewMediaFile, String>("newName"));
-        noteCol.setCellValueFactory(new PropertyValueFactory<tableViewMediaFile, String>("note"));
+/*        oldNameCol.setCellValueFactory(new PropertyValueFactory<TableViewMediaFile, String>("currentName"));
+        newNameCol.setCellValueFactory(new PropertyValueFactory<TableViewMediaFile, String>("newName"));
+        noteCol.setCellValueFactory(new PropertyValueFactory<TableViewMediaFile, String>("note"));
 */
 //        processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
         processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));

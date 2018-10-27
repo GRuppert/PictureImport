@@ -49,8 +49,9 @@ public class Progress {
     public void setProgress(double progress, long speed) {
         this.progress = 0;
         this.goal = 0;
+        progressPercent.setValue(progress);
         Platform.runLater(() -> {
-            progressPercent.setValue(progress);
+//            progressPercent.setValue(progress);
             getSpeeds().getData().add(new XYChart.Data(progressPercent.getValue(), speed));
         });
     }

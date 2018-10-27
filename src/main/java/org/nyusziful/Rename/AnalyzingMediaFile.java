@@ -17,18 +17,17 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import org.nyusziful.Rename.tableViewMediaFile.WriteMethod;
 import static org.nyusziful.ExifUtils.ExifReadWrite.*;
 import static org.nyusziful.Hash.MediaFileHash.*;
 import static org.nyusziful.Main.StaticTools.*;
-import static org.nyusziful.Rename.fileRenamer.getFileName;
-import static org.nyusziful.Rename.fileRenamer.getV;
+import static org.nyusziful.Rename.FileRenamer.getFileName;
+import static org.nyusziful.Rename.FileRenamer.getV;
 
 /**
  *
  * @author gabor
  */
-public class AnalyzingMediaFile implements tableViewMediaFile {
+public class AnalyzingMediaFile implements TableViewMediaFile {
     private static String Version = "6";
     
     private final SimpleBooleanProperty processing;

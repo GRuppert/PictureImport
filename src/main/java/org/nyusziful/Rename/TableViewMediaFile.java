@@ -3,7 +3,7 @@ package org.nyusziful.Rename;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 
-public interface tableViewMediaFile {
+public interface TableViewMediaFile {
     public enum WriteMethod {
         MOVE, COPY
     }

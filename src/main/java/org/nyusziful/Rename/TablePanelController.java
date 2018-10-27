@@ -1,17 +1,27 @@
 package org.nyusziful.Rename;
 
 import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import org.nyusziful.Main.CommonProperties;
 
 import java.net.URL;
+import java.util.Collection;
 import java.util.ResourceBundle;
 
 public class TablePanelController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
+    @FXML
+    private ProgressIndicator tableProgressIndicator;
+
+    @FXML
+    private Button btnGo;
+
     // </editor-fold>
 
     private MediaFileSet mediaFileSet;
@@ -43,7 +53,12 @@ public class TablePanelController {
 
     @FXML
     private void handleGoButtonAction() {
-        mediaFileSet.applyChanges(CommonProperties.getInstance().getCopyOrMove());
+        btnGo.setDisable(true);
+        tableProgressIndicator.setVisible(true);
+        Task<Collection<TableViewMediaFile>> collectionTask = mediaFileSet.applyChanges(CommonProperties.getInstance().getCopyOrMove());
+        tableProgressIndicator.progressProperty().bind(collectionTask.progressProperty());
+        new Thread(collectionTask).start();
+        btnGo.setDisable(false);
     }
 
     @FXML

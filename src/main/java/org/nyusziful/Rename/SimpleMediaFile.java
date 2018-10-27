@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class SimpleMediaFile implements tableViewMediaFile {
+public class SimpleMediaFile implements TableViewMediaFile {
     private final SimpleBooleanProperty processing;
     private final SimpleStringProperty currentName;
     private final SimpleStringProperty newName;
