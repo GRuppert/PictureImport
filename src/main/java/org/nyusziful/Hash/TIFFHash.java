@@ -251,7 +251,7 @@ public class TIFFHash implements Hasher {
     }
         
     //returns the pointer to the main image data in tiff based files
-    public static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
+    public static byte[] readDigest(File file, BufferedInputStream in) throws IOException {
         in.mark(0);
         int c;
         long j = 0;
@@ -268,6 +268,6 @@ public class TIFFHash implements Hasher {
         IfdCursor cursor = new IfdCursor(file, endian, readEndianValue(in, 4, endian));
         if (cursor.getPointer() == -1) {return null;}
         if (cursor.getPointer() == 0) {return null;}
-        return readIFDirectory(cursor, fileStream);
+        return readIFDirectory(cursor, in);
     }
 }

@@ -1,8 +1,11 @@
 package org.nyusziful.Main;
 
+import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
 import org.nyusziful.Comparison.Listing;
 import org.nyusziful.Rename.*;
 
@@ -55,6 +58,8 @@ public class MainController implements Initializable {
     @FXML
     private Label to;
     @FXML
+    private HBox buttonHBox;
+    @FXML
     private BorderPane mainPane;
     // </editor-fold>
 
@@ -93,11 +98,13 @@ public class MainController implements Initializable {
     // <editor-fold defaultstate="collapsed" desc="View Action">
     @FXML
     private void handleImportButtonAction() {
+        disableButtons(true);
         showTablePane(importFiles(), "/fxml/mediaFileTableView.fxml");
     }
 
     @FXML
     private void handleShiftButtonAction() {
+        disableButtons(true);
         File file = StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             stripesOnScreen(file);
@@ -121,6 +128,7 @@ public class MainController implements Initializable {
         if(file != null) {
             ArrayList<String> directories = new ArrayList<>();
             directories.add(file.toString());
+            disableButtons(true);
             showTablePane(itWasImport(directories), "/fxml/mediaFileTableView.fxml");
         }
     }
@@ -240,10 +248,18 @@ public class MainController implements Initializable {
             tablePane.setCenter(table);
             TablePanelController ctrl = loader.getController();
             ctrl.setMediaFileSet(mediaFileSet);
+            mediaFileSet.getDataModel().addListener(new ListChangeListener<TableViewMediaFile>() {
+                @Override
+                public void onChanged(Change<? extends TableViewMediaFile> c) {
+                    if (mediaFileSet.getDataModel().size() == 0) {
+                        resetAction();
+                    }
+                }
+            });
+            mainPane.setCenter(tablePane);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        mainPane.setCenter(tablePane);
         StaticTools.beep();
     }
 
@@ -254,6 +270,18 @@ public class MainController implements Initializable {
         mainPane.setCenter(timeLine.getStripeBox());
         timeLine.resetView();
     }
+
+    private void resetAction() {
+        disableButtons(false);
+        mainPane.setCenter(null);
+    }
+
+    private void disableButtons(boolean disabled) {
+        ObservableList<Node> children = buttonHBox.getChildren();
+        for (Node buttonNode : children) {
+            buttonNode.setDisable(disabled);
+        }
+    }
     // </editor-fold>
 
     // <editor-fold defaultstate="collapsed" desc="Model Notify">
@@ -263,7 +291,6 @@ public class MainController implements Initializable {
     // <editor-fold defaultstate="collapsed" desc="Model Update">
 
     // </editor-fold>
-
 
 
 

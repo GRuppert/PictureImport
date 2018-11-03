@@ -10,7 +10,7 @@
     <top>
         <VBox>
             <Label text="Functions" alignment="CENTER"/>
-            <HBox alignment="CENTER">
+            <HBox fx:id="buttonHBox" alignment="CENTER">
                 <Button text="Import" onAction="#handleImportButtonAction" fx:id="btnImport" />
                 <Button text="Shift" onAction="#handleShiftButtonAction" fx:id="btnShift" />
                 <Button text="Meta" onAction="#handleMetaButtonAction" fx:id="btnMeta" />

@@ -2,6 +2,8 @@ package org.nyusziful.Hash;
 
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -16,12 +18,13 @@ import java.io.File;
 public class IfdCursor {
     private final File file;
     private final Boolean endian;
-    private long pointer;
+    private List<Long> pointers;
     
     public IfdCursor(File file, Boolean endian, long pointer) {
         this.file = file;
         this.endian = endian;
-        this.pointer = pointer;
+        this.pointers = new ArrayList();
+        pointers.add(pointer);
     }
 
     /**
@@ -42,14 +45,17 @@ public class IfdCursor {
      * @return the pointer
      */
     public long getPointer() {
-        return pointer;
+        return pointers.get(pointers.size() - 1);
     }
 
     /**
      * @param pointer the pointer to set
      */
     public void setPointer(long pointer) {
-        this.pointer = pointer;
+        pointers.add(pointer);
     }
 
+    public List<Long> getPointers() {
+        return pointers;
+    }
 }

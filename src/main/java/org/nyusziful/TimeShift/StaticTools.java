@@ -6,7 +6,7 @@
 package org.nyusziful.TimeShift;
 
 import static org.nyusziful.ExifUtils.ExifReadWrite.readFileMeta;
-import static org.nyusziful.ExifUtils.ExifReadWrite.exifTool;
+import static org.nyusziful.ExifUtils.ExifReadWriteET.exifTool;
 import static org.nyusziful.Main.StaticTools.errorOut;
 
 import org.nyusziful.Rename.Meta;
