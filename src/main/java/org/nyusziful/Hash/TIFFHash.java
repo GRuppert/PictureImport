@@ -203,12 +203,11 @@ public class TIFFHash implements Hasher {
     
     private static byte[] readIFDirectory(IfdCursor cursor, BufferedInputStream in) throws IOException {
         in.reset();
-        if (!skipBytes(in, cursor.getPointer())) return null;
+        if (!skipBytes(in, cursor.getPointer())) {in.reset(); return null;}
         int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
         long subIFDs = 0;
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
-        long nextIFD = 0;
         boolean mainImage = false;
         ArrayList<IfdField> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
@@ -224,27 +223,31 @@ public class TIFFHash implements Hasher {
                 subIFDs = field.count;
                 subIFDsPointerLength = field.getTypeLength();
             }
-//            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
+            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
             if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
             if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
             if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile
         }
-        nextIFD = readEndianValue(in, 4, cursor.getEndian());
-        if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
+        long nextIFD = readEndianValue(in, 4, cursor.getEndian());
+        if (mainImage) {in.reset(); return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());}
         if (subIFDs == 1) {
             cursor.setPointer(subIFDsPointer);
             byte[] hash = readSubIFDirectory(cursor, in);
-            if (hash != null) return hash;
+            if (hash != null) {in.reset(); return hash;}
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {                    
                 in.reset();
 //                    in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
-                if (!skipBytes(in, subIFDsPointer)) return null;
-                if (!skipBytes(in, j * subIFDsPointerLength)) return null;
+                if (!skipBytes(in, subIFDsPointer)) {in.reset(); return null;}
+                if (!skipBytes(in, j * subIFDsPointerLength)) {in.reset(); return null;}
                 cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
                 byte[] hash = readSubIFDirectory(cursor, in);
-                if (hash != null) return hash;
+                if (hash != null) {in.reset(); return hash;}
             }
+        }
+        if (nextIFD == 0) {
+            in.reset();
+            return null;
         }
         cursor.setPointer(nextIFD);
         return readIFDirectory(cursor, in);

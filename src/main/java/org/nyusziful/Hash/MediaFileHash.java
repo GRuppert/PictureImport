@@ -60,7 +60,7 @@ public class MediaFileHash {
         }
         byte[] digestDef = md5Digest.digest();
         byte[] digest = null;
-        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {            
+        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
             switch (getType(file)) {
                 case "tiff":
                     digest = TIFFHash.readDigest(file, fileStream);
