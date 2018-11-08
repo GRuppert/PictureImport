@@ -27,6 +27,7 @@ public class JPEGFileStruct {
         long readedBytes = 0;
         for (JPEGSegment segment : segments) {
             System.out.format("%,8d / 0x%8X  " + segment.getMarker() + " " + segment.getId() + "%n", segment.getStartAddress(), segment.getStartAddress());
+            System.out.format("%,8d / 0x%8X   next marker awaited%n", segment.getStartAddress() + segment.getLength(), segment.getStartAddress() + segment.getLength());
             readedBytes += segment.getLength();
         }
         System.out.format("Recognized size: %,8d bytes %n", readedBytes);

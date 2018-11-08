@@ -20,30 +20,33 @@ import org.apache.logging.log4j.Logger;
  * @author gabor
  */
 public class JPGHash implements Hasher {
+    private static final int markerLength = 2;
     private static final Logger LOG = LogManager.getLogger(JPGHash.class);
     
     private static long startOfImageJPG(BufferedInputStream in) throws IOException {
-        int c;
-        long j = -1;
+        int lastReadByte;
+        long lastReadBytePosition = -1;
         OUTER:
-        while ((c = in.read()) != -1) {
-            j++;
-            switch (c) {
+        while ((lastReadByte = in.read()) != -1) {
+            lastReadBytePosition++;
+            switch (lastReadByte) {
                 case 0:
                     break;
                 case 0xFF://255
-                    c = in.read();
-                    j++;
-                    if (c == 0xD8 /*216*/) {break OUTER;}
+                    lastReadByte = in.read();
+                    lastReadBytePosition++;
+                    if (lastReadByte == 0xD8 /*216*/) {break OUTER;}
                 default:
                     return -1;
             }
         }
-        return j;
+        return lastReadBytePosition;
     }
 
     public static void main(String[] args) {
-        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806.jpg");
+
+        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
+//        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
@@ -58,34 +61,34 @@ public class JPGHash implements Hasher {
         }
     }
 
-    private static JPEGSegment readScan(BufferedInputStream in, AtomicInteger marker, long address) throws IOException {
+    private static JPEGSegment readScan(BufferedInputStream in, AtomicInteger marker, long payLoadAddress) throws IOException {
         int segmentMarker = marker.get();
-        long read = 2;
-        int c;
+        long read = markerLength;
+        int lastReadByte;
         Boolean markerFF = false;
-        while ((c = in.read()) != -1){
+        while ((lastReadByte = in.read()) != -1){
             read++;
             if (markerFF) {
-                if (c != 0x00 && !(0xD0 <= c && c <= 0xD7)) {
-                    marker.set(c);
+                if (lastReadByte != 0x00 && !(0xD0 <= lastReadByte && lastReadByte <= 0xD7)) {
+                    marker.set(lastReadByte);
                     break;
                 } else {
                     markerFF = false;
                 }
-            } else if (c == 0xFF/*255*/) {
+            } else if (lastReadByte == 0xFF/*255*/) {
                 markerFF = true;
             }
         }
-        if (c == -1) return null;
-        JPEGSegment segment = new JPEGSegment(address-2, read, segmentMarker);
+        if (lastReadByte == -1) return null;
+        JPEGSegment segment = new JPEGSegment(payLoadAddress - markerLength, read - markerLength, segmentMarker);
         segment.addRead(read);
         return segment;
     }
 
-    private static JPEGSegment readAPP(BufferedInputStream in, AtomicInteger marker, long address, File file) throws IOException {
+    private static JPEGSegment readAPP(BufferedInputStream in, AtomicInteger marker, long payLoadAddress, File file) throws IOException {
         int segmentMarker = marker.get();
         long lengthPayload = 0;
-        long read = 2;
+        long read = markerLength;
         lengthPayload = 256*in.read() + in.read();
         read += 2;
         byte b[] = new byte[6];
@@ -100,7 +103,7 @@ public class JPGHash implements Hasher {
             TIFFHash.readDigest(file, in);
         }
         String header = new String(b);
-        JPEGSegment segment = new JPEGSegment(address-2, lengthPayload + 2, segmentMarker);
+        JPEGSegment segment = new JPEGSegment(payLoadAddress - markerLength, lengthPayload + markerLength, segmentMarker);
         segment.addRead(read);
         segment.setId(header);
         return segment;
@@ -108,25 +111,25 @@ public class JPGHash implements Hasher {
     }
 
 
-    private static JPEGSegment readSegment(BufferedInputStream in, AtomicInteger marker, long address, File file) throws IOException {
+    private static JPEGSegment readSegment(BufferedInputStream in, AtomicInteger marker, long payLoadAddress, File file) throws IOException {
         int segmentMarker = marker.get();
         long lengthPayload = 0;
-        long read = 2;
+        long read = markerLength;
         if (208 <= segmentMarker && segmentMarker <= 217) {
             lengthPayload = 0;
         } else if (221 == segmentMarker) {
             lengthPayload = 4;
         } else if (218 == segmentMarker) {
-            return readScan(in, marker, address);
+            return readScan(in, marker, payLoadAddress);
         } else if (224 <= segmentMarker && segmentMarker <= 233) {
-            return readAPP(in, marker, address, file);
+            return readAPP(in, marker, payLoadAddress, file);
         } else {
             lengthPayload = 256*in.read() + in.read();
             read += 2;
         }
-        //address -2 because marker is already read
+        //payLoadAddress -2 because marker is already read
         //length should contain the header as well -> +2
-        JPEGSegment segment = new JPEGSegment(address-2, lengthPayload + 2, segmentMarker);
+        JPEGSegment segment = new JPEGSegment(payLoadAddress - markerLength, lengthPayload + markerLength, segmentMarker);
         segment.addRead(read);
         return segment;
     }
@@ -134,16 +137,17 @@ public class JPGHash implements Hasher {
     private static void scanJPG(BufferedInputStream in, JPEGFileStruct fileStruct, File file) throws IOException {
         Integer lastReadByte = -1;
         boolean scan = false;
-        long j = startOfImageJPG(in);
-        if (j == -1) {fileStruct.setTerminationMessage("No \"Start Of Image\" found"); return;}
+        long lastReadBytePosition = startOfImageJPG(in);
+        if (lastReadBytePosition == -1) {fileStruct.setTerminationMessage("No \"Start Of Image\" found"); return;}
         Boolean marker = false;
         while (scan || (lastReadByte = in.read()) != -1) {
-            j++;
+            if (!scan) {lastReadBytePosition++; }
+            else {lastReadBytePosition +=2;}
             if (marker) {
                 //Not a marker(byte stuffing), shouldn't happen in header
                 if (lastReadByte == 0/* || lastReadByte==216*/) {
                     marker = false;
-                    fileStruct.addWarningMessage("Strange bytestuffing/broken marker at: " + j);
+                    fileStruct.addWarningMessage("Strange bytestuffing/broken marker at: " + lastReadBytePosition);
                 } else {
                     if (scan) {
                         scan = false;
@@ -155,7 +159,7 @@ public class JPGHash implements Hasher {
                     }
 //                    System.out.print("ff" + Integer.toHexString(lastReadByte) + " ");
                     AtomicInteger segmentMarker = new AtomicInteger(lastReadByte);
-                    JPEGSegment segment = readSegment(in, segmentMarker, j, file);
+                    JPEGSegment segment = readSegment(in, segmentMarker, lastReadBytePosition + 1, file);
                     if (segment == null) {
                         fileStruct.setTerminationMessage("Segment " + JPEGSegment.getMarker(lastReadByte) + " read error");
                         return;
@@ -163,7 +167,7 @@ public class JPGHash implements Hasher {
                     lastReadByte = segmentMarker.get();
                     fileStruct.addSegment(segment);
                     long bytesLeft = segment.getBytesLeft();
-//                    j += bytesLeft;
+//                    lastReadBytePosition += bytesLeft;
 //                    System.out.println(Long.toHexString(bytesLeft));
                     do {
                         long skip = in.skip(bytesLeft);
@@ -173,7 +177,7 @@ public class JPGHash implements Hasher {
                         }
                         bytesLeft -= skip;
                     } while (bytesLeft > 0);
-                    j += segment.getLength() - 4;
+                    lastReadBytePosition += segment.getLength() - markerLength;
                     //SOS segment doesn't have a length; it will be read until the next marker which is then already loaded into the variables
                 }
             } else {
