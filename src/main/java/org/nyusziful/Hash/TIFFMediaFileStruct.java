@@ -1,8 +1,13 @@
 package org.nyusziful.Hash;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.nyusziful.Hash.BasicFileReader.skipBytes;
 
 public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory> {
     private File file;
@@ -13,6 +18,13 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory> 
     private String terminationMessage;
     private List<String> warningMessages;
     private List<ReadRange> excludeRanges;
+    private RandomAccessFile randomAccessFile;
+    private BufferedInputStream bufferedInputStream;
+
+    public boolean jumpTo(long position) throws IOException {
+        bufferedInputStream.reset();
+        return skipBytes(bufferedInputStream, position);
+    }
 
     public TIFFMediaFileStruct(File file, long startAddress) {
         this.file = file;
@@ -59,14 +71,14 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory> 
     }
 
     public void drawSegmentMap(ImageFileDirectory segment, int depth) {
+        System.out.println();
         for (IfdTag tag : segment.getTags()) {
             for (int i = 0; i < depth; i++) System.out.print("  ");
-            System.out.println(IfdNames.getTag(tag.tagId) + " " + (tag.getCount() < 4 ? "value: " + tag.getValue() : "pointer: " + tag.getPointer()));
+            System.out.format("%,10d / 0x%8X  " + IfdNames.getTag(tag.tagId) + " " + (tag.getCount() < 4 ? "value: " + tag.getValue() : "pointer from the TIFF beginning: " + tag.getPointer()) + "%n", tag.address, tag.address);
         }
         for (ImageFileDirectory subSegment : segment.getSubDirs()) {
             drawSegmentMap(subSegment, depth++);
         }
-        System.out.println();
     }
 
         @Override
@@ -105,5 +117,21 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory> 
 
     public void addExcludeRange(ReadRange excludeRange) {
         this.excludeRanges.add(excludeRange);
+    }
+
+    public RandomAccessFile getRandomAccessFile() {
+        return randomAccessFile;
+    }
+
+    public void setRandomAccessFile(RandomAccessFile randomAccessFile) {
+        this.randomAccessFile = randomAccessFile;
+    }
+
+    public BufferedInputStream getBufferedInputStream() {
+        return bufferedInputStream;
+    }
+
+    public void setBufferedInputStream(BufferedInputStream bufferedInputStream) {
+        this.bufferedInputStream = bufferedInputStream;
     }
 }

@@ -14,13 +14,15 @@ import java.util.HashMap;
  * @author gabor
  */
 public class IfdTag {
+    long address;
     int tagId;
     int type;
     long count;
     long offset;
 
 
-    public IfdTag() {
+    public IfdTag(long address) {
+        this.address = address;
     }
     
     public String getTagId() {
