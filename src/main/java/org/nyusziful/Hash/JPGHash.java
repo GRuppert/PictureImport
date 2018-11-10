@@ -14,6 +14,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import static org.nyusziful.Hash.BasicFileReader.skipBytes;
+
 
 /**
  *
@@ -45,12 +47,12 @@ public class JPGHash implements Hasher {
 
     public static void main(String[] args) {
 
-        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
-//        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806.jpg");
+//        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
+        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
-        final JPEGFileStruct fileStruct = scanJPG(file);
+        final JPEGMediaFileStruct fileStruct = scan(file);
         fileStruct.drawMap();
     }
 
@@ -93,7 +95,7 @@ public class JPGHash implements Hasher {
 * APP2 ICC 0..11 ICC_PROFILE\0 12 icc chunk-count 13 icc total chunks
 * */
         if (Arrays.equals(b, new byte[] {0x45,0x78,0x69,0x66,0x00,0x00})) {
-            TIFFHash.readDigest(file, in);
+            TIFFHash.scan(file, payLoadAddress + read - markerLength);
         }
         String header = new String(b);
         JPEGSegment segment = new JPEGSegment(payLoadAddress - markerLength, lengthPayload + markerLength, segmentMarker);
@@ -126,8 +128,8 @@ public class JPGHash implements Hasher {
         return segment;
     }
 
-    public static JPEGFileStruct scanJPG(File file) {
-        JPEGFileStruct fileStruct = new JPEGFileStruct(file);
+    public static JPEGMediaFileStruct scan(File file) {
+        JPEGMediaFileStruct fileStruct = new JPEGMediaFileStruct(file);
         JPGCursor cursor = new JPGCursor(file);
         try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream, 65000);) {
             cursor.setBufferedInStream(fileStream);
@@ -165,14 +167,10 @@ public class JPGHash implements Hasher {
                         long bytesLeft = segment.getBytesLeft();
     //                    lastReadBytePosition += bytesLeft;
     //                    System.out.println(Long.toHexString(bytesLeft));
-                        do {
-                            long skip = fileStream.skip(bytesLeft);
-                            if (skip < 0) {
-                                fileStruct.setTerminationMessage("Reached the end of the file during reading segment " + segment.getMarker() + " at " + segment.getStartAddress());
-                                return fileStruct;
-                            }
-                            bytesLeft -= skip;
-                        } while (bytesLeft > 0);
+                        if (!skipBytes(fileStream, bytesLeft)) {
+                            fileStruct.setTerminationMessage("Reached the end of the file during reading segment " + segment.getMarker() + " at " + segment.getStartAddress());
+                            return fileStruct;
+                        }
                         cursor.position += segment.getLength() - markerLength;
                         //SOS segment doesn't have a length; it will be read until the next marker which is then already loaded into the variables
                     }
@@ -210,14 +208,10 @@ public class JPGHash implements Hasher {
                 //Start of Scan
                 else if (c == 0xDA /*218*/) return j; 
                 else {
-//                    System.out.print("ff" + Integer.toHexString(c) + " ");
                     long nextHeaderAddress = 256*in.read() + in.read() - 2;
-//                    System.out.println(Long.toHexString(nextHeaderAddress));
-                    do {
-                        long skip = in.skip(nextHeaderAddress);
-                        if (skip < 0) return -1;
-                        nextHeaderAddress -= skip;
-                    } while (nextHeaderAddress > 0);
+                    if (!skipBytes(in, nextHeaderAddress)) {
+                        return -1;
+                    }
                     j += nextHeaderAddress + 2;
                     marker = false;
                 }

@@ -5,8 +5,7 @@
  */
 package org.nyusziful.Hash;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 
 /**
  *
@@ -15,7 +14,16 @@ import java.io.InputStream;
 public class BasicFileReader {
     public static boolean BIGENDIAN = true;
     public static boolean LITTLEENDIAN = true;
-    
+
+    public static boolean reset(InputStream in, long pointer, File file) throws IOException {
+        if (in.markSupported()) {in.reset(); return true;}
+        else {
+            FileInputStream fileInStream = new FileInputStream(file.toString());
+            in = new BufferedInputStream(fileInStream);
+            return skipBytes(in, pointer);
+        }
+    }
+
     public static boolean skipBytes(InputStream in, long pointer) throws IOException {
         do {
             long skip = in.skip(pointer);

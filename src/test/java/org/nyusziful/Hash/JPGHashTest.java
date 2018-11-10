@@ -59,7 +59,7 @@ public class JPGHashTest {
     @Test
     public void scanJPG() {
         File file = new File(this.getClass().getClassLoader().getResource(filename).getFile());
-        final JPEGFileStruct fileStruct = JPGHash.scanJPG(file);
+        final JPEGMediaFileStruct fileStruct = JPGHash.scan(file);
         assertEquals(filename + " read termination message: " + fileStruct.getTerminationMessage() + " awaited: " + terminationMessage, fileStruct.getTerminationMessage(), terminationMessage);
         assertEquals("Structure of " + filename + " analyzed: " + fileStruct.getLastSegment().toString() + " awaited: " + lastSegment.toString(), fileStruct.getLastSegment(), lastSegment);
 //        fileStruct.drawMap();

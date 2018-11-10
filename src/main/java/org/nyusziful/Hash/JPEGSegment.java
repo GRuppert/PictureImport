@@ -1,6 +1,6 @@
 package org.nyusziful.Hash;
 
-public class JPEGSegment {
+public class JPEGSegment implements MediaFileSegment {
     private long startAddress;
     private long length;
     private int marker;
@@ -18,10 +18,12 @@ public class JPEGSegment {
         this(startAddress, length, marker, "");
     }
 
+    @Override
     public long getStartAddress() {
         return startAddress;
     }
 
+    @Override
     public long getLength() {
         return length;
     }

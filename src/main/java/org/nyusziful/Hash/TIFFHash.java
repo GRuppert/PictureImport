@@ -5,15 +5,12 @@
  */
 package org.nyusziful.Hash;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.security.DigestInputStream;
+import java.io.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Iterator;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import static org.nyusziful.Hash.BasicFileReader.readEndianValue;
@@ -27,7 +24,7 @@ import static org.nyusziful.Hash.BasicFileReader.skipBytes;
 public class TIFFHash implements Hasher {
     private static final Logger LOG = LogManager.getLogger(TIFFHash.class);
     
-    private static byte[] getPointers(ArrayList<IfdField> imageLocationFields, File file, boolean endian) throws IOException {
+    private static byte[] getPointers(ArrayList<IfdTag> imageLocationFields, File file, boolean endian) throws IOException {
 /*      RawImageDigest
         Tag 50972 (C71C.H)
         Type BYTE
@@ -36,7 +33,7 @@ public class TIFFHash implements Hasher {
         Default Optional
         Usage IFD 0
         Description
-        This tag is an MD5 digest of the raw image data. All pixels in the image are processed in rowscan
+        This tagId is an MD5 digest of the raw image data. All pixels in the image are processed in rowscan
         order. Each pixel is zero padded to 16 or 32 bits deep (16-bit for data less than or equal to
         16 bits deep, 32-bit otherwise). The data for each pixel is processed in little-endian byte order         */
         long imageLength;
@@ -49,10 +46,10 @@ public class TIFFHash implements Hasher {
         long pieceByteCounts = 0;
         long pieceByteCountsCount = 0;
         int pieceByteLength = 0;
-        Iterator<IfdField> iterator = imageLocationFields.iterator();
+        Iterator<IfdTag> iterator = imageLocationFields.iterator();
         while (iterator.hasNext()) {
-            IfdField field = iterator.next();
-            switch (field.tag) {
+            IfdTag field = iterator.next();
+            switch (field.tagId) {
                 case 256:
                     imageWidth = field.offset;
                     break;
@@ -155,106 +152,135 @@ public class TIFFHash implements Hasher {
         }
     }
     
-    private static byte[] readSubIFDirectory(IfdCursor cursor, BufferedInputStream in) throws IOException {
+    private static boolean readSubIFDirectory(long thisIFD, BufferedInputStream in, TIFFMediaFileStruct tiffMediaFileStruct) throws IOException {
         in.reset();
-        if (!skipBytes(in, cursor.getPointer())) return null;
-        int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
+        if (!skipBytes(in, thisIFD)) return false;
+        int tagEntryCount = (int) readEndianValue(in, 2, tiffMediaFileStruct.getEndian());
         long subIFDs = 0;
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
         boolean mainImage = false;
-        ArrayList<IfdField> imageLocationFields = new ArrayList<>();
+        ArrayList<IfdTag> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
-            IfdField field = new IfdField();
-            field.tag = (int) readEndianValue(in, 2, cursor.getEndian());
-            field.type = (int) readEndianValue(in, 2, cursor.getEndian());
-            field.count = readEndianValue(in, 4, cursor.getEndian());
-            field.offset = readEndianValue(in, 4, cursor.getEndian());
-            if (field.tag == 50972) System.out.println("!!!!!!!!!!" + field.count + " " + field.offset);
-            if (field.tag == 254 && field.offset == 0) {mainImage = true;}
-            if (field.tag == 330) {
+            IfdTag field = new IfdTag();
+            field.tagId = (int) readEndianValue(in, 2, tiffMediaFileStruct.getEndian());
+            field.type = (int) readEndianValue(in, 2, tiffMediaFileStruct.getEndian());
+            field.count = readEndianValue(in, 4, tiffMediaFileStruct.getEndian());
+            field.offset = readEndianValue(in, 4, tiffMediaFileStruct.getEndian());
+            if (field.tagId == 50972) System.out.println("!!!!!!!!!!" + field.count + " " + field.offset);
+            if (field.tagId == 254 && field.offset == 0) {mainImage = true;}
+            if (field.tagId == 330) {
                 subIFDsPointer = field.offset;
                 subIFDs = field.count;
                 subIFDsPointerLength = field.getTypeLength();
             }
-//            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
-            if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
-            if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
-            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile
+//            System.out.println(field.getTagId() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
+            if (field.tagId == 257 || field.tagId == 256) imageLocationFields.add(field); //Image
+            if (field.tagId == 273 || field.tagId == 278 || field.tagId == 279) imageLocationFields.add(field); //Stripe
+            if (field.tagId == 322 || field.tagId == 323 || field.tagId == 324 || field.tagId == 325) imageLocationFields.add(field); //Tile
         }
-        if (mainImage) return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());
+        if (mainImage) tiffMediaFileStruct.setDigestBytes(getPointers(imageLocationFields, tiffMediaFileStruct.getFile(), tiffMediaFileStruct.getEndian()));
         if (subIFDs == 1) {
-            cursor.setPointer(subIFDsPointer);
-            byte[] hash = readSubIFDirectory(cursor, in);
-            if (hash != null) return hash;
+            if(!readSubIFDirectory(subIFDsPointer, in, tiffMediaFileStruct)) return false;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {
                 in.reset();
 //                    in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
-                if (!skipBytes(in, subIFDsPointer)) return null;
-                if (!skipBytes(in, j * subIFDsPointerLength)) return null;
-                cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
-                byte[] hash = readSubIFDirectory(cursor, in);
-                if (hash != null) return hash;
+                if (!skipBytes(in, subIFDsPointer)) return false;
+                if (!skipBytes(in, j * subIFDsPointerLength)) return false;
+                long nextSubIFD = readEndianValue(in, subIFDsPointerLength, tiffMediaFileStruct.getEndian());
+                if(!readSubIFDirectory(nextSubIFD, in, tiffMediaFileStruct)) return false;
             }
         }
-        return null;
+        return true;
     }
-    
-    private static byte[] readIFDirectory(IfdCursor cursor, BufferedInputStream in) throws IOException {
+
+    private static boolean readIFDirectory(long thisIFD, BufferedInputStream in, TIFFMediaFileStruct tiffMediaFileStruct) throws IOException {
         in.reset();
-        if (!skipBytes(in, cursor.getPointer())) {in.reset(); return null;}
-        int tagEntryCount = (int) readEndianValue(in, 2, cursor.getEndian());
+        if (!skipBytes(in, thisIFD)) {in.reset(); return false;}
+        ImageFileDirectory imageFileDirectory = new ImageFileDirectory(thisIFD);
+        tiffMediaFileStruct.addSegment(imageFileDirectory);
+        int tagEntryCount = (int) readEndianValue(in, 2, tiffMediaFileStruct.getEndian());
         long subIFDs = 0;
         long subIFDsPointer = 0;
         int subIFDsPointerLength = 0;
         boolean mainImage = false;
-        ArrayList<IfdField> imageLocationFields = new ArrayList<>();
+        ArrayList<IfdTag> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
-            IfdField field = new IfdField();
-            field.tag = (int) readEndianValue(in, 2, cursor.getEndian());
-            field.type = (int) readEndianValue(in, 2, cursor.getEndian());
-            field.count = readEndianValue(in, 4, cursor.getEndian());
-            field.offset = readEndianValue(in, 4, cursor.getEndian());
-            if (field.tag == 50972) System.out.println("!!!!!!!!!!" + field.count + " " + field.offset);
-            if (field.tag == 254 && field.offset == 0) {mainImage = true;}
-            if (field.tag == 330) {
-                subIFDsPointer = field.offset;
-                subIFDs = field.count;
-                subIFDsPointerLength = field.getTypeLength();
+            IfdTag ifdTag = new IfdTag();
+            ifdTag.tagId = (int) readEndianValue(in, 2, tiffMediaFileStruct.getEndian());
+            ifdTag.type = (int) readEndianValue(in, 2, tiffMediaFileStruct.getEndian());
+            ifdTag.count = readEndianValue(in, 4, tiffMediaFileStruct.getEndian());
+            ifdTag.offset = readEndianValue(in, 4, tiffMediaFileStruct.getEndian());
+            if (ifdTag.tagId == 50972) System.out.println("!!!!!!!!!!" + ifdTag.count + " " + ifdTag.offset);
+            if (ifdTag.tagId == 254 && ifdTag.offset == 0) {mainImage = true;}
+            if (ifdTag.tagId == 330) {
+                subIFDsPointer = ifdTag.offset;
+                subIFDs = ifdTag.count;
+                subIFDsPointerLength = ifdTag.getTypeLength();
             }
-//            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
-            if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
-            if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
-            if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile
+//            System.out.println(ifdTag.getTagId() + " " + ifdTag.getType() + " " + ifdTag.getCount() + " " + ifdTag.getValue() + " " + ifdTag.getPointer());
+            if (ifdTag.tagId == 257 || ifdTag.tagId == 256) imageLocationFields.add(ifdTag); //Image
+            if (ifdTag.tagId == 273 || ifdTag.tagId == 278 || ifdTag.tagId == 279) imageLocationFields.add(ifdTag); //Stripe
+            if (ifdTag.tagId == 322 || ifdTag.tagId == 323 || ifdTag.tagId == 324 || ifdTag.tagId == 325) imageLocationFields.add(ifdTag); //Tile
+            imageFileDirectory.addTag(ifdTag);
         }
-        long nextIFD = readEndianValue(in, 4, cursor.getEndian());
-        if (mainImage) {in.reset(); return getPointers(imageLocationFields, cursor.getFile(), cursor.getEndian());}
+
+        long nextIFD = readEndianValue(in, 4, tiffMediaFileStruct.getEndian());
+        if (mainImage) {tiffMediaFileStruct.setDigestBytes(getPointers(imageLocationFields, tiffMediaFileStruct.getFile(), tiffMediaFileStruct.getEndian()));}
         if (subIFDs == 1) {
-            cursor.setPointer(subIFDsPointer);
-            byte[] hash = readSubIFDirectory(cursor, in);
-            if (hash != null) {in.reset(); return hash;}
+            if(!readSubIFDirectory(subIFDsPointer, in, tiffMediaFileStruct)) return false;
         } else if (subIFDs > 1) {
             for (int j = 0; j < subIFDs; j++) {                    
                 in.reset();
 //                    in = new BufferedInputStream(new FileInputStream(cursor.getFile().toString()));
-                if (!skipBytes(in, subIFDsPointer)) {in.reset(); return null;}
-                if (!skipBytes(in, j * subIFDsPointerLength)) {in.reset(); return null;}
-                cursor.setPointer(readEndianValue(in, subIFDsPointerLength, cursor.getEndian()));
-                byte[] hash = readSubIFDirectory(cursor, in);
-                if (hash != null) {in.reset(); return hash;}
+                if (!skipBytes(in, subIFDsPointer)) {return false;}
+                if (!skipBytes(in, j * subIFDsPointerLength)) {return false;}
+                long nextSubIFD = readEndianValue(in, subIFDsPointerLength, tiffMediaFileStruct.getEndian());
+                if(!readSubIFDirectory(nextSubIFD, in, tiffMediaFileStruct)) return false;
             }
         }
         if (nextIFD == 0) {
+            tiffMediaFileStruct.setTerminationMessage("File pointer is zero.");
             in.reset();
-            return null;
+            return false;
         }
-        cursor.setPointer(nextIFD);
-        return readIFDirectory(cursor, in);
+        return readIFDirectory(nextIFD, in, tiffMediaFileStruct);
     }
-        
+
+    public static TIFFMediaFileStruct scan(File file, Long startPosition) {
+        TIFFMediaFileStruct tiffMediaFileStruct = new TIFFMediaFileStruct(file, startPosition);
+        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInStream, 65000);) {
+            skipBytes(bufferedInputStream, startPosition);
+            bufferedInputStream.mark(0);
+            int readByte;
+            Boolean endian = null;
+            readByte = bufferedInputStream.read();
+            if (readByte == 73) {
+                if (bufferedInputStream.read() == 73) endian = true;
+            } else if (readByte == 77) {
+                if (bufferedInputStream.read() == 77) endian = false;
+            }
+            if (endian == null) {tiffMediaFileStruct.setTerminationMessage("Endian definition error."); return tiffMediaFileStruct;}
+            tiffMediaFileStruct.setEndian(endian);
+            long tiffCheck = readEndianValue(bufferedInputStream, 2, endian);
+            if (tiffCheck != 42) {tiffMediaFileStruct.setTerminationMessage("Not 42."); return tiffMediaFileStruct;}
+            long nextIFD = readEndianValue(bufferedInputStream, 4, endian);
+            if (nextIFD == -1) {tiffMediaFileStruct.setTerminationMessage("File end reached before first directory."); return tiffMediaFileStruct;}
+            if (nextIFD == 0) {tiffMediaFileStruct.setTerminationMessage("File first pointer is zero."); return tiffMediaFileStruct;}
+            if (readIFDirectory(nextIFD, bufferedInputStream, tiffMediaFileStruct)) tiffMediaFileStruct.setTerminationMessage("Successful."); else tiffMediaFileStruct.setTerminationMessage("Unsuccessful.");
+            return tiffMediaFileStruct;
+        } catch (FileNotFoundException e) {
+            tiffMediaFileStruct.setTerminationMessage("File couldn't be opened.");
+        } catch (IOException e) {
+            tiffMediaFileStruct.setTerminationMessage("IO error: "+ e.getMessage());
+        }
+        return tiffMediaFileStruct;
+    }
+
     //returns the pointer to the main image data in tiff based files
     public static byte[] readDigest(File file, BufferedInputStream in) throws IOException {
+        TIFFMediaFileStruct tiffMediaFileStruct = new TIFFMediaFileStruct(file, 0);
         in.mark(0);
         int c;
         long j = 0;
@@ -266,11 +292,13 @@ public class TIFFHash implements Hasher {
             if (in.read() == 77) endian = false;
         }
         if (endian == null) {return null;}
+        tiffMediaFileStruct.setEndian(endian);
         long tiffCheck = readEndianValue(in, 2, endian);
         if (tiffCheck != 42) {return null;}
-        IfdCursor cursor = new IfdCursor(file, endian, readEndianValue(in, 4, endian));
-        if (cursor.getPointer() == -1) {return null;}
-        if (cursor.getPointer() == 0) {return null;}
-        return readIFDirectory(cursor, in);
+        long nextIFD = readEndianValue(in, 4, endian);
+        if (nextIFD == -1) {return null;}
+        if (nextIFD == 0) {return null;}
+        if (readIFDirectory(nextIFD, in, tiffMediaFileStruct)) tiffMediaFileStruct.setTerminationMessage("Successful."); else tiffMediaFileStruct.setTerminationMessage("Unsuccessful.");
+        return tiffMediaFileStruct.getDigestBytes();
     }
 }
