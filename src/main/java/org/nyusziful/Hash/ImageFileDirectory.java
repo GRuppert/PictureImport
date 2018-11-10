@@ -5,12 +5,13 @@ import java.util.ArrayList;
 public class ImageFileDirectory implements MediaFileSegment {
     private long startAddress;
     private ArrayList<ImageFileDirectory> subDirs;
-    private ArrayList<ImageFileDirectory> tags;
+    private ArrayList<IfdTag> tags;
     private long length = 0;
 
     public ImageFileDirectory(long startAddress) {
         this.startAddress = startAddress;
         subDirs = new ArrayList<>();
+        tags = new ArrayList<>();
     }
 
     @Override
@@ -45,7 +46,15 @@ public class ImageFileDirectory implements MediaFileSegment {
         return header;
     }
 
-    public void addTag(IfdTag field) {
+    public void addTag(IfdTag tag) {
+        tags.add(tag);
+    }
 
+    public ArrayList<ImageFileDirectory> getSubDirs() {
+        return subDirs;
+    }
+
+    public ArrayList<IfdTag> getTags() {
+        return tags;
     }
 }

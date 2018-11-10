@@ -12,11 +12,14 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory> 
     private long startAddress;
     private String terminationMessage;
     private List<String> warningMessages;
+    private List<ReadRange> excludeRanges;
 
     public TIFFMediaFileStruct(File file, long startAddress) {
         this.file = file;
         this.startAddress = startAddress;
         segments = new ArrayList<>();
+        warningMessages = new ArrayList<>();
+        this.excludeRanges = new ArrayList<>();
     }
 
     @Override
@@ -41,10 +44,32 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory> 
 
     @Override
     public void drawMap() {
+        System.out.format(file.getName() + " size: %,8d bytes %n", file.length());
+        long readedBytes = 0;
+        for (ImageFileDirectory segment : segments) {
+            drawSegmentMap(segment, 1);
+        }
+        System.out.format("Recognized size: %,10d bytes %n", readedBytes);
+        System.out.println("\n");
+        for (String warningMessage : warningMessages) {
+            System.out.println(warningMessage);
+        }
+        System.out.println("Stopped because: " + terminationMessage);
 
     }
 
-    @Override
+    public void drawSegmentMap(ImageFileDirectory segment, int depth) {
+        for (IfdTag tag : segment.getTags()) {
+            for (int i = 0; i < depth; i++) System.out.print("  ");
+            System.out.println(IfdNames.getTag(tag.tagId) + " " + (tag.getCount() < 4 ? "value: " + tag.getValue() : "pointer: " + tag.getPointer()));
+        }
+        for (ImageFileDirectory subSegment : segment.getSubDirs()) {
+            drawSegmentMap(subSegment, depth++);
+        }
+        System.out.println();
+    }
+
+        @Override
     public ImageFileDirectory getLastSegment() {
         return null;
     }
@@ -72,5 +97,13 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory> 
 
     public File getFile() {
         return file;
+    }
+
+    public List<ReadRange> getExcludeRanges() {
+        return excludeRanges;
+    }
+
+    public void addExcludeRange(ReadRange excludeRange) {
+        this.excludeRanges.add(excludeRange);
     }
 }

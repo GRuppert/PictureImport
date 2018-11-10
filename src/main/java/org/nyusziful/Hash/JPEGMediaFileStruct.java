@@ -7,14 +7,13 @@ import java.util.List;
 public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
     private File file;
     private List<JPEGSegment> segments;
-    private long size;
     private String terminationMessage;
     private List<String> warningMessages;
 
     public JPEGMediaFileStruct(File file) {
         this.file = file;
-        this.size = file.length();
         segments = new ArrayList<>();
+        warningMessages = new ArrayList<>();
     }
 
     @Override
@@ -24,11 +23,12 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
 
     @Override
     public void drawMap() {
-        System.out.format(file.getName() + " size: %,8d bytes %n", size);
+        System.out.format(file.getName() + " size: %,8d bytes %n", file.length());
         long readedBytes = 0;
         for (JPEGSegment segment : segments) {
             System.out.format("%,10d / 0x%8X  " + segment.getMarker() + "%n%,10d / 0x%8X " + segment.getId() + "%n", segment.getStartAddress(), segment.getStartAddress(), segment.getLength(), segment.getLength());
             readedBytes += segment.getLength();
+            if (segment.getData() != null) segment.getData().drawMap();
         }
         System.out.format("Recognized size: %,10d bytes %n", readedBytes);
         System.out.println("\n");
