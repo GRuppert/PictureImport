@@ -223,7 +223,7 @@ public class TIFFHash implements Hasher {
                 subIFDs = field.count;
                 subIFDsPointerLength = field.getTypeLength();
             }
-            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
+//            System.out.println(field.getTag() + " " + field.getType() + " " + field.getCount() + " " + field.getValue() + " " + field.getPointer());
             if (field.tag == 257 || field.tag == 256) imageLocationFields.add(field); //Image
             if (field.tag == 273 || field.tag == 278 || field.tag == 279) imageLocationFields.add(field); //Stripe
             if (field.tag == 322 || field.tag == 323 || field.tag == 324 || field.tag == 325) imageLocationFields.add(field); //Tile

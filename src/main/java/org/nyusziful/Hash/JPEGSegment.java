@@ -7,10 +7,15 @@ public class JPEGSegment {
     private long read = 0;
     private String id = "";
 
-    public JPEGSegment(long startAddress, long length, int marker) {
+    public JPEGSegment(long startAddress, long length, int marker, String id) {
         this.startAddress = startAddress;
         this.length = length;
         this.marker = marker;
+        this.id = id;
+    }
+
+    public JPEGSegment(long startAddress, long length, int marker) {
+        this(startAddress, length, marker, "");
     }
 
     public long getStartAddress() {
@@ -108,4 +113,30 @@ public class JPEGSegment {
     public void setId(String id) {
         this.id = id;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj != null && this.getClass().equals(obj.getClass())) {
+            JPEGSegment otherSegment = (JPEGSegment) obj;
+            if (this.getMarker().equals(otherSegment.getMarker()))
+                if (this.getLength() == otherSegment.getLength())
+                    if (this.getStartAddress() == otherSegment.getStartAddress())
+                        if (this.getId().equals(otherSegment.getId()))
+                            return true;
+        }
+        return false;
+
+    }
+
+    @Override
+    public String toString() {
+        String header = String.format("%,8d / 0x%8X  " + this.getMarker() + "%n", this.getStartAddress(), this.getStartAddress());
+        if (length > 0) {
+            return header;
+        } else {
+            String payload = String.format(" payload: " + this.getId() + "%,8d length %n", this.getLength());
+            return header + payload;
+        }
+    }
+
 }

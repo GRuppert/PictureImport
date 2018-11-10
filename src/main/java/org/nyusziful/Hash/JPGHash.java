@@ -50,15 +50,8 @@ public class JPGHash implements Hasher {
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
-        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream, 65000);) {
-            JPEGFileStruct fileStruct = new JPEGFileStruct(file);
-            scanJPG(fileStream, fileStruct, file);
-            fileStruct.drawMap();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        final JPEGFileStruct fileStruct = scanJPG(file);
+        fileStruct.drawMap();
     }
 
     private static JPEGSegment readScan(BufferedInputStream in, AtomicInteger marker, long payLoadAddress) throws IOException {
@@ -110,7 +103,6 @@ public class JPGHash implements Hasher {
 
     }
 
-
     private static JPEGSegment readSegment(BufferedInputStream in, AtomicInteger marker, long payLoadAddress, File file) throws IOException {
         int segmentMarker = marker.get();
         long lengthPayload = 0;
@@ -134,64 +126,74 @@ public class JPGHash implements Hasher {
         return segment;
     }
 
-    private static void scanJPG(BufferedInputStream in, JPEGFileStruct fileStruct, File file) throws IOException {
-        Integer lastReadByte = -1;
-        boolean scan = false;
-        long lastReadBytePosition = startOfImageJPG(in);
-        if (lastReadBytePosition == -1) {fileStruct.setTerminationMessage("No \"Start Of Image\" found"); return;}
-        Boolean marker = false;
-        while (scan || (lastReadByte = in.read()) != -1) {
-            if (!scan) {lastReadBytePosition++; }
-            else {lastReadBytePosition +=2;}
-            if (marker) {
-                //Not a marker(byte stuffing), shouldn't happen in header
-                if (lastReadByte == 0/* || lastReadByte==216*/) {
-                    marker = false;
-                    fileStruct.addWarningMessage("Strange bytestuffing/broken marker at: " + lastReadBytePosition);
-                } else {
-                    if (scan) {
-                        scan = false;
-                    }
-                    if (lastReadByte == 218) {
-                        scan = true;
-                    } else {
+    public static JPEGFileStruct scanJPG(File file) {
+        JPEGFileStruct fileStruct = new JPEGFileStruct(file);
+        JPGCursor cursor = new JPGCursor(file);
+        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream, 65000);) {
+            cursor.setBufferedInStream(fileStream);
+            Integer lastReadByte = -1;
+            boolean scan = false;
+            cursor.position = startOfImageJPG(fileStream);
+            if (cursor.position == -1) {fileStruct.setTerminationMessage("No \"Start Of Image\" found"); return fileStruct;}
+            Boolean marker = false;
+            while (scan || (lastReadByte = fileStream.read()) != -1) {
+                if (!scan) {cursor.position++; }
+                else {cursor.position +=2;}
+                if (marker) {
+                    //Not a marker(byte stuffing), shouldn't happen in header
+                    if (lastReadByte == 0/* || lastReadByte==216*/) {
                         marker = false;
-                    }
-//                    System.out.print("ff" + Integer.toHexString(lastReadByte) + " ");
-                    AtomicInteger segmentMarker = new AtomicInteger(lastReadByte);
-                    JPEGSegment segment = readSegment(in, segmentMarker, lastReadBytePosition + 1, file);
-                    if (segment == null) {
-                        fileStruct.setTerminationMessage("Segment " + JPEGSegment.getMarker(lastReadByte) + " read error");
-                        return;
-                    }
-                    lastReadByte = segmentMarker.get();
-                    fileStruct.addSegment(segment);
-                    long bytesLeft = segment.getBytesLeft();
-//                    lastReadBytePosition += bytesLeft;
-//                    System.out.println(Long.toHexString(bytesLeft));
-                    do {
-                        long skip = in.skip(bytesLeft);
-                        if (skip < 0) {
-                            fileStruct.setTerminationMessage("Reached the end of the file during reading segment " + segment.getMarker() + " at " + segment.getStartAddress());
-                            return;
+                        fileStruct.addWarningMessage("Strange bytestuffing/broken marker at: " + cursor.position);
+                    } else {
+                        if (scan) {
+                            scan = false;
                         }
-                        bytesLeft -= skip;
-                    } while (bytesLeft > 0);
-                    lastReadBytePosition += segment.getLength() - markerLength;
-                    //SOS segment doesn't have a length; it will be read until the next marker which is then already loaded into the variables
-                }
-            } else {
-                if (lastReadByte == 0xFF/*255*/) {marker = true;
-//                } else if (lastReadByte == 0) {//byte stuffing
-                } else if (lastReadByte == 0x00) {
-                    //Padding
+                        if (lastReadByte == 218) {
+                            scan = true;
+                        } else {
+                            marker = false;
+                        }
+    //                    System.out.print("ff" + Integer.toHexString(lastReadByte) + " ");
+                        AtomicInteger segmentMarker = new AtomicInteger(lastReadByte);
+                        JPEGSegment segment = readSegment(fileStream, segmentMarker, cursor.position + 1, file);
+                        if (segment == null) {
+                            fileStruct.setTerminationMessage("Segment " + JPEGSegment.getMarker(lastReadByte) + " read error");
+                            return fileStruct;
+                        }
+                        lastReadByte = segmentMarker.get();
+                        fileStruct.addSegment(segment);
+                        long bytesLeft = segment.getBytesLeft();
+    //                    lastReadBytePosition += bytesLeft;
+    //                    System.out.println(Long.toHexString(bytesLeft));
+                        do {
+                            long skip = fileStream.skip(bytesLeft);
+                            if (skip < 0) {
+                                fileStruct.setTerminationMessage("Reached the end of the file during reading segment " + segment.getMarker() + " at " + segment.getStartAddress());
+                                return fileStruct;
+                            }
+                            bytesLeft -= skip;
+                        } while (bytesLeft > 0);
+                        cursor.position += segment.getLength() - markerLength;
+                        //SOS segment doesn't have a length; it will be read until the next marker which is then already loaded into the variables
+                    }
                 } else {
-                    fileStruct.setTerminationMessage("Not found marker after segment");
-                    return;
+                    if (lastReadByte == 0xFF/*255*/) {marker = true;
+    //                } else if (lastReadByte == 0) {//byte stuffing
+                    } else if (lastReadByte == 0x00) {
+                        //Padding
+                    } else {
+                        fileStruct.setTerminationMessage("Not found marker after segment");
+                        return fileStruct;
+                    }
                 }
             }
+            fileStruct.setTerminationMessage("Reached the end of the file");
+        } catch (FileNotFoundException e) {
+            fileStruct.setTerminationMessage("File couldn't be opened.");
+        } catch (IOException e) {
+            fileStruct.setTerminationMessage("IO error: "+ e.getMessage());
         }
-        fileStruct.setTerminationMessage("Reached the end of the file");
+        return fileStruct;
     }
 
     private static long startOfScanJPG(BufferedInputStream in) throws IOException {
