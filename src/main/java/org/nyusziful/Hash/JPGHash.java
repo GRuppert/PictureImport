@@ -6,6 +6,7 @@
 package org.nyusziful.Hash;
 
 import java.io.*;
+import java.lang.reflect.Array;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -48,16 +49,84 @@ public class JPGHash implements Hasher {
     public static void main(String[] args) {
 
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
-        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806_windows.jpg");
+        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806_bak.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
         final JPEGMediaFileStruct fileStruct = scan(file);
         fileStruct.drawMap();
         file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806.jpg");
+//        addBackupExif(file);
 //        final JPEGMediaFileStruct fileStruct2 = scan(file);
 //        fileStruct2.drawMap();
     }
+
+    public static boolean addBackupExif(File file) {
+        final JPEGMediaFileStruct fileStruct = scan(file);
+        if (!fileStruct.isBackup()) {
+            byte[] buffer = new byte[4096];
+            try {
+                FileInputStream fis = new FileInputStream(file);
+                BufferedInputStream bis = new BufferedInputStream(fis);
+
+                FileOutputStream fos = new FileOutputStream(file.getPath().concat(".bak"));
+                BufferedOutputStream bos = new BufferedOutputStream(fos);
+
+                for (JPEGSegment segment : fileStruct.getSegments()) {
+                    segment.getStartAddress();
+                    byte[] bytes = writeBytes(bis, bos, segment.getLength());
+                    if (segment.getId().equals("Exif\0\0")) {
+                        bytes = turnExiftoBackup(bytes);
+                        bos.write(bytes);
+                    }
+                }
+
+                bis.close();
+                bos.close();
+                return true;
+            } catch (IOException e)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static byte[] turnExiftoBackup(byte[] bytes) {
+        final byte[] chars = "Backup".getBytes();
+        for (int i = 0; i < chars.length; i++) {
+            bytes[i+4] = chars[i];
+        }
+        return bytes;
+    }
+
+    private static byte[] writeBytes(BufferedInputStream bis, BufferedOutputStream bos, long length) throws IOException {
+        byte[] segment = new byte[0];
+        int numBytes;
+        byte[] buffer = new byte[4096];
+        long read = 0;
+        while ((numBytes = bis.read(buffer, 0, (int)(Math.min(buffer.length, length - read))))!= -1 && read < length)
+        {
+            read += numBytes;
+            byte[] bufferfilled = Arrays.copyOfRange(buffer, 0, numBytes);
+            bos.write(bufferfilled);
+            segment = concatenate(segment, bufferfilled);
+        }
+        return segment;
+    }
+
+    public static byte[] concatenate(byte[] a, byte[] b) {
+        int aLen = a.length;
+        int bLen = b.length;
+
+        @SuppressWarnings("unchecked")
+        byte[] c = (byte[]) Array.newInstance(a.getClass().getComponentType(), aLen + bLen);
+        System.arraycopy(a, 0, c, 0, aLen);
+        System.arraycopy(b, 0, c, aLen, bLen);
+
+        return c;
+    }
+
 
     private static JPEGSegment readScan(BufferedInputStream in, AtomicInteger marker, long payLoadAddress) throws IOException {
         int segmentMarker = marker.get();
@@ -135,12 +204,26 @@ public class JPGHash implements Hasher {
     public static JPEGMediaFileStruct scan(File file) {
         JPEGMediaFileStruct fileStruct = new JPEGMediaFileStruct(file);
         JPGCursor cursor = new JPGCursor(file);
-        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream, 65000);) {
+        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream);) {
             cursor.setBufferedInStream(fileStream);
             Integer lastReadByte = -1;
             boolean scan = false;
-            cursor.position = startOfImageJPG(fileStream);
-            if (cursor.position == -1) {fileStruct.setTerminationMessage("No \"Start Of Image\" found"); return fileStruct;}
+            OUTER:
+            while ((lastReadByte = fileStream.read()) != -1) {
+                cursor.position++;
+                switch (lastReadByte) {
+                    case 0:
+                        break;
+                    case 0xFF://255
+                        lastReadByte = fileStream.read();
+                        cursor.position++;
+                        if (lastReadByte == 0xD8 /*216*/) {break OUTER;}
+                    default:
+                        fileStruct.setTerminationMessage("No \"Start Of Image\" found");
+                        return fileStruct;
+                }
+            }
+            fileStruct.addSegment(new JPEGSegment(cursor.position + 1 - markerLength, 0 + markerLength, 216));
             Boolean marker = false;
             while (scan || (lastReadByte = fileStream.read()) != -1) {
                 if (!scan) {cursor.position++; }
@@ -163,7 +246,7 @@ public class JPGHash implements Hasher {
                         AtomicInteger segmentMarker = new AtomicInteger(lastReadByte);
                         JPEGSegment segment = readSegment(fileStream, segmentMarker, cursor.position + 1, file);
                         if (segment == null) {
-                            fileStruct.setTerminationMessage("Segment " + JPEGSegment.getMarker(lastReadByte) + " read error");
+                            fileStruct.setTerminationMessage("Segment " + JPEGSegment.getMarkerText(lastReadByte) + " read error");
                             return fileStruct;
                         }
                         lastReadByte = segmentMarker.get();
@@ -172,7 +255,7 @@ public class JPGHash implements Hasher {
     //                    lastReadBytePosition += bytesLeft;
     //                    System.out.println(Long.toHexString(bytesLeft));
                         if (!skipBytes(fileStream, bytesLeft)) {
-                            fileStruct.setTerminationMessage("Reached the end of the file during reading segment " + segment.getMarker() + " at " + segment.getStartAddress());
+                            fileStruct.setTerminationMessage("Reached the end of the file during reading segment " + segment.getMarkerText() + " at " + segment.getStartAddress());
                             return fileStruct;
                         }
                         cursor.position += segment.getLength() - markerLength;
@@ -230,8 +313,28 @@ public class JPGHash implements Hasher {
         }
         return -1;  
     }
-    
+
     public static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
+        final JPEGMediaFileStruct fileStruct = scan(file);
+        final JPEGSegment mainImage = fileStruct.getMainImage();
+        if (mainImage == null) throw new IOException("No valid image found");
+        in.on(false);
+        md5Digest.reset();
+        skipBytes(in, mainImage.getStartAddress() + markerLength);
+        in.on(true);
+        int c = 0;
+        int oldc;
+        do {
+            oldc = c;
+            c = in.read();
+            if (c == -1) {
+                throw new IOException("File ended unexpectedly");
+            }
+        } while (!(oldc == 0xFF && c == 0xD9/*217*/));
+        return md5Digest.digest();
+    }
+
+    public static byte[] read_Digest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
         byte[] digest = null;
         int scanLength;
         int scanLengthOld = 0;

@@ -73,8 +73,9 @@ public class MediaFileHash {
                     break;
             }
         }  catch(IOException e) {
-            errorOut("Hash", e);         
-        } 
+//            errorOut("Hash", e);
+            return EMPTYHASH;
+        }
         if (digest == null) {
             return EMPTYHASH;
         }

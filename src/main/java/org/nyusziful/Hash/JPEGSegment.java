@@ -33,11 +33,11 @@ public class JPEGSegment implements MediaFileSegment {
         return length - read;
     }
 
-    public String getMarker() {
-        return getMarker(marker);
+    public String getMarkerText() {
+        return getMarkerText(marker);
     }
 
-    public static String getMarker(int marker) {
+    public static String getMarkerText(int marker) {
         String markerText = String.format("0xFF%02X ", marker);
         switch (marker) {
             case 216:
@@ -119,9 +119,10 @@ public class JPEGSegment implements MediaFileSegment {
 
     @Override
     public boolean equals(Object obj) {
+        //TODO check
         if (obj != null && this.getClass().equals(obj.getClass())) {
             JPEGSegment otherSegment = (JPEGSegment) obj;
-            if (this.getMarker().equals(otherSegment.getMarker()))
+            if (this.marker == otherSegment.marker)
                 if (this.getLength() == otherSegment.getLength())
                     if (this.getStartAddress() == otherSegment.getStartAddress())
                         if (this.getId().equals(otherSegment.getId()))
@@ -133,7 +134,7 @@ public class JPEGSegment implements MediaFileSegment {
 
     @Override
     public String toString() {
-        String header = String.format("%,8d / 0x%8X  " + this.getMarker() + "%n", this.getStartAddress(), this.getStartAddress());
+        String header = String.format("%,8d / 0x%8X  " + this.getMarkerText() + "%n", this.getStartAddress(), this.getStartAddress());
         if (length > 0) {
             return header;
         } else {
@@ -148,5 +149,9 @@ public class JPEGSegment implements MediaFileSegment {
 
     public void setData(MediaFileStruct data) {
         this.data = data;
+    }
+
+    public int getMarker() {
+        return marker;
     }
 }

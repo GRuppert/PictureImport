@@ -6,6 +6,8 @@ import java.util.List;
 
 public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
     private File file;
+    private boolean backup = false;
+    private JPEGSegment mainImage;
     private List<JPEGSegment> segments;
     private String terminationMessage;
     private List<String> warningMessages;
@@ -18,6 +20,8 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
 
     @Override
     public void addSegment(JPEGSegment segment) {
+        if ("Backup".equals(segment.getId())) backup = true;
+        if (218 == segment.getMarker() && (mainImage == null || mainImage.getLength() < segment.getLength())) {mainImage = segment;}
         segments.add(segment);
     }
 
@@ -26,7 +30,7 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
         System.out.format(file.getName() + " size: %,8d bytes %n", file.length());
         long readedBytes = 0;
         for (JPEGSegment segment : segments) {
-            System.out.format("%,10d / 0x%8X  " + segment.getMarker() + "%n%,10d / 0x%8X " + segment.getId() + "%n", segment.getStartAddress(), segment.getStartAddress(), segment.getLength(), segment.getLength());
+            System.out.format("%,10d / 0x%8X  " + segment.getMarkerText() + "%n%,10d / 0x%8X " + segment.getId() + "%n", segment.getStartAddress(), segment.getStartAddress(), segment.getLength(), segment.getLength());
             readedBytes += segment.getLength();
             if (segment.getData() != null) segment.getData().drawMap();
         }
@@ -61,5 +65,17 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
     @Override
     public JPEGSegment getSegment(int i) {
         return segments.get(i);
+    }
+
+    public List<JPEGSegment> getSegments() {
+        return segments;
+    }
+
+    public boolean isBackup() {
+        return backup;
+    }
+
+    public JPEGSegment getMainImage() {
+        return mainImage;
     }
 }

@@ -17,7 +17,7 @@ import java.io.File;
 public class JPGCursor {
     private final File file;
     private int marker;
-    long position;
+    long position = -1;
     private BufferedInputStream bufferedInStream;
 
     public JPGCursor(File file) {
