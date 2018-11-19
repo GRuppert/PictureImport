@@ -71,6 +71,13 @@ public class MediaFileHash {
                 case "mp4":
                     digest = MP4Hash.readDigest(file, fileStream, md5Digest, in);
                     break;
+                case "heif":
+                case "heifs":
+                case "heic":
+                case "heics":
+                case "avci":
+                case "avcs":
+                    break;
             }
         }  catch(IOException e) {
 //            errorOut("Hash", e);

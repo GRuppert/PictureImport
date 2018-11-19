@@ -4,12 +4,14 @@ import java.util.ArrayList;
 
 public class ImageFileDirectory implements MediaFileSegment {
     private long startAddress;
+    private String id;
     private ArrayList<ImageFileDirectory> subDirs;
     private ArrayList<IfdTag> tags;
     private long length = 0;
 
-    public ImageFileDirectory(long startAddress) {
+    public ImageFileDirectory(long startAddress, String id) {
         this.startAddress = startAddress;
+        this.id = id;
         subDirs = new ArrayList<>();
         tags = new ArrayList<>();
     }

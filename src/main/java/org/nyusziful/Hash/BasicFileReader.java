@@ -55,4 +55,18 @@ public class BasicFileReader {
         return result;
     }
 
+    public static long readEndianValue(BufferedRandomAccessFile in, int length, boolean endian) throws IOException {
+        long result = 0;
+        for(int i=0; i<length; i++) {
+            long c = in.read();
+            if (endian) {
+                c = (long) (c * Math.pow(256, i));
+            } else {
+                c = (long) (c * Math.pow(256, length-1-i));
+            }
+            result += c;
+        }
+        return result;
+    }
+
 }

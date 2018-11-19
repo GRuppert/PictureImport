@@ -159,13 +159,13 @@ public class TIFFHash implements Hasher {
     //700	, "	XMP
 
     private static boolean readSubDirectories(List<IfdTag> tags, TIFFMediaFileStruct tiffMediaFileStruct, ImageFileDirectory parent) throws IOException {
-        BufferedInputStream bufferedInputStream = tiffMediaFileStruct.getBufferedInputStream();
+        BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
         for (IfdTag ifdTag : tags) {
             long subIFDsPointer = ifdTag.offset;
             long subIFDs = ifdTag.count;
             int subIFDsPointerLength = ifdTag.getTypeLength();
             if (subIFDs == 1) {
-                if(!readIFDirectory(subIFDsPointer, tiffMediaFileStruct, parent)) return false;
+                if(!readIFDirectory(subIFDsPointer, IfdNames.getTag(ifdTag.tagId), tiffMediaFileStruct, parent)) return false;
             } else if (subIFDs > 1) {
                 for (int j = 0; j < subIFDs; j++) {
                     if (!tiffMediaFileStruct.jumpTo(subIFDsPointer + j * subIFDsPointerLength)) return false;
@@ -174,18 +174,18 @@ public class TIFFHash implements Hasher {
                     if (!skipBytes(bufferedInputStream, subIFDsPointer)) {return false;}
                     if (!skipBytes(bufferedInputStream, j * subIFDsPointerLength)) {return false;}*/
                     long nextSubIFD = readEndianValue(bufferedInputStream, subIFDsPointerLength, tiffMediaFileStruct.getEndian());
-                    if(!readIFDirectory(nextSubIFD, tiffMediaFileStruct, parent)) return false;
+                    if(!readIFDirectory(nextSubIFD, IfdNames.getTag(ifdTag.tagId), tiffMediaFileStruct, parent)) return false;
                 }
             }
         }
         return true;
     }
 
-    private static boolean readIFDirectory(long thisIFD, TIFFMediaFileStruct tiffMediaFileStruct, ImageFileDirectory parent) throws IOException {
-        BufferedInputStream bufferedInputStream = tiffMediaFileStruct.getBufferedInputStream();
-        long readFromBuffer = -8192;
+    private static boolean readIFDirectory(long thisIFD, String id, TIFFMediaFileStruct tiffMediaFileStruct, ImageFileDirectory parent) throws IOException {
+        BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
+        long readFromBuffer = -1;
         if (!tiffMediaFileStruct.jumpTo(thisIFD)) return false;
-        ImageFileDirectory imageFileDirectory = new ImageFileDirectory(thisIFD);
+        ImageFileDirectory imageFileDirectory = new ImageFileDirectory(thisIFD, id);
         parent.addTIFFDirectory(imageFileDirectory);
         int tagEntryCount = (int) readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
         readFromBuffer += 2;
@@ -196,7 +196,7 @@ public class TIFFHash implements Hasher {
         boolean mainImage = false;
         ArrayList<IfdTag> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
-            IfdTag ifdTag = new IfdTag(tiffMediaFileStruct.getRandomAccessFile().getFilePointer() + readFromBuffer);
+            IfdTag ifdTag = new IfdTag(tiffMediaFileStruct.getBufferedRandomAccessFile().getFilePointer() + readFromBuffer);
             ifdTag.tagId = (int) readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
             ifdTag.type = (int) readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
             ifdTag.count = readEndianValue(bufferedInputStream, 4, tiffMediaFileStruct.getEndian());
@@ -207,7 +207,7 @@ public class TIFFHash implements Hasher {
  */
             if (ifdTag.tagId == 330 ) recognizedSubDirs.add(ifdTag); //SubIFD
             if (tiffMediaFileStruct.getMode() == TIFFMediaFileStruct.MAPPING) {
-                if (ifdTag.tagId == 34665 ) recognizedSubDirs.add(ifdTag); //Exif
+                if (ifdTag.tagId == 34665 ) recognizedSubDirs.add(ifdTag); //Exif IFD
     //            if (ifdTag.tagId == 33723 ) recognizedSubDirs.add(ifdTag); //IPTC
     //            if (ifdTag.tagId == 34152 ) recognizedSubDirs.add(ifdTag); //IPTC
     //            if (ifdTag.tagId == 34377 ) recognizedSubDirs.add(ifdTag); //Photoshop
@@ -215,7 +215,7 @@ public class TIFFHash implements Hasher {
                 if (ifdTag.tagId == 34853 ) recognizedSubDirs.add(ifdTag); //GPS
 //                if (ifdTag.tagId == 37500 ) recognizedSubDirs.add(ifdTag); //MakerNote
                 if (ifdTag.tagId == 37724 ) recognizedSubDirs.add(ifdTag); //Photoshop DocumentData Tags
-    //            if (ifdTag.tagId == 40965 ) recognizedSubDirs.add(ifdTag); //InteropOffset
+                if (ifdTag.tagId == 40965 ) recognizedSubDirs.add(ifdTag); //InteropOffset
                 if (ifdTag.tagId == 50740 ) recognizedSubDirs.add(ifdTag); //MakerNote
                 if (ifdTag.tagId == 50828 ) recognizedSubDirs.add(ifdTag); //DNG OriginalRaw Tags
     //            if (ifdTag.tagId == 50831 ) recognizedSubDirs.add(ifdTag); //ICC*/
@@ -257,15 +257,18 @@ public class TIFFHash implements Hasher {
         if (nextIFD == 0) {
             return true;
         }
-        return readIFDirectory(nextIFD, tiffMediaFileStruct, parent);
+        return readIFDirectory(nextIFD, "IFD", tiffMediaFileStruct, parent);
     }
 
     public static TIFFMediaFileStruct scan(File file, Long startPosition) {
-        try (TIFFMediaFileStruct tiffMediaFileStruct = new TIFFMediaFileStruct(file, 0, TIFFMediaFileStruct.MAPPING)) {
+        try (TIFFMediaFileStruct tiffMediaFileStruct = new TIFFMediaFileStruct(file, startPosition, TIFFMediaFileStruct.MAPPING)) {
             try {
-                BufferedInputStream bufferedInputStream = tiffMediaFileStruct.getBufferedInputStream();
-                skipBytes(bufferedInputStream, startPosition);
-                bufferedInputStream.mark(0);
+                BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
+                if (!tiffMediaFileStruct.jumpTo(0)) {
+                    tiffMediaFileStruct.setTerminationMessage("Starting point " + startPosition + " could not be reached");
+                    return tiffMediaFileStruct;
+                }
+//                bufferedInputStream.mark(0);
                 int readByte;
                 Boolean endian = null;
                 readByte = bufferedInputStream.read();
@@ -281,9 +284,9 @@ public class TIFFHash implements Hasher {
                 long nextIFD = readEndianValue(bufferedInputStream, 4, endian);
                 if (nextIFD == -1) {tiffMediaFileStruct.setTerminationMessage("File end reached before first directory."); return tiffMediaFileStruct;}
                 if (nextIFD == 0) {tiffMediaFileStruct.setTerminationMessage("File first pointer is zero."); return tiffMediaFileStruct;}
-                ImageFileDirectory root = new ImageFileDirectory(startPosition);
+                ImageFileDirectory root = new ImageFileDirectory(startPosition, "root");
                 tiffMediaFileStruct.addSegment(root);
-                if (readIFDirectory(nextIFD, tiffMediaFileStruct, root)) tiffMediaFileStruct.setTerminationMessage("Successful."); else tiffMediaFileStruct.setTerminationMessage("Unsuccessful.");
+                if (readIFDirectory(nextIFD, "IFD0", tiffMediaFileStruct, root)) tiffMediaFileStruct.setTerminationMessage("Successful."); else tiffMediaFileStruct.setTerminationMessage("Unsuccessful.");
                 return tiffMediaFileStruct;
             } catch (FileNotFoundException e) {
                 tiffMediaFileStruct.setTerminationMessage("File couldn't be opened.");
@@ -300,8 +303,8 @@ public class TIFFHash implements Hasher {
     public static byte[] readDigest(File file, BufferedInputStream buffered_InputStream) {
         try (TIFFMediaFileStruct tiffMediaFileStruct = new TIFFMediaFileStruct(file, 0, TIFFMediaFileStruct.HASHING)) {
             try {
-                BufferedInputStream bufferedInputStream = tiffMediaFileStruct.getBufferedInputStream();
-                bufferedInputStream.mark(0);
+                BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
+//                bufferedInputStream.mark(0);
                 int c;
                 long j = 0;
                 Boolean endian = null;
@@ -326,9 +329,9 @@ public class TIFFHash implements Hasher {
                 if (nextIFD == 0) {
                     return null;
                 }
-                ImageFileDirectory root = new ImageFileDirectory(0);
+                ImageFileDirectory root = new ImageFileDirectory(0, "root");
                 tiffMediaFileStruct.addSegment(root);
-                if (readIFDirectory(nextIFD, tiffMediaFileStruct, root))
+                if (readIFDirectory(nextIFD, "IFD0", tiffMediaFileStruct, root))
                     tiffMediaFileStruct.setTerminationMessage("Successful.");
                 else tiffMediaFileStruct.setTerminationMessage("Unsuccessful.");
             } catch (FileNotFoundException e) {
@@ -338,7 +341,7 @@ public class TIFFHash implements Hasher {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-//        tiffMediaFileStruct.drawMap();
+        tiffMediaFileStruct.drawMap();
             return tiffMediaFileStruct.getDigestBytes();
         } catch (IOException e) {
             return null;
