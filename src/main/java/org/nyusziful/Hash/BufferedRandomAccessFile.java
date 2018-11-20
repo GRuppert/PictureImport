@@ -253,13 +253,17 @@ public class BufferedRandomAccessFile implements Closeable {
         return raf.getFilePointer();
     }
 
-    public String readLine() throws IOException {
+        public long getFilePosition() throws IOException {
+            return raf.getFilePointer() + bufferPos;
+        }
+
+        public String readLine() throws IOException {
         needsFill = true;
         return raf.readLine();
     }
 
-    public byte read() throws IOException {
-        return readByte();
+    public int read() throws IOException {
+        return readByte() & 0xFF;
     }
 
     public byte readByte() throws IOException {

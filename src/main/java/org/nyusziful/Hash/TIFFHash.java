@@ -183,12 +183,10 @@ public class TIFFHash implements Hasher {
 
     private static boolean readIFDirectory(long thisIFD, String id, TIFFMediaFileStruct tiffMediaFileStruct, ImageFileDirectory parent) throws IOException {
         BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
-        long readFromBuffer = -1;
         if (!tiffMediaFileStruct.jumpTo(thisIFD)) return false;
         ImageFileDirectory imageFileDirectory = new ImageFileDirectory(thisIFD, id);
         parent.addTIFFDirectory(imageFileDirectory);
         int tagEntryCount = (int) readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
-        readFromBuffer += 2;
         ArrayList<IfdTag> recognizedSubDirs = new ArrayList<>();
         long subIFDs = 0;
         long subIFDsPointer = 0;
@@ -196,12 +194,11 @@ public class TIFFHash implements Hasher {
         boolean mainImage = false;
         ArrayList<IfdTag> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
-            IfdTag ifdTag = new IfdTag(tiffMediaFileStruct.getBufferedRandomAccessFile().getFilePointer() + readFromBuffer);
+            IfdTag ifdTag = new IfdTag(tiffMediaFileStruct.getBufferedRandomAccessFile().getFilePosition());
             ifdTag.tagId = (int) readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
             ifdTag.type = (int) readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
             ifdTag.count = readEndianValue(bufferedInputStream, 4, tiffMediaFileStruct.getEndian());
             ifdTag.offset = readEndianValue(bufferedInputStream, 4, tiffMediaFileStruct.getEndian());
-            readFromBuffer += 12;
 /*
 *Handling of known Tags
  */
