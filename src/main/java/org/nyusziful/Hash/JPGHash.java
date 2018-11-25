@@ -168,7 +168,7 @@ public class JPGHash implements Hasher {
 * */
         JPEGSegment segment = new JPEGSegment(payLoadAddress - markerLength, lengthPayload + markerLength, segmentMarker);
         if (Arrays.equals(b, new byte[] {0x45,0x78,0x69,0x66,0x00,0x00})) {
-            TIFFMediaFileStruct scan = TIFFHash.scan(file, payLoadAddress + read - markerLength);
+            TIFFMediaFileStruct scan = TIFFHash.scan(file, payLoadAddress + read - markerLength, TIFFMediaFileStruct.MAPPING);
             segment.setData(scan);
         }
         String header = new String(b);

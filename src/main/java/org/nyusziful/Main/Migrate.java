@@ -21,7 +21,6 @@ import static org.nyusziful.Hash.MediaFileHash.getHash;
 import static org.nyusziful.Main.StaticTools.getDirectoryElementsNonRecursive;
 import static org.nyusziful.Main.StaticTools.supportedFileType;
 import static org.nyusziful.Main.StaticTools.supportedMediaFileType;
-import static org.nyusziful.Rename.AnalyzingMediaFile.MOVE;
 
 public class Migrate {
     private long fileSizeCountTotal = 0;
@@ -310,6 +309,16 @@ public class Migrate {
         progressDialog.setVisible(true);
         return progressDialog;
     }
+
+    /**
+     * Media Hash
+     * Hash
+     * File
+     * Orig Hash
+     *
+     * @param path
+     * @param start
+     */
 
     private void listFiles(Path path, int start) {
         fileSizeCountTotal = 0;

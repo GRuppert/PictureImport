@@ -16,6 +16,7 @@ import java.util.HashMap;
 public class IfdTag {
     long address;
     int tagId;
+    String tagIdName;
     int type;
     long count;
     long offset;
