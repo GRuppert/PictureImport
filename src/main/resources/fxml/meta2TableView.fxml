@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
-<TableView editable="true" items="${controller.meta}" xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Main.Meta2TableViewController">
+<TableView editable="true" items="${controller.meta}" xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.pictureorganizer.GUI.Meta2TableViewController">
     <columnResizePolicy><TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/></columnResizePolicy>
     <columns>
         <TableColumn fx:id="dateFormatCol" text="dateFormat" prefWidth="50" resizable="false" editable="true">
