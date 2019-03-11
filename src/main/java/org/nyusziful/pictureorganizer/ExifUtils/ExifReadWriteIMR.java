@@ -166,7 +166,7 @@ public class ExifReadWriteIMR {
     public static ArrayList<String[]> readMetaNew(File file) throws ImageProcessingException, IOException {
         ArrayList<String[]> tags = new ArrayList();
         Metadata metadata = ImageMetadataReader.readMetadata(file);
-        metadata.getDirectories().forEach(directory -> directory.getTags().stream().forEach(tag -> tags.add(new String[]{tag.getTagName(), tag.getDescription()})));
+        metadata.getDirectories().forEach(directory -> directory.getTags().stream().forEach(tag -> {if (tag.getDescription() != null && !tag.getDescription().replaceAll("\\s+","").equals("")) tags.add(new String[]{tag.getTagName(), tag.getDescription()});}));
         return tags;
     }
 }

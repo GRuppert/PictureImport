@@ -14,6 +14,7 @@ import java.net.URL;
 import java.util.ArrayList;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
@@ -35,26 +36,29 @@ public class ExifPreReadTest {
         try {
             ArrayList<String[]> strings = ExifReadWriteIMR.readMeta(file);
             ArrayList<String[]> strings2 = ExifReadWriteIMR.readMetaNew(file);
+            ArrayList<String[]> common = new ArrayList<>();
+            ArrayList<String[]> common2 = new ArrayList<>();
             strings.stream().forEach(stringArray1 -> {
                 strings2.stream().forEach(stringArray2 -> {
                     if (stringArray2[0].equals(stringArray1[0]) &&
                        (stringArray2[1] == null && stringArray1[1] == null) ||
-                       ((stringArray2[1] == null && stringArray1[1] == null) && stringArray2[1].equals(stringArray1[1]))
+                       ((stringArray2[1] != null && stringArray1[1] != null) && stringArray2[1].equals(stringArray1[1]))
                     ) {
-                        strings.remove(stringArray1); strings2.remove(stringArray2);
+                        common.add(stringArray1);
+                        common2.add(stringArray2);
                     }
                 });
             });
-            System.out.println("a");
-
+            strings.removeAll(common);
+            strings2.removeAll(common2);
+            System.out.print("Ennyi");
+            assertTrue((strings.size() == 0 && strings2.size() == 0));
+            return;
         } catch (ImageProcessingException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-        ArrayList expResult = null;
-        ArrayList result = ExifReadWrite.readMeta(file);
-        assertEquals(expResult, result);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
     }

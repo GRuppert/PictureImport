@@ -18,7 +18,6 @@ import static org.junit.Assert.fail;
  *
  * @author gabor
  */
-@RunWith(Parameterized.class)
 public class ExifWriteTest {
     /**
      * Test of updateExif method, of class ExifReadWrite.
