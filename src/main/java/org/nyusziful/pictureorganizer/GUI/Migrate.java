@@ -26,7 +26,8 @@ public class Migrate {
     private static long fileCount = 0;
 
     public static void main(String[] args) {
-        listFiles(Paths.get("E:\\Képek"), 7, 0);
+        listFiles(Paths.get("G:\\Pictures\\Photos"), 1, 0);
+        listFiles(Paths.get("E:\\Képek"), 1, 0);
     }
 
     private void osNev() {
