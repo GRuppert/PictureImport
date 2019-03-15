@@ -24,6 +24,7 @@ import org.apache.logging.log4j.Logger;
 public class JPGHash implements Hasher {
     private static final int markerLength = 2;
     private static final Logger LOG = LogManager.getLogger(JPGHash.class);
+    private static final String BACKUPID = "Backup";
     
     private static long startOfImageJPG(BufferedInputStream in) throws IOException {
         int lastReadByte;
@@ -48,14 +49,20 @@ public class JPGHash implements Hasher {
     public static void main(String[] args) {
 
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
-        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806_bak_digi.jpg");
+//        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806_bak_digi.jpg");
+        File file  = new File("e:\\20180717_183213.jpg");
+//        addBackupExif(file);
+        file  = new File("e:\\20180717_183213bak_digi.jpg");
+
+        System.out.println(file.getName() + " backup equals exif: " + checkBackupExif(file));
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
-        final JPEGMediaFileStruct fileStruct = scan(file);
+/*        final JPEGMediaFileStruct fileStruct = scan(file);
         fileStruct.drawMap();
         file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806.jpg");
         addBackupExif(file);
+        */
 //        final JPEGMediaFileStruct fileStruct2 = scan(file);
 //        fileStruct2.drawMap();
     }
@@ -72,7 +79,7 @@ public class JPGHash implements Hasher {
                 BufferedOutputStream bos = new BufferedOutputStream(fos);
 
                 for (JPEGSegment segment : fileStruct.getSegments()) {
-                    segment.getStartAddress();
+                    long startAddress = segment.getStartAddress();
                     byte[] bytes = writeBytes(bis, bos, segment.getLength());
                     if (segment.getId().equals("Exif\0\0")) {
                         bytes = turnExiftoBackup(bytes);
@@ -91,8 +98,37 @@ public class JPGHash implements Hasher {
         return true;
     }
 
+    public static boolean checkBackupExif(File file) {
+        final JPEGMediaFileStruct fileStruct = scan(file);
+        if (fileStruct.isBackup()) {
+            try {
+                FileInputStream fis = new FileInputStream(file);
+                BufferedInputStream bis = new BufferedInputStream(fis);
+                byte[] exif = null;
+                byte[] backup = null;
+                for (JPEGSegment segment : fileStruct.getSegments()) {
+                    byte[] segmentContent = BasicFileReader.readBytes(bis,(int) segment.getLength());
+                    segment.getStartAddress();
+                    if (segment.getId().equals("Exif\0\0")) {
+                        exif = Arrays.copyOfRange(segmentContent, 4+6, (int) (segment.getLength()-4-6));
+                    }
+                    if (segment.getId().equals(BACKUPID)) {
+                        backup = Arrays.copyOfRange(segmentContent, 4+6, (int) (segment.getLength()-4-6));
+                    }
+                }
+                if (exif == null || backup == null) return false;
+                if (Arrays.equals(exif, backup)) return true;
+            } catch (IOException e)
+            {
+                return false;
+            }
+
+        }
+        return false;
+    }
+
     private static byte[] turnExiftoBackup(byte[] bytes) {
-        final byte[] chars = "Backup".getBytes();
+        final byte[] chars = BACKUPID.getBytes();
         for (int i = 0; i < chars.length; i++) {
             bytes[i+4] = chars[i];
         }
@@ -162,6 +198,7 @@ public class JPGHash implements Hasher {
 /*
 * APP1 “Exif\0\0” / "45786966 0000" -> TIFF structure
 * APP1 „http://ns.adobe.com/xap/1.0/x00”
+* APP1 "backup" Exif backup
 * APP13 IPTC usually "Photoshop 3.0\000", but also 'Adobe_Photoshop2.5:',
 * APP2 ICC 0..11 ICC_PROFILE\0 12 icc chunk-count 13 icc total chunks
 * */
