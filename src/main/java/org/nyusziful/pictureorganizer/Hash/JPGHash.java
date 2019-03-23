@@ -8,6 +8,7 @@ package org.nyusziful.pictureorganizer.Hash;
 import java.io.*;
 import java.lang.reflect.Array;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.nyusziful.pictureorganizer.ExifUtils.ExifReadWrite;
 
 
 /**
@@ -54,7 +56,8 @@ public class JPGHash implements Hasher {
 //        addBackupExif(file);
         file  = new File("e:\\20180717_183213bak_digi.jpg");
 
-        System.out.println(file.getName() + " backup equals exif: " + checkBackupExif(file));
+        if (!checkBackupExif(file)) {
+        }
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
@@ -118,6 +121,23 @@ public class JPGHash implements Hasher {
                 }
                 if (exif == null || backup == null) return false;
                 if (Arrays.equals(exif, backup)) return true;
+                else {
+                    StringBuilder exifSb = new StringBuilder();
+                    StringBuilder backupSb = new StringBuilder();
+                    for (int i = 0; i < exif.length; i++) {
+                        if (i+1 < exif.length && i+1 < backup.length && exif[i] != backup[i]) {
+                            exifSb.append(new String(new byte[] {exif[i]}));
+                            backupSb.append(new String(new byte[] {backup[i]}));
+                            if (i+1 < exif.length && i+1 < backup.length && (exif[i+1] == backup[i+1])) {
+                                exifSb.append(" : ");
+                                backupSb.append(" : ");
+                            }
+                        }
+                    }
+                    System.out.println(exifSb.toString());
+                    System.out.println("Backup");
+                    System.out.println(backupSb.toString());
+                }
             } catch (IOException e)
             {
                 return false;
