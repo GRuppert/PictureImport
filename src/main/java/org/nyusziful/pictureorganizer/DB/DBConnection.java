@@ -33,49 +33,6 @@ public class DBConnection {
         }
     }
 
-    public static void saveFile(String filename, String path, int driveId, String hash, long size, Timestamp dateMod) {
-        try {
-            Connection conn = getConnection();
-            Statement s = conn.createStatement();
-            String selPrevious = "SELECT id FROM file WHERE drive_id = " + driveId + " AND filename = '" + filename + "' AND path = '" + path + "'";
-            s.execute(selPrevious);
-            ResultSet rs = s.getResultSet();
-            if ((rs != null) && (rs.next())) {
-                int id = rs.getInt(1);
-                String selTable = "UPDATE file SET image_id = '" + hash + "', size = '" + size + "', date_mod = '" + dateMod + "' WHERE id = " + id;
-                s.execute(selTable);
-            } else {
-                String selTable = "INSERT INTO file (filename, path, drive_id, image_id, size, date_mod)" +
-                        " VALUES ('" + filename + "', '" + path + "', '" + driveId + "', '" + hash + "', '" + size + "', '" + dateMod + "')";
-                s.execute(selTable);
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    public static int checkFile(String filename, String path, int driveId, long size, Timestamp dateMod) {
-        try {
-            Connection conn = getConnection();
-            Statement s = conn.createStatement();
-            dateMod.setNanos(0);
-            String selPrevious = "SELECT id FROM file WHERE drive_id = " + driveId + " AND filename = '" + filename + "' AND path = '" + path  + "' AND size = '" + size  + "' AND date_mod = '" + dateMod + "'";
-            s.execute(selPrevious);
-            ResultSet rs = s.getResultSet();
-            if ((rs != null) && (rs.next())) {
-                return rs.getInt(1);
-            }
-            return -1;
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
-        return -2;
-    }
-
-    public static void saveImage(String hash, String origFilenam, Date dateTaken) {
-
-    }
-
     public static Connection getConnection() {
         if (connection==null) {
             try {
@@ -130,4 +87,48 @@ public class DBConnection {
             ex.printStackTrace();
         }
     }
+
+    public static void saveFile(String filename, String path, int driveId, String fullhash, String hash, long size, Timestamp dateMod) {
+        try {
+            Connection conn = getConnection();
+            Statement s = conn.createStatement();
+            String selPrevious = "SELECT id FROM file WHERE drive_id = " + driveId + " AND filename = '" + filename + "' AND path = '" + path + "'";
+            s.execute(selPrevious);
+            ResultSet rs = s.getResultSet();
+            if ((rs != null) && (rs.next())) {
+                int id = rs.getInt(1);
+                String selTable = "UPDATE file SET image_id = '" + hash + "',  filehash = '" + fullhash + "', size = '" + size + "', date_mod = '" + dateMod + "' WHERE id = " + id;
+                s.execute(selTable);
+            } else {
+                String selTable = "INSERT INTO file (filename,  filehash, path, drive_id, image_id, size, date_mod)" +
+                        " VALUES ('" + filename + "', '" + fullhash + "', '" + path + "', '" + driveId + "', '" + hash + "', '" + size + "', '" + dateMod + "')";
+                s.execute(selTable);
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    public static int checkFile(String filename, String path, int driveId, long size, Timestamp dateMod) {
+        try {
+            Connection conn = getConnection();
+            Statement s = conn.createStatement();
+            dateMod.setNanos(0);
+            String selPrevious = "SELECT id FROM file WHERE drive_id = " + driveId + " AND filename = '" + filename + "' AND path = '" + path  + "' AND size = '" + size  + "' AND date_mod = '" + dateMod + "'";
+            s.execute(selPrevious);
+            ResultSet rs = s.getResultSet();
+            if ((rs != null) && (rs.next())) {
+                return rs.getInt(1);
+            }
+            return -1;
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+        return -2;
+    }
+
+    public static void saveImage(String hash, String origFilenam, Date dateTaken) {
+
+    }
+
 }

@@ -14,6 +14,7 @@ import java.nio.file.attribute.FileTime;
 import java.sql.Connection;
 import java.util.concurrent.TimeUnit;
 
+import static org.nyusziful.pictureorganizer.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.GUI.StaticTools.getDirectoryElementsNonRecursive;
 import static org.nyusziful.pictureorganizer.GUI.StaticTools.supportedFileType;
@@ -26,8 +27,9 @@ public class Migrate {
     private static long fileCount = 0;
 
     public static void main(String[] args) {
-        listFiles(Paths.get("G:\\Pictures\\Photos"), 1, 0);
-        listFiles(Paths.get("E:\\Képek"), 1, 0);
+//        listFiles(Paths.get("G:\\Pictures\\Photos"), 1, 0);
+//        listFiles(Paths.get("E:\\Képek"), 1, 0);
+        listFiles(Paths.get("E:\\Képek"), 7, 0);
     }
 
     private void osNev() {
@@ -313,7 +315,13 @@ public class Migrate {
         String path = file.getParent().toString().substring(2).replaceAll("\\\\", "/");
         String filename = file.getFileName().toString();
         if (force || DBConnection.checkFile(filename, path, driveID, filesize, new java.sql.Timestamp(dateMod.toMillis())) == -1) {
-            DBConnection.saveFile(filename, path, driveID, getHash(file.toFile()), filesize, new java.sql.Timestamp(dateMod.toMillis()));
+            long startTime = System.nanoTime();
+            final String fullHash = getFullHash(file.toFile());
+            final String hash = getHash(file.toFile());
+            System.out.println("Reading " + filename + " hashes took: " + (System.nanoTime()-startTime));
+            startTime = System.nanoTime();
+            DBConnection.saveFile(filename, path, driveID, fullHash, hash, filesize, new java.sql.Timestamp(dateMod.toMillis()));
+            System.out.println("Writing " + filename + "  to DB took: " + (System.nanoTime()-startTime));
         }
     }
 
@@ -385,7 +393,7 @@ public class Migrate {
                             long toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
                             System.out.print("Time elasped: " + toSeconds + "s Data processed: " + fileSizeCount/1048576 + "MB from " + fileCount + " files" );
                             System.out.println(" Avg. speed " + fileSizeCount/1048576/toSeconds + "MB/s ETA: " + toSeconds*(fileSizeCountTotal - fileSizeCount)/fileSizeCount + "s Data left: " + (fileSizeCountTotal-fileSizeCount)/1048576 + "MB from " + (fileCountTotal-fileCount) + " files");
-                            pw.flush();
+//                            pw.flush();
                         }
                         progressBar.setValue((int)(fileSizeCount/1000000));
                     }
