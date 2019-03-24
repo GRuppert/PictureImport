@@ -41,7 +41,7 @@ public class MP4Hash implements Hasher {
             } else if (length == -8) {
                 // until eof
                  EOF = true;
-            } else if (length == in.available()) {
+            } else if (length >= in.available()) {
                  EOF = true;
             }
             if (desc.equals("mdat")) {

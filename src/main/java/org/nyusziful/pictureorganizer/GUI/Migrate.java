@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.GUI;
 
 import org.nyusziful.pictureorganizer.DB.DBConnection;
+import org.nyusziful.pictureorganizer.DB.filePOJO;
 
 import javax.swing.*;
 import java.awt.*;
@@ -12,6 +13,8 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.sql.Connection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static org.nyusziful.pictureorganizer.Hash.MediaFileHash.getFullHash;
@@ -25,11 +28,14 @@ public class Migrate {
     private static long fileSizeCount = 0;
     private static long fileCountTotal = 0;
     private static long fileCount = 0;
+    private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
 //        listFiles(Paths.get("G:\\Pictures\\Photos"), 1, 0);
-//        listFiles(Paths.get("E:\\Képek"), 1, 0);
-        listFiles(Paths.get("E:\\Képek"), 7, 0);
+        listFiles(Paths.get("D:\\Képek"), 6, 0);
+
+//        listFiles(Paths.get("E:\\temp"), 2, 0);
+//        listFiles(Paths.get("E:\\Képek"), 7, 0);
     }
 
     private void osNev() {
@@ -311,20 +317,6 @@ public class Migrate {
     }
 
 
-    private static void writeFile(Path file, long filesize, int driveID, FileTime dateMod, boolean force) {
-        String path = file.getParent().toString().substring(2).replaceAll("\\\\", "/");
-        String filename = file.getFileName().toString();
-        if (force || DBConnection.checkFile(filename, path, driveID, filesize, new java.sql.Timestamp(dateMod.toMillis())) == -1) {
-            long startTime = System.nanoTime();
-            final String fullHash = getFullHash(file.toFile());
-            final String hash = getHash(file.toFile());
-            System.out.println("Reading " + filename + " hashes took: " + (System.nanoTime()-startTime));
-            startTime = System.nanoTime();
-            DBConnection.saveFile(filename, path, driveID, fullHash, hash, filesize, new java.sql.Timestamp(dateMod.toMillis()));
-            System.out.println("Writing " + filename + "  to DB took: " + (System.nanoTime()-startTime));
-        }
-    }
-
     /**
      * Media Hash
      * Hash
@@ -339,6 +331,7 @@ public class Migrate {
         fileCountTotal = 0;
         fileCount = 0;
         String filename = "";
+        boolean force = false;
         try
         {
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
@@ -370,13 +363,36 @@ public class Migrate {
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
             JDialog progressDialog = progressDiag(progressBar);
             PrintWriter pw = new PrintWriter(new File("e:\\test2.csv"));
+            Set<filePOJO> files = new HashSet<>();
             long startTime = System.nanoTime();
             String delimiter = "\t";
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                 @Override public FileVisitResult
                 visitFile(Path file, BasicFileAttributes attrs) throws IOException {
                     if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-                        writeFile(file, attrs.size(), driveID, attrs.lastModifiedTime(), false);
+                        long startTime = System.nanoTime();
+                        long toSeconds = 0;
+                        String path = file.getParent().toString().substring(2).replaceAll("\\\\", "/");
+                        String filename = file.getFileName().toString();
+                        filePOJO actFile = new filePOJO(filename, path, driveID, attrs.size(), new java.sql.Timestamp(attrs.lastModifiedTime().toMillis()));
+                        if (force || !DBConnection.checkFile(actFile)) {
+                            System.out.println("Hashing: " + path + "/" + filename);
+                            actFile.setFullhash(getFullHash(file.toFile()));
+                            actFile.setHash(getHash(file.toFile()));
+                            toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
+                            if (toSeconds > 0) System.out.println(toSeconds + "s. Hash speed " + attrs.size()*2/1048576/toSeconds + "MB/s");
+                            files.add(actFile);
+                            fileSizeCount += attrs.size();
+                            fileCount++;
+                        } else {
+                            fileSizeCountTotal -= attrs.size();
+                            fileCountTotal--;
+                        }
+                        long toSeconds2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
+//                        System.out.println((toSeconds2-toSeconds) + "s to DB.");
+                        long secondsBetween = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-prevTime);
+//                        System.out.println(secondsBetween + "s since the last iteration.");
+                        prevTime = System.nanoTime();
 /*                        StringBuilder sb = new StringBuilder();
                         String hash = getHash(file.toFile());
                         sb.append(start + fileCount).append(delimiter);
@@ -387,12 +403,21 @@ public class Migrate {
                         sb.append(attrs.size());
                         sb.append('\n');
                         pw.write(sb.toString());*/
-                        fileSizeCount += attrs.size();
-                        fileCount++;
-                        if ((fileCount % 10000) == 0) {
-                            long toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
-                            System.out.print("Time elasped: " + toSeconds + "s Data processed: " + fileSizeCount/1048576 + "MB from " + fileCount + " files" );
-                            System.out.println(" Avg. speed " + fileSizeCount/1048576/toSeconds + "MB/s ETA: " + toSeconds*(fileSizeCountTotal - fileSizeCount)/fileSizeCount + "s Data left: " + (fileSizeCountTotal-fileSizeCount)/1048576 + "MB from " + (fileCountTotal-fileCount) + " files");
+                        if (files.size() > 0 && (files.size() % 1000) == 0) {
+                            System.out.println("Writting files to DB");
+                            long insertTime = System.nanoTime();
+                            DBConnection.saveFile(files);
+                            files.clear();
+                            System.out.println("1000 files written to DB in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-insertTime));
+                        }
+                        if (fileCount > 0 && (fileCount % 10000) == 0) {
+                            long toSeconds3 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
+                            System.out.print("Time elasped: " + toSeconds3 + "s Data processed: " + fileSizeCount / 1048576 + "MB from " + fileCount + " files");
+                            if (toSeconds3 > 0 && fileSizeCount > 0) {
+                                System.out.println(" Avg. speed " + fileSizeCount / 1048576 / toSeconds3 + "MB/s ETA: " + toSeconds3 * (fileSizeCountTotal - fileSizeCount) / fileSizeCount + "s Data left: " + (fileSizeCountTotal - fileSizeCount) / 1048576 + "MB from " + (fileCountTotal - fileCount) + " files");
+                            } else {
+                                System.out.println();
+                            }
 //                            pw.flush();
                         }
                         progressBar.setValue((int)(fileSizeCount/1000000));
@@ -415,6 +440,8 @@ public class Migrate {
                     return FileVisitResult.CONTINUE;
                 }
             });
+            DBConnection.saveFile(files);
+            System.out.println("Rédi");
             pw.close();
             progressDialog.dispose();
         }

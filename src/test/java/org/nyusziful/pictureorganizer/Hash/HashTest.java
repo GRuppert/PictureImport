@@ -53,6 +53,9 @@ public class HashTest {
         new TestData("V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-fcc9ab21a2fd849ef07a1b8b1045e0cf-47e0be579ef91106cdd6c818b2976ce2-DSC09460.ARW",
                      "fcc9ab21a2fd849ef07a1b8b1045e0cf",
                      "47e0be579ef91106cdd6c818b2976ce2"),
+        new TestData("1.mp4",
+                "fcc9ab21a2fd849ef07a1b8b1045e0cf",
+                "47e0be579ef91106cdd6c818b2976ce2"),
         new TestData("V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-cd293a213a3291ad280629d38e7d3a3c-47e0be579ef91106cdd6c818b2976ce2-DSC09461.ARW",
                      "cd293a213a3291ad280629d38e7d3a3c",
                      "47e0be579ef91106cdd6c818b2976ce2")

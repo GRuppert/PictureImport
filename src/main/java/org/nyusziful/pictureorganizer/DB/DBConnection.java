@@ -1,8 +1,12 @@
 package org.nyusziful.pictureorganizer.DB;
 
 import java.sql.*;
+import java.util.HashSet;
+import java.util.Set;
 
 public class DBConnection {
+    private static Set<filePOJO> fileSet = null;
+
     private static Connection connection;
 
     private DBConnection() {
@@ -19,18 +23,6 @@ public class DBConnection {
             }
         }
         return connection;
-    }
-
-    public static void saveFile(String filename, String path, int driveId, String hash, long size, Date dateMod, Boolean exifBackup) {
-        try {
-            Connection conn = getConnection();
-            Statement s = conn.createStatement();
-            String selTable = "INSERT INTO file (filename, path, drive_id, image_id, size, date_mod, exifbackup)" +
-                    " VALUES ('" + filename + "', '" + path + "', '" + driveId + "', '" + hash + "', '" + size + "', '" + dateMod + "', '" + exifBackup + "')";
-            s.execute(selTable);
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        }
     }
 
     public static Connection getConnection() {
@@ -88,6 +80,40 @@ public class DBConnection {
         }
     }
 
+    public static void saveFile(Set<filePOJO> files) {
+        try {
+            Connection conn = getConnection();
+            String sql = "INSERT INTO file (filename, path, drive_id, image_id, size, date_mod, exifbackup, filehash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            PreparedStatement ps = conn.prepareStatement(sql);
+
+            final int batchSize = 1000;
+            int count = 0;
+
+            for (filePOJO actFile: files) {
+
+                ps.setString(1, actFile.getFilename());
+                ps.setString(2, actFile.getPath());
+                ps.setInt(3, actFile.getDriveId());
+                ps.setString(4, actFile.getHash());
+                ps.setLong(5, actFile.getSize());
+                ps.setTimestamp(6, actFile.getDateMod());
+                ps.setBoolean(7, false);
+                ps.setString(8, actFile.getFullhash());
+                ps.addBatch();
+
+                if(++count % batchSize == 0) {
+                    ps.executeBatch();
+                }
+            }
+            ps.executeBatch(); // insert remaining records
+            ps.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+
+
+    }
+
     public static void saveFile(String filename, String path, int driveId, String fullhash, String hash, long size, Timestamp dateMod) {
         try {
             Connection conn = getConnection();
@@ -109,7 +135,27 @@ public class DBConnection {
         }
     }
 
-    public static int checkFile(String filename, String path, int driveId, long size, Timestamp dateMod) {
+    public static boolean checkFile(filePOJO actFile) {
+        if (fileSet == null) {
+            fileSet = new HashSet<>();
+            try {
+                Connection conn = getConnection();
+                Statement s = conn.createStatement();
+                String selPrevious = "SELECT filename, path, size, date_mod FROM file WHERE drive_id = " + actFile.getDriveId() + ";";
+                s.execute(selPrevious);
+                ResultSet rs = s.getResultSet();
+                while (rs.next()) {
+                    fileSet.add(new filePOJO(rs.getString(1), rs.getString(2), actFile.getDriveId(), rs.getLong(3), rs.getTimestamp(4)));
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                return false;
+            }
+        }
+        return fileSet.contains(actFile);
+    }
+
+    public static int getFileID(String filename, String path, int driveId, long size, Timestamp dateMod) {
         try {
             Connection conn = getConnection();
             Statement s = conn.createStatement();
@@ -120,11 +166,11 @@ public class DBConnection {
             if ((rs != null) && (rs.next())) {
                 return rs.getInt(1);
             }
-            return -1;
         } catch (Exception ex) {
             ex.printStackTrace();
+            return -2;
         }
-        return -2;
+        return -1;
     }
 
     public static void saveImage(String hash, String origFilenam, Date dateTaken) {
