@@ -7,6 +7,8 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import org.nyusziful.pictureorganizer.Comparison.Listing;
+import org.nyusziful.pictureorganizer.Model.MediaDirectory;
+import org.nyusziful.pictureorganizer.Model.Meta;
 import org.nyusziful.pictureorganizer.Rename.*;
 
 import static java.lang.Integer.*;
@@ -36,7 +38,6 @@ import javafx.scene.layout.BorderPane;
 import javax.swing.JOptionPane;
 
 import org.nyusziful.pictureorganizer.ExifUtils.ExifReadWrite;
-import org.nyusziful.pictureorganizer.Rename.*;
 
 //Exiftool must be in PATH
 // <2GB file support
@@ -352,7 +353,7 @@ public class MainController implements Initializable {
         Collection<String> directories = StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
         Path backupdrive = null;
             if ((backupdrive = Services.backupMounted()) == null) {
-            StaticTools.errorOut("No backup Drive", new Exception("Attach a backup drive!"));
+            StaticTools.errorOut("No backup DriveDTO", new Exception("Attach a backup drive!"));
             if ((backupdrive = Services.backupMounted()) == null) {
     //                        return;
             }

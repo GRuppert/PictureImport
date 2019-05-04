@@ -1,11 +1,17 @@
-package org.nyusziful.pictureorganizer.DB;
+package org.nyusziful.pictureorganizer.Model;
 
+import javax.persistence.Embeddable;
+import javax.persistence.Entity;
+import javax.persistence.Table;
 import java.sql.Timestamp;
 import java.util.Objects;
 
-public class filePOJO {
+@Entity
+@Table(name = "media_file")
+public class MediafileDTO {
     private int id;
     private String filename;
+    //@Embeddable
     private String path;
     private int driveId;
     private String fullhash;
@@ -13,15 +19,20 @@ public class filePOJO {
     private long size;
     private Timestamp dateMod;
 
-    public filePOJO(String filename, String path, int driveId, String fullhash, String hash, long size, Timestamp dateMod) {
+    public MediafileDTO() {
+        // this form used by Hibernate
+    }
+
+
+    public MediafileDTO(String filename, String path, int driveId, String fullhash, String hash, long size, Timestamp dateMod) {
         this(-1, filename, path, driveId, fullhash, hash, size, dateMod);
     }
 
-    public filePOJO(String filename, String path, int driveId, long size, Timestamp dateMod) {
+    public MediafileDTO(String filename, String path, int driveId, long size, Timestamp dateMod) {
         this(-1, filename, path, driveId, "", "", size, dateMod);
     }
 
-    public filePOJO(int id, String filename, String path, int driveId, String fullhash, String hash, long size, Timestamp dateMod) {
+    public MediafileDTO(int id, String filename, String path, int driveId, String fullhash, String hash, long size, Timestamp dateMod) {
         this.id = id;
         this.filename = filename;
         this.path = path;
@@ -96,8 +107,8 @@ public class filePOJO {
         if (this == anObject) {
             return true;
         }
-        if (anObject instanceof filePOJO) {
-            filePOJO anotherFile = (filePOJO)anObject;
+        if (anObject instanceof MediafileDTO) {
+            MediafileDTO anotherFile = (MediafileDTO)anObject;
             if (id > -1 && id == anotherFile.id) return true;
             if (this.filename.equals(anotherFile.filename) &&
                 this.path.equals(anotherFile.path) &&

@@ -1,7 +1,7 @@
 package org.nyusziful.pictureorganizer.GUI;
 
 import org.nyusziful.pictureorganizer.DB.DBConnection;
-import org.nyusziful.pictureorganizer.DB.filePOJO;
+import org.nyusziful.pictureorganizer.Model.MediafileDTO;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,8 +11,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.FileTime;
-import java.sql.Connection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -363,7 +361,7 @@ public class Migrate {
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
             JDialog progressDialog = progressDiag(progressBar);
             PrintWriter pw = new PrintWriter(new File("e:\\test2.csv"));
-            Set<filePOJO> files = new HashSet<>();
+            Set<MediafileDTO> files = new HashSet<>();
             long startTime = System.nanoTime();
             String delimiter = "\t";
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
@@ -374,7 +372,7 @@ public class Migrate {
                         long toSeconds = 0;
                         String path = file.getParent().toString().substring(2).replaceAll("\\\\", "/");
                         String filename = file.getFileName().toString();
-                        filePOJO actFile = new filePOJO(filename, path, driveID, attrs.size(), new java.sql.Timestamp(attrs.lastModifiedTime().toMillis()));
+                        MediafileDTO actFile = new MediafileDTO(filename, path, driveID, attrs.size(), new java.sql.Timestamp(attrs.lastModifiedTime().toMillis()));
                         if (force || !DBConnection.checkFile(actFile)) {
                             System.out.println("Hashing: " + path + "/" + filename);
                             actFile.setFullhash(getFullHash(file.toFile()));

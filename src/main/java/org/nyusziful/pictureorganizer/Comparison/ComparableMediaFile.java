@@ -1,7 +1,7 @@
 package org.nyusziful.pictureorganizer.Comparison;
 
 
-import org.nyusziful.pictureorganizer.Rename.Meta;
+import org.nyusziful.pictureorganizer.Model.Meta;
 
 import java.io.File;
 

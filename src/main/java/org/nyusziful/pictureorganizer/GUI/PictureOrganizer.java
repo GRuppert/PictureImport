@@ -7,6 +7,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import org.nyusziful.pictureorganizer.DB.DBConnection;
 
 import java.util.prefs.Preferences;
 
@@ -20,6 +21,11 @@ public class PictureOrganizer extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
+        if (DBConnection.getConnection() != null) {
+            DBConnection.uploadLocalChanges();
+        } else {
+            DBConnection.getLocalConnection();
+        }
         view = this;
         this.primaryStage = stage;
 

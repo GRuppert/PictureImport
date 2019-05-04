@@ -10,7 +10,7 @@ import static org.nyusziful.pictureorganizer.GUI.StaticTools.XmpDateFormatTZ;
 import static org.nyusziful.pictureorganizer.GUI.StaticTools.getTimeFromStr;
 import static org.nyusziful.pictureorganizer.GUI.StaticTools.getZonedTimeFromStr;
 
-import org.nyusziful.pictureorganizer.Rename.Meta;
+import org.nyusziful.pictureorganizer.Model.Meta;
 import com.adobe.xmp.XMPException;
 import com.adobe.xmp.XMPIterator;
 import com.adobe.xmp.XMPMeta;

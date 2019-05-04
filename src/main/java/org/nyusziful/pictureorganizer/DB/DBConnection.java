@@ -1,11 +1,13 @@
 package org.nyusziful.pictureorganizer.DB;
 
+import org.nyusziful.pictureorganizer.Model.MediafileDTO;
+
 import java.sql.*;
 import java.util.HashSet;
 import java.util.Set;
 
 public class DBConnection {
-    private static Set<filePOJO> fileSet = null;
+    private static Set<MediafileDTO> fileSet = null;
 
     private static Connection connection;
 
@@ -38,6 +40,11 @@ public class DBConnection {
                 e.printStackTrace();
             }
         }
+        return connection;
+    }
+
+    public static Connection getLocalConnection() {
+        //TODO need to implement
         return connection;
     }
 
@@ -80,7 +87,7 @@ public class DBConnection {
         }
     }
 
-    public static void saveFile(Set<filePOJO> files) {
+    public static void saveFile(Set<MediafileDTO> files) {
         try {
             Connection conn = getConnection();
             String sql = "INSERT INTO file (filename, path, drive_id, image_id, size, date_mod, exifbackup, filehash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -89,7 +96,7 @@ public class DBConnection {
             final int batchSize = 1000;
             int count = 0;
 
-            for (filePOJO actFile: files) {
+            for (MediafileDTO actFile: files) {
 
                 ps.setString(1, actFile.getFilename());
                 ps.setString(2, actFile.getPath());
@@ -135,7 +142,7 @@ public class DBConnection {
         }
     }
 
-    public static boolean checkFile(filePOJO actFile) {
+    public static boolean checkFile(MediafileDTO actFile) {
         if (fileSet == null) {
             fileSet = new HashSet<>();
             try {
@@ -145,7 +152,7 @@ public class DBConnection {
                 s.execute(selPrevious);
                 ResultSet rs = s.getResultSet();
                 while (rs.next()) {
-                    fileSet.add(new filePOJO(rs.getString(1), rs.getString(2), actFile.getDriveId(), rs.getLong(3), rs.getTimestamp(4)));
+                    fileSet.add(new MediafileDTO(rs.getString(1), rs.getString(2), actFile.getDriveId(), rs.getLong(3), rs.getTimestamp(4)));
                 }
             } catch (Exception ex) {
                 ex.printStackTrace();
@@ -177,4 +184,7 @@ public class DBConnection {
 
     }
 
+    public static void uploadLocalChanges() {
+        //TODO need to implement as a background task
+    }
 }

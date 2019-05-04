@@ -5,7 +5,7 @@
  */
 package org.nyusziful.pictureorganizer.ExifUtils;
 
-import org.nyusziful.pictureorganizer.Rename.Meta;
+import org.nyusziful.pictureorganizer.Model.Meta;
 
 import java.io.*;
 import java.time.ZoneId;

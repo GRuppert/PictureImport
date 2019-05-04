@@ -5,6 +5,8 @@
  */
 package org.nyusziful.pictureorganizer.Rename;
 
+import org.nyusziful.pictureorganizer.Model.Meta;
+
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;

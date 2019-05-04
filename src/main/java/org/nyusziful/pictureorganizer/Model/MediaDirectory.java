@@ -1,4 +1,4 @@
-package org.nyusziful.pictureorganizer.Rename;
+package org.nyusziful.pictureorganizer.Model;
 
 import org.nyusziful.pictureorganizer.GUI.CommonProperties;
 
