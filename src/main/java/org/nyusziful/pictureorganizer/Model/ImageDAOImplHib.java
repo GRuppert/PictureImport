@@ -20,6 +20,8 @@ public class ImageDAOImplHib extends AbstractDAO implements ImageDAO {
     }
 
     public void update(ImageDTO image) {
+        getCurrentSession().beginTransaction();
         getCurrentSession().update(image);
+        getCurrentSession().getTransaction().commit();
     }
 }
