@@ -79,7 +79,7 @@ public class DBConnection {
 //            String dropTable = "DROP TABLE " + tableName;
 //            s.execute(dropTable);
 
-            // close and cleanup
+            // flush and cleanup
             s.close();
             conn.close();
         } catch (Exception ex) {

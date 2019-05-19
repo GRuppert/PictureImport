@@ -1,6 +1,5 @@
 package org.nyusziful.pictureorganizer.Service;
 
-import org.nyusziful.pictureorganizer.DB.HibConnection;
 import org.nyusziful.pictureorganizer.Model.DriveDAO;
 import org.nyusziful.pictureorganizer.Model.DriveDAOImplHib;
 import org.nyusziful.pictureorganizer.Model.DriveDTO;
@@ -15,22 +14,8 @@ public class DriveService {
     }
 
     public List<DriveDTO> getDrives() {
-        openConnection();
-        List<DriveDTO> getDrives = driveDAO.getDrives();
-        closeConnection();
+        List<DriveDTO> getDrives = driveDAO.getAll();
         return getDrives;
-    }
-
-    private void openConnection() {
-        if (((DriveDAOImplHib)driveDAO).getCurrentSession() == null || !((DriveDAOImplHib)driveDAO).getCurrentSession().isOpen())
-            ((DriveDAOImplHib)driveDAO).setCurrentSession(HibConnection.getCurrentSession());
-//        ((DriveDAOImplHib)driveDAO).getCurrentSession().beginTransaction();
-
-    }
-
-    private void closeConnection() {
-//        ((DriveDAOImplHib)driveDAO).getCurrentSession().getTransaction().commit();
-        HibConnection.closeSession();
     }
 
     public static void main(String[] args) {

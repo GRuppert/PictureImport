@@ -192,7 +192,7 @@ public class Migrate {
         } catch (UnsupportedEncodingException ex) {
         Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
-        writer.close();
+        writer.flush();
         }
          */
 //            readMetaDataTest(new File("e:\\DSC07914.ARW"));
@@ -292,7 +292,7 @@ public class Migrate {
             } catch (UnsupportedEncodingException ex) {
             Logger.getLogger(PicOrganizes.class.getName()).log(Level.SEVERE, null, ex);
             } finally {
-            writer.close();
+            writer.flush();
             }
             */
 //            readMetaDataTest(new File("e:\\DSC07914.ARW"));

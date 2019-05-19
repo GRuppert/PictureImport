@@ -8,9 +8,5 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.nyusziful.pictureorganizer.DB.AbstractDAO;
 import java.util.List;
 
-public class DriveDAOImplHib extends AbstractDAO implements DriveDAO {
-    @Override
-    public List<DriveDTO> getDrives() {
-        return (List<DriveDTO>) getCurrentSession().createQuery("from DriveDTO").list();
-    }
+public class DriveDAOImplHib extends CRUDDAOImpHib<DriveDTO> implements DriveDAO {
 }

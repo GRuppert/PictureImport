@@ -48,7 +48,7 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
     }
 
 /*    private void openNewBufferStream() throws IOException {
-//        if (bufferedInputStream != null) bufferedInputStream.close();
+//        if (bufferedInputStream != null) bufferedInputStream.flush();
         bufferedInputStream = new BufferedInputStream(fis);
     }*/
 
@@ -160,8 +160,8 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
 */
     @Override
     public void close() throws IOException {
-/*        bufferedInputStream.close();
-        randomAccessFile.close();*/
+/*        bufferedInputStream.flush();
+        randomAccessFile.flush();*/
         bufferedRandomAccessFile.close();
     }
 

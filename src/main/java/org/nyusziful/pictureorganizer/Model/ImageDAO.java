@@ -2,9 +2,6 @@ package org.nyusziful.pictureorganizer.Model;
 
 import java.util.List;
 
-public interface ImageDAO {
-    public List<ImageDTO> getImages();
+public interface ImageDAO extends CRUDDAO<ImageDTO> {
     public ImageDTO getImageByHash(String hash);
-    public ImageDTO save(ImageDTO image);
-    public void update(ImageDTO image);
 }

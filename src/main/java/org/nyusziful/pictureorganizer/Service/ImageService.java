@@ -5,6 +5,7 @@ import org.nyusziful.pictureorganizer.Model.ImageDAO;
 import org.nyusziful.pictureorganizer.Model.ImageDAOImplHib;
 import org.nyusziful.pictureorganizer.Model.ImageDTO;
 
+import javax.transaction.Transactional;
 import java.util.List;
 
 public class ImageService {
@@ -15,50 +16,36 @@ public class ImageService {
     }
 
     public List<ImageDTO> getImages() {
-        openConnection();
-        List<ImageDTO> getImages = imageDAO.getImages();
-        closeConnection();
+        List<ImageDTO> getImages = imageDAO.getAll();
         return getImages;
     }
 
     public ImageDTO getImage(String hash) {
-        openConnection();
         ImageDTO getImage = imageDAO.getImageByHash(hash);
-        closeConnection();
         return getImage;
     }
 
-    public ImageDTO saveImage(ImageDTO image) {
-        openConnection();
+    public ImageDTO saveImage(ImageDTO image) throws Exception {
         ImageDTO getImage = imageDAO.save(image);
-        closeConnection();
         return getImage;
     }
 
-    public void updateImage(ImageDTO image) {
-        openConnection();
-        imageDAO.update(image);
-        closeConnection();
-    }
-
-    private void openConnection() {
-        if (((ImageDAOImplHib)imageDAO).getCurrentSession() == null || !((ImageDAOImplHib)imageDAO).getCurrentSession().isOpen())
-            ((ImageDAOImplHib)imageDAO).setCurrentSession(HibConnection.getCurrentSession());
-//        ((ImageDAOImplHib)ImageDAO).getCurrentSession().beginTransaction();
-
-    }
-
-    private void closeConnection() {
-//        ((ImageDAOImplHib)ImageDAO).getCurrentSession().getTransaction().commit();
-        HibConnection.closeSession();
+    public void updateImage(ImageDTO image) throws Exception {
+        imageDAO.merge(image);
     }
 
     public static void main(String[] args) {
-        final ImageService ImageService = new ImageService();
-        ImageDTO image = ImageService.getImage("001ccb41c7eb77075051f3febdcafe71");
+        final ImageService imageService = new ImageService();
+        ImageDTO image = imageService.getImage("001ccb41c7eb77075051f3febdcafe71");
         System.out.println(image);
-        image.setOringinalFilename("test");
-        ImageService.updateImage(image);
+        image.setOringinalFilename("test2");
+        try {
+            imageService.updateImage(image);
+            HibConnection.getInstance().commit();
+        } catch (Exception e) {
+            HibConnection.getInstance().rollback();
+            e.printStackTrace();
+        }
     }
 
 }
