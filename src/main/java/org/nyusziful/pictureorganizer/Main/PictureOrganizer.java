@@ -1,4 +1,4 @@
-package org.nyusziful.pictureorganizer.GUI;
+package org.nyusziful.pictureorganizer.Main;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -7,9 +7,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import org.nyusziful.pictureorganizer.DB.DBConnection;
-
-import java.util.prefs.Preferences;
 
 import static javafx.application.Application.launch;
 
@@ -21,17 +18,17 @@ public class PictureOrganizer extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        if (DBConnection.getConnection() != null) {
+/*        if (DBConnection.getConnection() != null) {
             DBConnection.uploadLocalChanges();
         } else {
             DBConnection.getLocalConnection();
-        }
+        }*/
         view = this;
         this.primaryStage = stage;
 
         Parent fmxlLook = FXMLLoader.load(getClass().getResource("/fxml/main.fxml"));
         Scene mainScene = new Scene(fmxlLook);
-        mainScene.getStylesheets().add("Chart.css");
+        mainScene.getStylesheets().add("/styles/Chart.css");
         primaryStage.setScene(mainScene);
 
         //set Stage boundaries to visible bounds of the main screen

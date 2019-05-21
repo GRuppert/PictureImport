@@ -1,4 +1,4 @@
-package org.nyusziful.pictureorganizer.GUI;
+package org.nyusziful.pictureorganizer.Main;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -16,7 +16,7 @@ public class CommonProperties {
     private String pictureSet = "K";
     private Path toDir;
     private File fromDir;
-    private Preferences prefs = Preferences.userNodeForPackage(org.nyusziful.pictureorganizer.GUI.PictureOrganizer.class);
+    private Preferences prefs = Preferences.userNodeForPackage(PictureOrganizer.class);
     private static final String INDIR = "InputDirectory";
     private static final String OUTDIR = "OutputDirectory";
 

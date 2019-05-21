@@ -1,10 +1,8 @@
 package org.nyusziful.pictureorganizer.Model;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 
 @Entity
 @Table(name = "image")
@@ -18,6 +16,8 @@ public class ImageDTO {
     private String oringinalFilename;
     @Column(name = "type")
     private String type;
+    @OneToMany(mappedBy = "image")
+    private Collection<MediafileDTO> mediaFiles;
 
     public String getHash() {
         return hash;
@@ -59,5 +59,9 @@ public class ImageDTO {
                 ", oringinalFilename='" + oringinalFilename + '\'' +
                 ", type='" + type + '\'' +
                 '}';
+    }
+
+    public Collection<MediafileDTO> getMediaFiles() {
+        return mediaFiles;
     }
 }

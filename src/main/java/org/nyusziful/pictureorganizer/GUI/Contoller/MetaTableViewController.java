@@ -1,7 +1,8 @@
-package org.nyusziful.pictureorganizer.GUI;
+package org.nyusziful.pictureorganizer.GUI.Contoller;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.CheckBoxTableCell;
 import org.nyusziful.pictureorganizer.Rename.AnalyzingMediaFile;
@@ -10,7 +11,7 @@ import org.nyusziful.pictureorganizer.Rename.MetaProp;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class MetaTableViewController {
+public class MetaTableViewController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
@@ -35,6 +36,7 @@ public class MetaTableViewController {
     }
 
 
+    @Override
     public void initialize(URL url, ResourceBundle rb) {
 
 /*        oldNameCol.setCellValueFactory(new PropertyValueFactory<TableViewMediaFile, String>("currentName"));

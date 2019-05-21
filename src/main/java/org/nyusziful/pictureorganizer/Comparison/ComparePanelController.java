@@ -6,7 +6,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import org.apache.commons.io.FilenameUtils;
-import org.nyusziful.pictureorganizer.GUI.CommonProperties;
+import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.GUI.DirectoryElement;
 import org.nyusziful.pictureorganizer.GUI.StaticTools;
 

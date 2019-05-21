@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.nyusziful.pictureorganizer.GUI;
+package org.nyusziful.pictureorganizer.Service;
 
 import java.io.File;
 import java.nio.file.Path;

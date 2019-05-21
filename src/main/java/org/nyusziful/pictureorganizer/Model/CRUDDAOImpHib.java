@@ -1,9 +1,7 @@
 package org.nyusziful.pictureorganizer.Model;
 
-import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.nyusziful.pictureorganizer.DB.HibConnection;
-import org.nyusziful.pictureorganizer.GUI.PictureOrganizer;
 
 import javax.persistence.criteria.CriteriaQuery;
 import java.lang.reflect.ParameterizedType;

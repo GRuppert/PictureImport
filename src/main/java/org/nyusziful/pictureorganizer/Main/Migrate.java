@@ -1,6 +1,7 @@
-package org.nyusziful.pictureorganizer.GUI;
+package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DB.DBConnection;
+import org.nyusziful.pictureorganizer.GUI.StaticTools;
 import org.nyusziful.pictureorganizer.Model.MediafileDTO;
 
 import javax.swing.*;

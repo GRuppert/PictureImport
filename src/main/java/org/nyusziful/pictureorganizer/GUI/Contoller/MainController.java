@@ -1,4 +1,4 @@
-package org.nyusziful.pictureorganizer.GUI;
+package org.nyusziful.pictureorganizer.GUI.Contoller;
 
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.SortedList;
@@ -7,12 +7,17 @@ import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import org.nyusziful.pictureorganizer.Comparison.Listing;
+import org.nyusziful.pictureorganizer.Main.CommonProperties;
+import org.nyusziful.pictureorganizer.GUI.DirectoryElement;
+import org.nyusziful.pictureorganizer.GUI.Progress;
+import org.nyusziful.pictureorganizer.GUI.StaticTools;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 import org.nyusziful.pictureorganizer.Model.Meta;
 import org.nyusziful.pictureorganizer.Rename.*;
 
 import static java.lang.Integer.*;
 
+import org.nyusziful.pictureorganizer.Service.Services;
 import org.nyusziful.pictureorganizer.TimeShift.TimeLine;
 
 import java.time.ZonedDateTime;
@@ -93,6 +98,17 @@ public class MainController implements Initializable {
         TimeZone.getSelectionModel().select(ZoneId.systemDefault().getId());
         from.setText(commonProperties.getFromDir().toString());
         to.setText(commonProperties.getToDir().toString());
+
+        BorderPane summaryPane = null;
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource(
+                    "/fxml/summary.fxml"));
+            summaryPane = (BorderPane) loader.load();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        mainPane.setCenter(summaryPane);
     }
 
     // <editor-fold defaultstate="collapsed" desc="View Action">
@@ -105,7 +121,7 @@ public class MainController implements Initializable {
     @FXML
     private void handleShiftButtonAction() {
         disableButtons(true);
-        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File file = org.nyusziful.pictureorganizer.GUI.StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             stripesOnScreen(file);
         }
@@ -113,7 +129,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleMetaButtonAction() {
-        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File file = org.nyusziful.pictureorganizer.GUI.StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
@@ -124,7 +140,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleRenameButtonAction() {
-        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File file = org.nyusziful.pictureorganizer.GUI.StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<>();
             directories.add(file.toString());
@@ -135,7 +151,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleMoveButtonAction() {
-        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File file = org.nyusziful.pictureorganizer.GUI.StaticTools.getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
@@ -167,7 +183,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleToButtonAction() {
-        File file = StaticTools.getDir(commonProperties.getToDir().toFile());
+        File file = org.nyusziful.pictureorganizer.GUI.StaticTools.getDir(commonProperties.getToDir().toFile());
         if (file != null) {
             commonProperties.setToDir(file.toPath());
             setToText(commonProperties.getToDir().toString());
@@ -176,7 +192,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleFromButtonAction() {
-        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File file = org.nyusziful.pictureorganizer.GUI.StaticTools.getDir(commonProperties.getFromDir());
         if (file != null) {
             commonProperties.setFromDir(file);
             setFromText(commonProperties.getFromDir().toString());
@@ -209,7 +225,7 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
         mainPane.setCenter(comparePane);
-        StaticTools.beep();
+        org.nyusziful.pictureorganizer.GUI.StaticTools.beep();
 
     }
 
@@ -228,7 +244,7 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
         mainPane.setCenter(tableView);
-        StaticTools.beep();
+        org.nyusziful.pictureorganizer.GUI.StaticTools.beep();
     }
 
 
@@ -260,7 +276,7 @@ public class MainController implements Initializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        StaticTools.beep();
+        org.nyusziful.pictureorganizer.GUI.StaticTools.beep();
     }
 
     //Sets the center view to pic stripes
@@ -297,7 +313,7 @@ public class MainController implements Initializable {
     //TODO reads dir:
     //Input processed mediafiles Output dated directory+old filename
     private Collection<SimpleMediaFile> sortToDateDirectories(Collection<String> directories) {
-        Collection<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
+        Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.GUI.StaticTools.getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
                         return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
@@ -330,7 +346,7 @@ public class MainController implements Initializable {
 
     //Input mediafiles Output standard
     public Collection<AnalyzingMediaFile> itWasImport(Collection<String> directories) {
-        Collection<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> StaticTools.supportedFileType(name));
+        Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.GUI.StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.GUI.StaticTools.supportedFileType(name));
         ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
         Progress instance = Progress.getInstance();
         instance.reset();
@@ -350,10 +366,10 @@ public class MainController implements Initializable {
 
     //import and rename are basically the same
     private Collection<AnalyzingMediaFile> importFiles() {
-        Collection<String> directories = StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
+        Collection<String> directories = org.nyusziful.pictureorganizer.GUI.StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
         Path backupdrive = null;
             if ((backupdrive = Services.backupMounted()) == null) {
-            StaticTools.errorOut("No backup DriveDTO", new Exception("Attach a backup drive!"));
+            org.nyusziful.pictureorganizer.GUI.StaticTools.errorOut("No backup DriveDTO", new Exception("Attach a backup drive!"));
             if ((backupdrive = Services.backupMounted()) == null) {
     //                        return;
             }
@@ -363,7 +379,7 @@ public class MainController implements Initializable {
 
     //no mediafile, creates a list of Meta
     private Collection<Meta> fileMetaList(Collection<String> directories, Path target) {
-        Collection<DirectoryElement> directoryElements = StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> StaticTools.supportedFileType(name));
+        Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.GUI.StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.GUI.StaticTools.supportedFileType(name));
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
         return ExifReadWrite.readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
@@ -377,7 +393,7 @@ public class MainController implements Initializable {
      * Creates a new background task which reads the From directory files' hashes into a list file
      */
     private void createList() {
-        File file = StaticTools.getDir(commonProperties.getFromDir());
+        File file = org.nyusziful.pictureorganizer.GUI.StaticTools.getDir(commonProperties.getFromDir());
         File output = StaticTools.getFile(commonProperties.getFromDir());
         int start;
         do {

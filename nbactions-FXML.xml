@@ -10,7 +10,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-DskipTests -classpath %classpath org.nyusziful.pictureorganizer.GUI.PictureOrganizer</exec.args>
+                <exec.args>-DskipTests -classpath %classpath org.nyusziful.pictureorganizer.Main.PictureOrganizer</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>
@@ -25,7 +25,7 @@
             </goals>
             <properties>
                 <exec.args>-Xdebug -Xrunjdwp:transport=dt_socket,server=n,address=${jpda.address} -DskipTests -classpath
-                    %classpath org.nyusziful.pictureorganizer.GUI.PictureOrganizer</exec.args>
+                    %classpath org.nyusziful.pictureorganizer.Main.PictureOrganizer</exec.args>
                 <exec.executable>java</exec.executable>
                 <jpda.listen>true</jpda.listen>
             </properties>
@@ -40,7 +40,7 @@
                 <goal>org.codehaus.mojo:exec-maven-plugin:1.2.1:exec</goal>
             </goals>
             <properties>
-                <exec.args>-DskipTests -classpath %classpath org.nyusziful.pictureorganizer.GUI.PictureOrganizer</exec.args>
+                <exec.args>-DskipTests -classpath %classpath org.nyusziful.pictureorganizer.Main.PictureOrganizer</exec.args>
                 <exec.executable>java</exec.executable>
             </properties>
         </action>

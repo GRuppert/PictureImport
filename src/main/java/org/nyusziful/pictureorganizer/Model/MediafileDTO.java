@@ -1,8 +1,6 @@
 package org.nyusziful.pictureorganizer.Model;
 
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
 import java.sql.Timestamp;
 import java.util.Objects;
 
@@ -14,6 +12,11 @@ public class MediafileDTO {
     //@Embeddable
     private String path;
     private int driveId;
+
+    @ManyToOne
+    @JoinColumn(name="fullhash", referencedColumnName="ODID")
+    private ImageDTO image;
+
     private String fullhash;
     private String hash;
     private long size;

@@ -1,6 +1,6 @@
 package org.nyusziful.pictureorganizer.Model;
 
-import org.nyusziful.pictureorganizer.GUI.CommonProperties;
+import org.nyusziful.pictureorganizer.Main.CommonProperties;
 
 import java.time.ZonedDateTime;
 
