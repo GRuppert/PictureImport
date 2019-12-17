@@ -6,7 +6,7 @@
 <?import javafx.scene.chart.NumberAxis?>
 
 
-<BorderPane fx:id="mainPane" xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.pictureorganizer.GUI.Contoller.MainController">
+<BorderPane fx:id="mainPane" xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.MainController">
     <top>
         <VBox>
             <Label text="Functions" alignment="CENTER"/>

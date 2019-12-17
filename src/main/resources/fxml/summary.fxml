@@ -6,7 +6,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<BorderPane fx:id="summaryPane" xmlns:fx="http://javafx.com/fxml/1" prefHeight="600" prefWidth="800" fx:controller="org.nyusziful.pictureorganizer.GUI.Contoller.SummaryController">
+<BorderPane fx:id="summaryPane" xmlns:fx="http://javafx.com/fxml/1" prefHeight="600" prefWidth="800" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.SummaryController">
     <center>
         <Label text="All images"/>
         <Label minHeight="16" minWidth="69" fx:id="image_num" />

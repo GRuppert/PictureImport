@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.pictureorganizer.Rename.TablePanelController">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.pictureorganizer.Service.Rename.TablePanelController">
     <top>
         <HBox>
             <Button fx:id="btnAll" text="All" onAction="#handleAllButtonAction"/>

@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.Model;
 
+import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 
 import java.time.ZonedDateTime;

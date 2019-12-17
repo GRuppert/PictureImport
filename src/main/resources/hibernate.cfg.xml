@@ -10,10 +10,12 @@
         <property name="hibernate.connection.url">jdbc:mysql://127.0.0.1:3306/picture</property>
         <property name="hibernate.connection.username">picture</property>
         <property name="hibernate.connection.password">picture</property>
-        <property name="hibernate.hbm2ddl.auto">update</property>
+        <property name="hibernate.hbm2ddl.auto">validate</property>
         <property name="show_sql">true</property>
         <property name="hibernate.current_session_context_class">thread</property>
-        <mapping class="org.nyusziful.pictureorganizer.Model.DriveDTO"/>
-        <mapping class="org.nyusziful.pictureorganizer.Model.ImageDTO"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Drive"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Folder"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Mediafile"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Image"/>
     </session-factory>
 </hibernate-configuration>

@@ -1,11 +1,11 @@
 package org.nyusziful.pictureorganizer.Service;
 
-import org.nyusziful.pictureorganizer.DB.HibConnection;
-import org.nyusziful.pictureorganizer.Model.ImageDAO;
-import org.nyusziful.pictureorganizer.Model.ImageDAOImplHib;
-import org.nyusziful.pictureorganizer.Model.ImageDTO;
+import org.nyusziful.pictureorganizer.DAL.HibConnection;
+import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAO;
+import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAOImplHib;
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 
-import javax.transaction.Transactional;
 import java.util.List;
 
 public class ImageService {
@@ -15,28 +15,31 @@ public class ImageService {
         imageDAO = new ImageDAOImplHib();
     }
 
-    public List<ImageDTO> getImages() {
-        List<ImageDTO> getImages = imageDAO.getAll();
+    public List<Image> getImages() {
+        List<Image> getImages = imageDAO.getAll();
         return getImages;
     }
 
-    public ImageDTO getImage(String hash) {
-        ImageDTO getImage = imageDAO.getImageByHash(hash);
+    public Image getImage(String hash, Mediafile requester) {
+        Image getImage = imageDAO.getImageByHash(hash);
+        if (getImage == null) {
+            getImage = new Image(hash, requester.getFilename(), requester.getType());
+        }
         return getImage;
     }
 
-    public ImageDTO saveImage(ImageDTO image) throws Exception {
-        ImageDTO getImage = imageDAO.save(image);
+    public Image saveImage(Image image) throws Exception {
+        Image getImage = imageDAO.save(image);
         return getImage;
     }
 
-    public void updateImage(ImageDTO image) throws Exception {
+    public void updateImage(Image image) throws Exception {
         imageDAO.merge(image);
     }
 
     public static void main(String[] args) {
         final ImageService imageService = new ImageService();
-        ImageDTO image = imageService.getImage("001ccb41c7eb77075051f3febdcafe71");
+        Image image = imageService.getImage("001ccb41c7eb77075051f3febdcafe71", new Mediafile());
         System.out.println(image);
         image.setOringinalFilename("test2");
         try {

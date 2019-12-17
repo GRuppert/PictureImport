@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.util.prefs.Preferences;
 
-import org.nyusziful.pictureorganizer.Rename.TableViewMediaFile.WriteMethod;
+import org.nyusziful.pictureorganizer.Service.Rename.TableViewMediaFile.WriteMethod;
 
 public class CommonProperties {
     private static CommonProperties instance;
@@ -24,7 +24,6 @@ public class CommonProperties {
     private CommonProperties() {
         fromDir = new File(prefs.get(INDIR, "C:\\"));
         toDir = Paths.get(prefs.get(OUTDIR, "C:\\"));
-
     }
 
     public void save() {

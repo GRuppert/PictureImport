@@ -1,22 +1,26 @@
 package org.nyusziful.pictureorganizer.Service;
 
-import org.nyusziful.pictureorganizer.Model.MediafileDAO;
-import org.nyusziful.pictureorganizer.Model.MediafileDAOImplHib;
-import org.nyusziful.pictureorganizer.Model.MediafileDTO;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
+import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
+import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 
-import java.util.List;
+import java.util.*;
 
 public class MediafileService {
     private static MediafileDAO mediafileDAO;
+    private static Set<Mediafile> fileSet = null;
+
 
     public MediafileService() {
         mediafileDAO = new MediafileDAOImplHib();
     }
 
-    public List<MediafileDTO> getMediafiles() {
-        List<MediafileDTO> getMediafiles = mediafileDAO.getAll();
+    public List<Mediafile> getMediafiles() {
+        List<Mediafile> getMediafiles = mediafileDAO.getAll();
         return getMediafiles;
     }
+
 
 /*
     public MediafileDTO getMediafile(String name) {
@@ -27,23 +31,50 @@ public class MediafileService {
     }
 */
 
-    public MediafileDTO saveMediafile(MediafileDTO Mediafile) throws Exception {
-        MediafileDTO getMediafile = mediafileDAO.save(Mediafile);
-        return getMediafile;
+    public Mediafile saveMediafile(Mediafile mediafile) {
+        return saveMediafile(Collections.singleton(mediafile)).get(0);
     }
 
-    public void updateMediafile(MediafileDTO Mediafile) throws Exception {
+    public List<Mediafile> saveMediafile(Collection<Mediafile> mediafile) {
+        List<Mediafile> mediafileDTOList = new ArrayList<>();
+        for (Mediafile file: mediafile
+             ) {
+            mediafileDTOList.add(mediafileDAO.save(file));
+
+        }
+        return mediafileDTOList;
+    }
+
+    public void updateMediafile(Mediafile Mediafile) {
         mediafileDAO.merge(Mediafile);
     }
 
     public static void main(String[] args) {
-/*
-        final MediafileService MediafileService = new MediafileService();
-        MediafileDTO mediafile = MediafileService.getMediafile("001ccb41c7eb77075051f3febdcafe71");
+        final MediafileService mediafileService = new MediafileService();
+        Mediafile mediafileDTO = new Mediafile(
+
+        );
+        final Drive driveDTO = new Drive();
+        driveDTO.setId(100);
+        mediafileDTO.setDrive(driveDTO);
+        final Mediafile b = mediafileService.getMediaFile(mediafileDTO);
+        System.out.println(b);
+/*        MediafileDTO mediafile = mediafileService.getMediafile("001ccb41c7eb77075051f3febdcafe71");
         System.out.println(mediafile);
-        MediafileService.updateMediafile(mediafile);
-*/
+        mediafileService.updateMediafile(mediafile);*/
     }
 
+    public Mediafile getMediaFile(Mediafile actFile) {
+        if (fileSet == null) {
+            fileSet = new HashSet<>();
+            fileSet.addAll(mediafileDAO.getByDriveId(actFile.getDrive().getId()));
+        }
+        for (Mediafile mfile: fileSet) {
+            if (mfile.getFilename().equals(actFile.getFilename()) && mfile.getFolder().getPath().equals(actFile.getFolder().getPath())) {
+                return mfile;
+            }
+        }
+        return actFile;
+    }
 
 }
