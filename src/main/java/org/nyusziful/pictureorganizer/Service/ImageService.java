@@ -41,7 +41,7 @@ public class ImageService {
         final ImageService imageService = new ImageService();
         Image image = imageService.getImage("001ccb41c7eb77075051f3febdcafe71", new Mediafile());
         System.out.println(image);
-        image.setOringinalFilename("test2");
+        image.setOriginalFilename("test2");
         try {
             imageService.updateImage(image);
             HibConnection.getInstance().commit();

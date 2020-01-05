@@ -10,7 +10,7 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.getTimeFromStr;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.getZonedTimeFromStr;
 
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import com.adobe.xmp.XMPException;
 import com.adobe.xmp.XMPIterator;
 import com.adobe.xmp.XMPMeta;
@@ -54,7 +54,7 @@ public class ExifReadWriteIMR {
             try {
                 tags = readMeta(file);
             } catch (ImageProcessingException | IOException ex) {
-                Meta meta = new Meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), null);
+                Meta meta = new Meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), -1);
                 System.out.println(meta);
                 results.add(meta);
                 continue;
@@ -106,7 +106,7 @@ public class ExifReadWriteIMR {
             } else if (wTZ != null) {
                 OrigDT = wTZ;
             }
-            Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, null);
+            Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, -1);
             System.out.println(meta);
             results.add(meta);
         }

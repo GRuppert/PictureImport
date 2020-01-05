@@ -5,7 +5,7 @@
  */
 package org.nyusziful.pictureorganizer.Service.ExifUtils;
 
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.io.*;
 import java.time.ZoneId;
@@ -62,7 +62,7 @@ public class ExifReadWriteET {
                 String line = iterator.next();
                 if (line.startsWith("========")) {
                     if (i > -1) {
-                        Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
+                        Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, -1);
                         System.out.println(meta);
                         results.add(meta);
                     }
@@ -113,7 +113,7 @@ public class ExifReadWriteET {
                 }
             }
             if (filename != null) {
-                Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null);
+                Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, -1);
                 System.out.println(meta);
                 results.add(meta);
 //            results.add(new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));

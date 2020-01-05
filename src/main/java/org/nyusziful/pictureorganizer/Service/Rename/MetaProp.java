@@ -4,7 +4,7 @@ package org.nyusziful.pictureorganizer.Service.Rename;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.ExifDateFormatTZ;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 /*
  * To change this license header, choose License Headers in Project Properties.

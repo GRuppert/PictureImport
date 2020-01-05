@@ -141,7 +141,7 @@ public class StaticTools {
         for(File drive:drives) {
             boolean valid = true;
             for(String criteria:Sony) {
-                //Todo might not work when drive is just a drive: double backslash
+                //TODO might not work when drive is just a drive: double backslash
                 File probe = new File(drive+criteria);
                 if(probe.exists() && probe.isDirectory()) {
                     continue;

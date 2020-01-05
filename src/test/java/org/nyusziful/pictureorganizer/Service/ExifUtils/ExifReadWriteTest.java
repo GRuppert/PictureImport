@@ -17,7 +17,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 /**
  *

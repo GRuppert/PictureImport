@@ -1,7 +1,7 @@
 package org.nyusziful.pictureorganizer.Service.Comparison;
 
 
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.io.File;
 

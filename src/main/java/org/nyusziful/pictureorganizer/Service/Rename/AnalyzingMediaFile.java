@@ -6,7 +6,7 @@ import javafx.beans.property.SimpleStringProperty;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWrite;
 import org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash;
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.UI.Model.AbstractTableViewMediaFile;
 
 import java.io.File;
@@ -34,7 +34,7 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
     private File file;
     private File fileXmp;
     private String originalName;
-    private String orig = "0";
+    private int orig = -1;
     private String targetDirectory;
     private boolean forceRewrite;
     private ZoneId zone;
@@ -89,7 +89,7 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
             
             //Set original filename, orig if possible from filename
             if (metaFile != null && metaFile.originalFilename != null) originalName = metaFile.originalFilename;
-            if (metaFile != null && metaFile.orig != null) orig = metaFile.orig;
+            if (metaFile != null && metaFile.orig > -1) orig = metaFile.orig;
             
             //read External sidecars
             Meta metaXmp = null;
@@ -100,7 +100,7 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
                         
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
             compareMeta(metaExif, metaFile, metaXmp);
-            if (!orig.matches("[a-w]") && ext.equals("jpg")) checkRAW();
+            if (orig == 0 && ext.equals("jpg")) checkRAW();
             
             if (!odID.equals(dID)) notOrig();
             
@@ -112,7 +112,7 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
         switch (ver) {
             case "5":
                 setiID();
-                return FileRenamer.getFileName(ver, pictureSet, originalName, date, getiID(), getdID(), "");
+                return FileRenamer.getFileName(ver, pictureSet, originalName, date, getiID(), getdID(), -1);
 
             case "6":
                 return FileRenamer.getFileName(ver, pictureSet, originalName, date, "", getdID(), orig);
@@ -178,7 +178,7 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
                     odID = metaExif.odID; //addNote("odID already presented", false);
                 }
             if (getOdID() == null) {
-                if (orig.equals("0")) {
+                if (orig == 0) {
                     odID = getdID();
                 } else if (metaFile.dID != null) {
                     odID = metaFile.dID;
@@ -236,15 +236,15 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
             if (metaExifXmp != null) metaExif = metaExifXmp;
             else {
                 if (metaExifFile != null) metaExif = metaExifFile;
-                else metaExif = new Meta(null, null, null, null, null, null, null, null, null);
+                else metaExif = new Meta(null, null, null, null, null, null, null, null, -1);
             }
             if (metaExifFile != null && metaExifFile.dID != null) notOrig();
         } else {
-            if (metaExifFile == null) metaExif = new Meta(null, null, null, null, null, null, null, null, null);
+            if (metaExifFile == null) metaExif = new Meta(null, null, null, null, null, null, null, null, -1);
             else metaExif = metaExifFile;
             if (metaExifXmp != null) metaSec  = metaExifXmp;
         }
-        if (metaFile == null) metaFile = new Meta(null, null, null, null, null, null, null, null, null);
+        if (metaFile == null) metaFile = new Meta(null, null, null, null, null, null, null, null, -1);
         
         compareModel(metaExif, metaFile);
         compareHash(metaExif, metaFile);
@@ -254,7 +254,7 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
     }
  
     private void notOrig() {
-        if (orig.matches("[0-9x-zX-Z]")) orig = "a";
+        orig = getVersionNumber();
     }
 
     private File checkDir(File targetDir) {
@@ -307,7 +307,7 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
                     exifMissing.remove(fileXmp.getName());
                 } 
             }
-            if (!exifMissing.isEmpty() && !(supportedRAWFileType(getFile().getName()) && orig.matches("[0-9]"))) {
+            if (!exifMissing.isEmpty() && !(supportedRAWFileType(getFile().getName()) && orig == 0)) {
                 exifMissing.add(updateFile);
                     ExifReadWrite.updateExif(exifMissing, getFile().getParentFile());
 //                setiID();

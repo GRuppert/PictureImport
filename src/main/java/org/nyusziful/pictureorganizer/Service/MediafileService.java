@@ -3,7 +3,10 @@ package org.nyusziful.pictureorganizer.Service;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Service.Rename.FileRenamer;
 
 import java.util.*;
 
@@ -77,4 +80,19 @@ public class MediafileService {
         return actFile;
     }
 
+    public int getVersionNumber(Image image) {
+        if (image == null) return -1;
+        if (image.getParent() == null) return 0;
+        return getVersionNumber(image.getParent()) + 1;
+/*
+        int version = 1;
+        for (Mediafile mediafile : filesForImage) {
+            if (mediafile..getFilehash().equals(actFile.getFilehash())
+            final Meta v = FileRenamer.getV(mediafile.getFilename());
+            if (v != null) {
+                version = Math.max(version, v.orig);
+            }
+        }
+*/
+    }
 }

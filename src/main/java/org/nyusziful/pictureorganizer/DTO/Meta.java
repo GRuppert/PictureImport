@@ -1,4 +1,4 @@
-package org.nyusziful.pictureorganizer.Model;
+package org.nyusziful.pictureorganizer.DTO;
 
 
 import java.time.ZonedDateTime;
@@ -21,7 +21,7 @@ public class Meta {
     public String dID;
     public String iID;
     public String note = "";
-    public String orig;
+    public int orig;
     public Boolean dateFormat;
 
     /**
@@ -36,7 +36,7 @@ public class Meta {
      * @param note
      * @param orig
      */
-    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig) {
+    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, int orig) {
         this.originalFilename = originalFilename;
         this.date = date;
         this.dateFormat = dateFormat;

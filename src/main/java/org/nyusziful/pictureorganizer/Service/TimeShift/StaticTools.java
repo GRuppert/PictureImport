@@ -9,7 +9,7 @@ import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWrite.rea
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWriteET.exifTool;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.errorOut;
 
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.io.File;
 import java.time.ZoneId;

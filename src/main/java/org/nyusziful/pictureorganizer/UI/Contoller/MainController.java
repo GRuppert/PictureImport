@@ -12,7 +12,7 @@ import org.nyusziful.pictureorganizer.UI.DirectoryElement;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.Rename.*;
 
 import static java.lang.Integer.*;

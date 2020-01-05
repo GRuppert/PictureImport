@@ -1,8 +1,10 @@
 package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.Service.DriveService;
 import org.nyusziful.pictureorganizer.Service.ImageService;
+import org.nyusziful.pictureorganizer.Service.Rename.FileRenamer;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
@@ -383,8 +385,9 @@ public class PresetUseCases {
                             System.out.println("Hashing: " + path + "/" + filename);
                             actFile.setImage(imageService.getImage(getHash(file.toFile()), actFile));
                             actFile.setFilehash(getFullHash(file.toFile()));
-                            toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
-                            if (toSeconds > 0) System.out.println(toSeconds + "s. Hash speed " + attrs.size()*2/1048576/toSeconds + "MB/s");
+                            toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
+                            if (toSeconds > 0)
+                                System.out.println(toSeconds + "s. Hash speed " + attrs.size() * 2 / 1048576 / toSeconds + "MB/s");
                             fileToSave = true;
                             fileSizeCount += attrs.size();
                             fileCount++;
@@ -392,7 +395,19 @@ public class PresetUseCases {
                             fileSizeCountTotal -= attrs.size();
                             fileCountTotal--;
                         }
-                        if (rename(actFile)) {
+                        final Image actFileImage = actFile.getImage();
+                        String desiredFileName = FileRenamer.getFileName(
+                                "6",
+                                CommonProperties.getInstance().getPictureSet(),
+                                actFileImage.getOriginalFilename(),
+                                actFileImage.getActualDate(),
+                                actFile.getFilehash(),
+                                actFileImage.getHash(),
+                                mediafileService.getVersionNumber(actFileImage)
+                        );
+
+                        if (!actFile.getFilename().equals(desiredFileName)) {
+
                             fileToSave = true;
                         }
                         long toSeconds2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);

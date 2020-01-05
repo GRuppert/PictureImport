@@ -8,15 +8,24 @@ import java.util.Collection;
 @Table(name = "image")
 public class Image extends TrackingEntity {
     @Id
-    @Column(name = "ODID", updatable = false, nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    private int id;
+    @Column(name = "odid", updatable = false, nullable = false)
     private String hash;
-    @Column(name = "Date_taken", updatable = false)
+    @Column(name = "date_taken", updatable = false)
     private ZonedDateTime dateTaken;
-    @Column(name = "Original_Filename")
-    private String oringinalFilename;
+    @Column(name = "date_corrected", updatable = false)
+    private ZonedDateTime dateCorrected;
+    @Column(name = "original_filename")
+    private String originalFilename;
     @Column(name = "type")
     private String type;
+    private String latitude;
+    private String longitude;
+    private String altitude;
     @ManyToOne
+    @JoinColumn(name="parent_id", referencedColumnName="id")
     private Image parent;
     @OneToMany(mappedBy = "parent")
     private Collection<Image> children;
@@ -30,7 +39,7 @@ public class Image extends TrackingEntity {
     public Image(String hash, String oringinalFilename, String type) {
         this.hash = hash;
         this.dateTaken = dateTaken;
-        this.oringinalFilename = oringinalFilename;
+        this.originalFilename = oringinalFilename;
         this.type = type;
     }
 
@@ -38,24 +47,16 @@ public class Image extends TrackingEntity {
         return hash;
     }
 
-    public void setHash(String hash) {
-        this.hash = hash;
-    }
-
     public ZonedDateTime getDateTaken() {
         return dateTaken;
     }
 
-    public void setDateTaken(ZonedDateTime dateTaken) {
-        this.dateTaken = dateTaken;
+    public String getOriginalFilename() {
+        return originalFilename;
     }
 
-    public String getOringinalFilename() {
-        return oringinalFilename;
-    }
-
-    public void setOringinalFilename(String oringinalFilename) {
-        this.oringinalFilename = oringinalFilename;
+    public void setOriginalFilename(String oringinalFilename) {
+        this.originalFilename = oringinalFilename;
     }
 
     public String getType() {
@@ -71,7 +72,7 @@ public class Image extends TrackingEntity {
         return "ImageDTO{" +
                 "hash='" + hash + '\'' +
                 ", dateTaken=" + dateTaken +
-                ", oringinalFilename='" + oringinalFilename + '\'' +
+                ", oringinalFilename='" + originalFilename + '\'' +
                 ", type='" + type + '\'' +
                 '}';
     }
@@ -94,5 +95,41 @@ public class Image extends TrackingEntity {
 
     public void setChildren(Collection<Image> children) {
         this.children = children;
+    }
+
+    public ZonedDateTime getDateCorrected() {
+        return dateCorrected;
+    }
+
+    public void setDateCorrected(ZonedDateTime dateCorrected) {
+        this.dateCorrected = dateCorrected;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getAltitude() {
+        return altitude;
+    }
+
+    public void setAltitude(String altitude) {
+        this.altitude = altitude;
+    }
+
+    public ZonedDateTime getActualDate() {
+        return getDateCorrected() != null ? getDateCorrected() : getDateTaken();
     }
 }

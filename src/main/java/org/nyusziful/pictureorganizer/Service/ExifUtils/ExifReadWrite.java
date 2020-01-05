@@ -5,7 +5,7 @@
  */
 package org.nyusziful.pictureorganizer.Service.ExifUtils;
 
-import org.nyusziful.pictureorganizer.Model.Meta;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import com.drew.imaging.ImageProcessingException;
 
 import java.io.File;
