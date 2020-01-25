@@ -3,14 +3,14 @@ package org.nyusziful.pictureorganizer.DTO;
 import java.time.ZonedDateTime;
 
 public class ImageDTO {
-    private String hash;
-    private ZonedDateTime dateTaken;
-    private ZonedDateTime dateCorrected;
-    private String originalFilename;
-    private String type;
-    private String latitude;
-    private String longitude;
-    private String altitude;
-    private String parentHash;
+    public String hash;
+    public ZonedDateTime dateTaken;
+    public ZonedDateTime dateCorrected;
+    public String originalFilename;
+    public String type;
+    public String latitude;
+    public String longitude;
+    public String altitude;
+    public String parentHash;
 
 }

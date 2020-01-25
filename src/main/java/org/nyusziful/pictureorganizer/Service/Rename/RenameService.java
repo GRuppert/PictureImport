@@ -1,13 +1,16 @@
 package org.nyusziful.pictureorganizer.Service.Rename;
 
-
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash;
-import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.UI.Model.AbstractTableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.SimpleMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import java.io.File;
 import java.io.FilenameFilter;
@@ -18,27 +21,23 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Iterator;
 
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.*;
+import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
-/**
- *
- * @author gabor
- */
-public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
-    private static String Version = "6";
+public class RenameService {
 
-    private File file;
+    private static String version = "6";
+    private ZoneId zone;
+    private String pictureSet;
+    private boolean forceRewrite = false;
+
+/*    private File file;
     private File fileXmp;
     private String originalName;
     private int orig = -1;
     private String targetDirectory;
-    private boolean forceRewrite;
-    private ZoneId zone;
-    private String pictureSet;
 
     private String iID;
     private String dID;
@@ -46,14 +45,80 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
     private String model = null;//Filename, Exif, xmp, xml
     private ZonedDateTime date = null;//Filename, Exif, xmp, xml, mod +TZ
 
-//    private HashMap<String, String> exifPar = new HashMap<>();
-    private ArrayList<String> exifMissing = new ArrayList<>();
+    //    private HashMap<String, String> exifPar = new HashMap<>();
+    private ArrayList<String> exifMissing = new ArrayList<>();*/
 
-    public AnalyzingMediaFile() {
-
+    public RenameService(ZoneId zone, String pictureSet) {
+        this(zone, pictureSet, version);
     }
-/*
-    public AnalyzingMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
+
+    public RenameService(ZoneId zone, String pictureSet, String version) {
+        this.zone = zone;
+        this.pictureSet = pictureSet;
+        this.version = version;
+    }
+
+    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod, File fileXmp) {
+        try {
+            validPath(newPath);
+            updateExif();
+//                if (iID == null && supportedMediaFileType(currentName.get())) setiID();
+            switch (writeMethod) {
+                case COPY:
+                    Files.copy(path, newPath);
+                    if (fileXmp != null && fileXmp.exists())
+                        Files.copy(fileXmp.toPath(), Paths.get(newPath + ".xmp"));
+                    break;
+                case MOVE:
+                    Files.move(path, newPath);
+                    if (fileXmp != null && fileXmp.exists())
+                        Files.move(fileXmp.toPath(), Paths.get(newPath + ".xmp"));
+                    break;
+            }
+            return true;
+        } catch (IOException e) {
+            System.out.println(e);
+            //Todo logging, All for error OK
+//                errorOut(this.getNewName(), e);
+        }
+        return false;
+    }
+
+    private static void validPath(Path path) throws IOException {
+        if (Files.notExists(path.getParent())) {
+            validPath(path.getParent());
+            Files.createDirectory(path.getParent());
+        }
+    }
+
+    public static boolean rename(Mediafile actFile) {
+        final Image actFileImage = actFile.getImage();
+        String desiredFileName = FileNameFactory.getFileName(
+                "6",
+                CommonProperties.getInstance().getPictureSet(),
+                actFileImage.getOriginalFilename(),
+                actFileImage.getActualDate(),
+                actFile.getFilehash(),
+                actFileImage.getHash(),
+                mediafileService.getVersionNumber(actFileImage)
+        );
+        if (!actFile.getFilename().equals(desiredFileName)) {
+            if (write())  {
+                actFile.setFilename(desiredFileName);
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    private void setiID() {
+        this.iID = getFullHash(file);
+        newName.set(getNewFileName("5"));
+    }
+
+    public TableViewMediaFile fileToTableViewMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
+        final SimpleMediaFile simpleMediaFile = new SimpleMediaFile();
         this.file = fileIn;
         this.zone = zone;
         this.pictureSet = pictureSet;
@@ -77,34 +142,35 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
                 metaExif = ExifService.readFileMeta(new File[] {file}, zone).iterator().next();
             }
 
-            //standardizes data in Sony mp4 
+            //standardizes data in Sony mp4
             if (ext.equals("mp4")) {
                 metaExif = repairMP4(metaExif);
             }
-            
+
             //read data from filename
             Meta metaFile;
             metaFile = FileNameFactory.getV(getFile().getName());
-            
+
             //Set original filename, orig if possible from filename
             if (metaFile != null && metaFile.originalFilename != null) originalName = metaFile.originalFilename;
             if (metaFile != null && metaFile.orig > -1) orig = metaFile.orig;
-            
+
             //read External sidecars
             Meta metaXmp = null;
             if (supportedRAWFileType(originalName)) {
                 fileXmp = new File(getFile().toString() + ".xmp");
                 if (fileXmp.exists()) metaXmp = ExifService.readFileMeta(new File[] {fileXmp}, zone).iterator().next();
             }
-                        
+
             //compare/prioritizes filename and exif data(metaFile, metaXmp/metaExif)
             compareMeta(metaExif, metaFile, metaXmp);
             if (orig == 0 && ext.equals("jpg")) checkRAW();
-            
+
             if (!odID.equals(dID)) notOrig();
-            
-            newName = new SimpleStringProperty(getNewFileName(Version));
+
+            newName = new SimpleStringProperty(getNewFileName(version));
         }
+        return simpleMediaFile;
     }
 
     private String getNewFileName(String ver) {
@@ -138,27 +204,27 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
             }
         }
     }
-    
+
     private void compareHash(Meta metaExif, Meta metaFile) {
         if (!forceRewrite) {//version change
-           if (metaExif.dID != null) {
-               this.dID = metaExif.dID;
-           } else if (metaFile.dID != null) {
-               this.dID = metaFile.dID;
-               addExif("DocumentID" , getdID());
-           } else {
-               this.dID = getHash(getFile());
-               addExif("DocumentID" , getdID());
-           }
-           if (metaExif.odID != null) {
-               this.odID = metaExif.odID;
-           } else if (metaFile.odID != null) {
-               this.odID = metaFile.odID;
-               addExif("OriginalDocumentID" , getOdID());
-           } else {
+            if (metaExif.dID != null) {
+                this.dID = metaExif.dID;
+            } else if (metaFile.dID != null) {
+                this.dID = metaFile.dID;
+                addExif("DocumentID" , getdID());
+            } else {
+                this.dID = getHash(getFile());
+                addExif("DocumentID" , getdID());
+            }
+            if (metaExif.odID != null) {
+                this.odID = metaExif.odID;
+            } else if (metaFile.odID != null) {
+                this.odID = metaFile.odID;
+                addExif("OriginalDocumentID" , getOdID());
+            } else {
                 this.odID = this.dID;
-               addExif("OriginalDocumentID" , getOdID());
-           }
+                addExif("OriginalDocumentID" , getOdID());
+            }
         } else {
             this.dID = getHash(getFile());
             if (getdID().equals(EMPTYHASH)) {
@@ -200,9 +266,9 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
             if (date != null) {
                 Boolean equal = true;
                 if (supportedVideoFileType(originalName)) {
-                    if (Math.abs(ChronoUnit.SECONDS.between(date, metaExif.date)) > 180) {equal = false;}                    
+                    if (Math.abs(ChronoUnit.SECONDS.between(date, metaExif.date)) > 180) {equal = false;}
                 } else {
-                    if (Math.abs(ChronoUnit.SECONDS.between(date, metaExif.date)) > 0) {equal = false;}                    
+                    if (Math.abs(ChronoUnit.SECONDS.between(date, metaExif.date)) > 0) {equal = false;}
                 }
                 if (!equal) {
                     addNote("date has been changed: " + (date.toEpochSecond() - metaExif.date.toEpochSecond()) + "sec", true);
@@ -220,14 +286,14 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
         }
         if (date != null && !date.isEqual(date.withZoneSameInstant(zone))) {addNote("TZ different", false);}
     }
-    
+
     private void compareXMP(Meta metaXmp) {
         if (metaXmp.date != null && !metaXmp.date.isEqual(date)) addNote("XMP date wrong", false);
         if (metaXmp.model != null && !metaXmp.model.equals(model)) addNote("XMP model wrong", false);
         if (metaXmp.dID != null && !metaXmp.dID.equals(dID)) addNote("XMP dID wrong", false);
         if (metaXmp.odID != null && !metaXmp.odID.equals(odID)) addNote("XMP odID wrong", false);
     }
-    
+
     private void compareMeta(Meta metaExifFile, Meta metaFile, Meta metaExifXmp) {
         Meta metaExif;
         Meta metaSec = null;
@@ -244,14 +310,14 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
             if (metaExifXmp != null) metaSec  = metaExifXmp;
         }
         if (metaFile == null) metaFile = new Meta(null, null, null, null, null, null, null, null, -1);
-        
+
         compareModel(metaExif, metaFile);
         compareHash(metaExif, metaFile);
         compareDate(metaExif, metaFile);
         if (metaSec != null) compareXMP(metaSec);
-                
+
     }
- 
+
     private void notOrig() {
         orig = getVersionNumber();
     }
@@ -270,13 +336,13 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
         });
         return (listFiles != null && listFiles.length > 0) ? listFiles[0] : null;
     }
-    
+
     private void checkRAW() {
         File rawFile;
         rawFile = checkDir(file.getParentFile());
         if  (rawFile != null && !rawFile.exists()) {
             rawFile = checkDir(this.getNewPath().getParent().toFile());
-        } 
+        }
         if  (rawFile != null && rawFile.exists()) {
             Meta v = FileNameFactory.getV(rawFile.getName());
             if (v != null && v.odID != null) odID = v.odID;
@@ -284,16 +350,16 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
             else odID = getHash(rawFile);
         }
     }
-    
+
     private void addExif(ZonedDateTime value) {
         addExif("DateTimeOriginal", value.format(ExifDateFormat));
         addExif("xmp:DateTimeOriginal", value.format(ExifDateFormatTZ));
     }
-    
+
     private void addExif(String field, String value) {
         exifMissing.add("-" + field + "=" + value);
     }
-    
+
     private void updateExif() {
         String ext = FilenameUtils.getExtension(getFile().getName().toLowerCase()).toLowerCase();
         if (supportedRAWFileType(getFile().getName()) || ext.equals("jpg") || ext.equals("mp4")) {
@@ -304,49 +370,14 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
                     exifMissing.add(fileXmp.getName());
                     ExifService.updateExif(exifMissing, getFile().getParentFile());
                     exifMissing.remove(fileXmp.getName());
-                } 
+                }
             }
             if (!exifMissing.isEmpty() && !(supportedRAWFileType(getFile().getName()) && orig == 0)) {
                 exifMissing.add(updateFile);
-                    ExifService.updateExif(exifMissing, getFile().getParentFile());
+                ExifService.updateExif(exifMissing, getFile().getParentFile());
 //                setiID();
             }
         }
-    }
-    
-    private void validPath(Path path) throws IOException {
-        if (Files.notExists(path.getParent())) {
-            validPath(path.getParent());    
-            Files.createDirectory(path.getParent());
-        }
-    }
-    
-    public boolean write(WriteMethod writeMethod) {
-        if (processing.get()) {
-            try {        
-                validPath(this.getNewPath());
-                updateExif();
-//                if (iID == null && supportedMediaFileType(currentName.get())) setiID();
-                switch (writeMethod) {
-                    case COPY:
-                        Files.copy(this.getOldPath(), this.getNewPath());
-                        if (fileXmp != null && fileXmp.exists())
-                            Files.copy(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));
-                        break;
-                    case MOVE:
-                        Files.move(this.getOldPath(), this.getNewPath());
-                        if (fileXmp != null && fileXmp.exists())
-                            Files.move(fileXmp.toPath(), Paths.get(this.getNewPath() + ".xmp"));
-                        break;
-                }
-                return true;
-            } catch (IOException e) {
-                System.out.println(e);
-                //Todo logging, All for error OK
-//                errorOut(this.getNewName(), e);
-            }
-        }
-        return false;
     }
 
     private void addNote(String addition, Boolean critical) {
@@ -354,98 +385,5 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
         if (critical) processing.set(false);
     }
 
-    private Meta repairMP4(Meta metaExif) {
-        ArrayList<String> meta = ExifService.getExif(new String[]{"-DateTimeOriginal", "-DeviceManufacturer", "-DeviceModelName", "-CreationDateValue"}, getFile());
-        Iterator<String> iterator = meta.iterator();
-        String dto = null;
-        String cdv = null;
-        String model = null;
-        String make = null;
-        while (iterator.hasNext()) {
-            String line = iterator.next();
-            String tagValue = line.substring(34);
-            switch (line.substring(0, 9)) {
-                case "Date/Time":
-                    dto = tagValue;
-                    break;
-                case "Creation ":
-                    cdv = tagValue;
-                    break;
-                case "Device Ma":
-                    make = tagValue;
-                    break;
-                case "Device Mo":
-                    model = tagValue;
-                    break;
-            }
-        }
-        if (cdv != null && dto == null) {
-            metaExif.model = model;
-            addExif("Model", metaExif.model);
-            metaExif.date = getZonedTimeFromStr(cdv);
-            addExif(metaExif.date);
-            addExif("Make", make);           
-//            String[] commandAndOptions2 = {"exiftool", "-P", "-overwrite_original", "-DateTimeOriginal<CreationDateValue", "-Make<DeviceManufacturer", "-Model<DeviceModelName", getFile().getName()};
-        }
-        return metaExif;
-    }
-
-    private void setiID() {
-        this.iID = getFullHash(file);
-        newName.set(getNewFileName("5"));
-    }
-*/
-    // <editor-fold defaultstate="collapsed" desc="Getter-Setter section">
-    /**
-     * @return the iID
-     */
-    public String getiID() {
-        return iID;
-    }
-
-    /**
-     * @return the dID
-     */
-    public String getdID() {
-        return dID;
-    }
-
-    /**
-     * @return the odID
-     */
-    public String getOdID() {
-        return odID;
-    }
-
-    /**
-     * @return the file
-     */
-    public File getFile() {
-        return file;
-    }
-
-    public Path getOldPath() {
-        return getFile().toPath();
-    }
-
-    /**
-     * Target directory\Parent directory\New filename
-     * @return
-     */
-/*    public Path getNewPath() {
-        return Paths.get(targetDirectory + "\\" + file.getParentFile().getName() + "\\" + this.getNewName());
-    }
-*/
-    public String getTargetDirectory() {return targetDirectory;}
-
-    public void setTargetDirectory(String targetDirectory) {this.targetDirectory = targetDirectory;}
-
-    @Override
-    public boolean write(WriteMethod writeMethod) {
-        return false;
-    }
-    // </editor-fold>
 
 }
-
-

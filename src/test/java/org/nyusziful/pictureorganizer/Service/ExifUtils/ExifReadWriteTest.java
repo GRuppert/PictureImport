@@ -34,7 +34,7 @@ public class ExifReadWriteTest {
         String fileName = "V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-4f0f7fe2fabb83c399af967ccf860d88-47e0be579ef91106cdd6c818b2976ce2-DSC09459.ARW";
         File fileMeta = new File(this.getClass().getClassLoader().getResource(fileName).getFile());
         Meta expResult = new Meta("", ZonedDateTime.of(2015, 07, 25, 14, 32, 29, 00, ZoneId.systemDefault()), true, "ILCE-5100", null, "47e0be579ef91106cdd6c818b2976ce2", "47e0be579ef91106cdd6c818b2976ce2", "", null);
-        Meta result = ExifReadWrite.readFileMeta(new File[] {fileMeta}, ZoneId.systemDefault()).iterator().next();
+        Meta result = ExifService.readFileMeta(new File[] {fileMeta}, ZoneId.systemDefault()).iterator().next();
         assert result.originalFilename.endsWith(fileName);
         result.originalFilename = "";
         assertEquals("Meta of file(" + fileName + ") counted: \n" + result + "\n awaited: \n" + expResult, expResult.toString(), result.toString());
@@ -61,7 +61,7 @@ public class ExifReadWriteTest {
         long result = 0;
         long checkFile = 0;
         try {
-            result = FileUtils.checksumCRC32(ExifReadWrite.createXmp(file));
+            result = FileUtils.checksumCRC32(ExifService.createXmp(file));
             checkFile = FileUtils.checksumCRC32(file);
         } catch (IOException ex) {
             fail("IOException: " + ex.getMessage());
@@ -82,7 +82,7 @@ public class ExifReadWriteTest {
         String[] values = null;
         File file = null;
         ArrayList<String> expResult = null;
-        ArrayList<String> result = ExifReadWrite.getExif(values, file);
+        ArrayList<String> result = ExifService.getExif(values, file);
         assertEquals(expResult, result);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
@@ -97,7 +97,7 @@ public class ExifReadWriteTest {
         System.out.println("updateExif");
         List<String> valuePairs = null;
         File directory = null;
-        ExifReadWrite.updateExif(valuePairs, directory);
+        ExifService.updateExif(valuePairs, directory);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");
     }
@@ -111,7 +111,7 @@ public class ExifReadWriteTest {
         System.out.println("readMeta");
         File file = null;
         ArrayList expResult = null;
-        ArrayList result = ExifReadWrite.readMeta(file);
+        ArrayList result = ExifService.readMeta(file);
         assertEquals(expResult, result);
         // TODO review the generated test code and remove the default call to fail.
         fail("The test case is a prototype.");

@@ -10,7 +10,7 @@ public class Image extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private int id;
+    private int id = -1;
     @Column(name = "odid", updatable = false, nullable = false)
     private String hash;
     @Column(name = "date_taken", updatable = false)
@@ -36,7 +36,7 @@ public class Image extends TrackingEntity {
 
     }
 
-    public Image(String hash, String oringinalFilename, String type) {
+    public Image(String hash, ZonedDateTime dateTaken, String oringinalFilename, String type) {
         this.hash = hash;
         this.dateTaken = dateTaken;
         this.originalFilename = oringinalFilename;
@@ -131,5 +131,13 @@ public class Image extends TrackingEntity {
 
     public ZonedDateTime getActualDate() {
         return getDateCorrected() != null ? getDateCorrected() : getDateTaken();
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 }

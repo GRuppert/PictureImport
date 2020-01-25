@@ -42,75 +42,78 @@ public class ExifReadWriteIMR {
     public static ArrayList<Meta> readFileMeta(File[] files, ZoneId defaultTZ) {
         ArrayList<Meta> results = new ArrayList<>();
         for (File file : files) {
-            ArrayList<String[]> tags;
-            String model = null;
-            String note = "";
-            String iID = null;
-            String dID = null;
-            String odID = null;
-            String captureDate = null;
-            ZonedDateTime wTZ = null;
-            Boolean dateFormat = false;
-            try {
-                tags = readMeta(file);
-            } catch (ImageProcessingException | IOException ex) {
-                Meta meta = new Meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), -1);
-                System.out.println(meta);
-                results.add(meta);
-                continue;
-            }
-            for (String[] tag : tags) {
-//                System.out.println(tag[0] + " : " + tag[1]);
-                switch (tag[0]) {
-                    case "Model":
-                    case "tiff:Model":
-                        model = tag[1];
-                        break;
-                    case "xmpMM:InstanceID":
-                        iID = tag[1];
-                        break;
-                    case "xmpMM:DocumentID":
-                        dID = tag[1];
-                        break;
-                    case "xmpMM:OriginalDocumentID":
-                        odID = tag[1];
-                        break;
-                    case "Offset Time Original":
-                    case "Unknown tag (0x9011)":
-                        if (captureDate == null) captureDate = tag[1];
-                        else captureDate += tag[1];
-                        dateFormat = true;
-                        break;
-                    case "Date/Time Original":
-                        if (captureDate == null) captureDate = tag[1];
-                        else captureDate = tag[1] + captureDate;
-                        if (wTZ != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
-                            dateFormat = true;
-                        break;
-                    case "exif:DateTimeOriginal":
-                        try {
-                            wTZ = ZonedDateTime.parse(tag[1], XmpDateFormatTZ);
-                            if ((captureDate != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
-                                    || FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp"))
-                                dateFormat = true;
-                        }
-                        catch (DateTimeParseException exc) {
-                        }
-                        break;
-                }
-            }
-            ZonedDateTime OrigDT = null;
-            if (captureDate != null) {
-                OrigDT = getZonedTimeFromStr(captureDate);
-                if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, defaultTZ);
-            } else if (wTZ != null) {
-                OrigDT = wTZ;
-            }
-            Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, -1);
-            System.out.println(meta);
-            results.add(meta);
+            results.add(readFileMeta(file, defaultTZ));
         }
         return results;
+    }
+
+    public static Meta readFileMeta(File file, ZoneId defaultTZ) {
+        ArrayList<String[]> tags;
+        String model = null;
+        String note = "";
+        String iID = null;
+        String dID = null;
+        String odID = null;
+        String captureDate = null;
+        ZonedDateTime wTZ = null;
+        Boolean dateFormat = false;
+        try {
+            tags = readMeta(file);
+        } catch (ImageProcessingException | IOException ex) {
+            Meta meta = new Meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), -1);
+            System.out.println(meta);
+            return meta;
+        }
+        for (String[] tag : tags) {
+//                System.out.println(tag[0] + " : " + tag[1]);
+            switch (tag[0]) {
+                case "Model":
+                case "tiff:Model":
+                    model = tag[1];
+                    break;
+                case "xmpMM:InstanceID":
+                    iID = tag[1];
+                    break;
+                case "xmpMM:DocumentID":
+                    dID = tag[1];
+                    break;
+                case "xmpMM:OriginalDocumentID":
+                    odID = tag[1];
+                    break;
+                case "Offset Time Original":
+                case "Unknown tag (0x9011)":
+                    if (captureDate == null) captureDate = tag[1];
+//                    else captureDate += tag[1];
+                    dateFormat = true;
+                    break;
+                case "Date/Time Original":
+                    if (captureDate == null) captureDate = tag[1];
+//                    else captureDate = tag[1] + captureDate;
+                    if (wTZ != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
+                        dateFormat = true;
+                    break;
+                case "exif:DateTimeOriginal":
+                    try {
+                        wTZ = ZonedDateTime.parse(tag[1], XmpDateFormatTZ);
+                        if ((captureDate != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
+                                || FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp"))
+                            dateFormat = true;
+                    }
+                    catch (DateTimeParseException exc) {
+                    }
+                    break;
+            }
+        }
+        ZonedDateTime OrigDT = null;
+        if (captureDate != null) {
+            OrigDT = getZonedTimeFromStr(captureDate);
+            if (OrigDT == null) OrigDT = getTimeFromStr(captureDate, defaultTZ);
+        } else if (wTZ != null) {
+            OrigDT = wTZ;
+        }
+        Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, -1);
+        System.out.println(meta);
+        return meta;
     }
 
 

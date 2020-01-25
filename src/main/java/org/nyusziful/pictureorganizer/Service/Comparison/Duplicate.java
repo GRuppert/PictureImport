@@ -1,7 +1,7 @@
 package org.nyusziful.pictureorganizer.Service.Comparison;
 
 
-import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWrite.readMeta;
+import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.readMeta;
 import com.drew.imaging.ImageProcessingException;
 import java.io.IOException;
 import java.util.ArrayList;

@@ -3,6 +3,7 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.persistence.*;
+import java.io.File;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.util.Objects;
@@ -14,7 +15,7 @@ public class Mediafile extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false, nullable = false)
-    private int id;
+    private int id = -1;
 
     @ManyToOne
     @JoinColumn(name="folder_id", referencedColumnName="id")
@@ -42,7 +43,6 @@ public class Mediafile extends TrackingEntity {
 
 
     public Mediafile(Drive drive, Path path, long size, Timestamp dateMod) {
-        this.id = -1;
         this.filename = path.getFileName().toString();
         this.drive = drive;
         this.folder = new Folder(drive, path.getParent());
@@ -143,5 +143,9 @@ public class Mediafile extends TrackingEntity {
 
     public String getType() {
         return FilenameUtils.getExtension(filename);
+    }
+
+    public File getFile() {
+        return new File(drive.getLetter() + ":\\" + folder + "\\" + filename);
     }
 }

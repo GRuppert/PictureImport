@@ -78,7 +78,7 @@ public class fileVersionTest {
      */
     @Test
     public void testGetV() {
-        Meta result = FileRenamer.getV(filename);
+        Meta result = FileNameFactory.getV(filename);
         assertEquals("Meta of file(" + filename + ") result: " + result + " awaited: " + expResult, expResult.toString(), result.toString());
     }
 }

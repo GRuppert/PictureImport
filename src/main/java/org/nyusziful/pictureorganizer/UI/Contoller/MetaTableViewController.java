@@ -5,8 +5,8 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import org.nyusziful.pictureorganizer.Service.Rename.AnalyzingMediaFile;
-import org.nyusziful.pictureorganizer.Service.Rename.MetaProp;
+import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -15,7 +15,7 @@ public class MetaTableViewController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableColumn<AnalyzingMediaFile, Boolean > processingCol;
+    private TableColumn<TableViewMediaFile, Boolean > processingCol;
 
     @FXML
     private TableColumn oldNameCol;
@@ -27,7 +27,7 @@ public class MetaTableViewController implements Initializable {
     private TableColumn noteCol;
 
     @FXML
-    private TableColumn<AnalyzingMediaFile, Boolean > xmpCol;
+    private TableColumn<TableViewMediaFile, Boolean > xmpCol;
     // </editor-fold>
 
     private ObservableList<MetaProp> meta;

@@ -1,10 +1,11 @@
-package org.nyusziful.pictureorganizer.Service.Rename;
+package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import java.net.URL;
 import java.util.Collection;

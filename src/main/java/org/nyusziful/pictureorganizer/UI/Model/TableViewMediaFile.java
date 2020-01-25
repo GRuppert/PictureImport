@@ -1,4 +1,4 @@
-package org.nyusziful.pictureorganizer.Service.Rename;
+package org.nyusziful.pictureorganizer.UI.Model;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;

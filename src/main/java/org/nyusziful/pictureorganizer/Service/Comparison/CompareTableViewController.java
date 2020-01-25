@@ -16,7 +16,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import org.nyusziful.pictureorganizer.Service.Rename.AnalyzingMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -25,7 +25,7 @@ public class CompareTableViewController {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableColumn<AnalyzingMediaFile, Boolean > processingCol;
+    private TableColumn<TableViewMediaFile, Boolean > processingCol;
 
     @FXML
     private TableColumn buttonCol;

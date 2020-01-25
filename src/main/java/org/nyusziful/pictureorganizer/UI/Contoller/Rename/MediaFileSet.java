@@ -1,8 +1,9 @@
-package org.nyusziful.pictureorganizer.Service.Rename;
+package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 

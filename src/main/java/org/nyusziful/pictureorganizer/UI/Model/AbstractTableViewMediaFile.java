@@ -2,7 +2,6 @@ package org.nyusziful.pictureorganizer.UI.Model;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import org.nyusziful.pictureorganizer.Service.Rename.TableViewMediaFile;
 
 public abstract class AbstractTableViewMediaFile implements TableViewMediaFile {
     protected SimpleBooleanProperty processing;

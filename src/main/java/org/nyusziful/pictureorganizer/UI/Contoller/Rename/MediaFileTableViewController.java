@@ -1,9 +1,10 @@
-package org.nyusziful.pictureorganizer.Service.Rename;
+package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
 import javafx.fxml.FXML;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -15,10 +16,10 @@ public class MediaFileTableViewController implements MediaFileSetTableViewContro
     private TableView Table;
 
     @FXML
-    private TableColumn<AnalyzingMediaFile, Boolean > processingCol;
+    private TableColumn<TableViewMediaFile, Boolean > processingCol;
 
     @FXML
-    private TableColumn<AnalyzingMediaFile, Boolean > xmpCol;
+    private TableColumn<TableViewMediaFile, Boolean > xmpCol;
     // </editor-fold>
 
     private MediaFileSet mediaFileSet;

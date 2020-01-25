@@ -5,7 +5,7 @@
  */
 package org.nyusziful.pictureorganizer.Service.TimeShift;
 
-import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWrite.readFileMeta;
+import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.readFileMeta;
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWriteET.exifTool;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.errorOut;
 

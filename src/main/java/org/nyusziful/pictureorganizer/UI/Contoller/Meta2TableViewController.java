@@ -2,7 +2,7 @@ package org.nyusziful.pictureorganizer.UI.Contoller;
 
 import javafx.collections.ObservableList;
 import javafx.fxml.Initializable;
-import org.nyusziful.pictureorganizer.Service.Rename.MetaProp;
+import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
 
 import java.net.URL;
 import java.util.ResourceBundle;

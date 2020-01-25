@@ -69,7 +69,7 @@ public class fileRenamerTest {
     @Test
     public void testGetFileName() {
         System.out.println("getFileName");
-        String result = FileRenamer.getFileName(ver, pictureSet, originalName, date, iID, dID, original);
+        String result = FileNameFactory.getFileName(ver, pictureSet, originalName, date, iID, dID, original);
         assertEquals("Rename of file(" + originalName + ") result: " + result + " awaited: " + expResult, expResult, result);
     }
     

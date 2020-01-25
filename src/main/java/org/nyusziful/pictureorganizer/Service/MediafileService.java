@@ -6,17 +6,22 @@ import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.Service.Rename.FileRenamer;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 
+import java.io.File;
 import java.util.*;
 
+import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
+
 public class MediafileService {
-    private static MediafileDAO mediafileDAO;
-    private static Set<Mediafile> fileSet = null;
+    private MediafileDAO mediafileDAO;
+    private HashMap<String, Mediafile> fileSet = null;
+    private ImageService imageService;
 
 
     public MediafileService() {
         mediafileDAO = new MediafileDAOImplHib();
+        imageService = new ImageService();
     }
 
     public List<Mediafile> getMediafiles() {
@@ -24,6 +29,16 @@ public class MediafileService {
         return getMediafiles;
     }
 
+    public void checkImage(Mediafile mediafile) {
+        File file = mediafile.getFile();
+        final String hash = getHash(file);
+        Image image = imageService.getImage(hash, mediafile);
+        if (image == null) {
+            Meta meta = ExifService.readMeta(file, zone);
+            image = new Image(hash, meta.date, mediafile.getFilename(), mediafile.getType());
+        }
+        mediafile.setImage(image);
+    }
 
 /*
     public MediafileDTO getMediafile(String name) {
@@ -69,15 +84,14 @@ public class MediafileService {
 
     public Mediafile getMediaFile(Mediafile actFile) {
         if (fileSet == null) {
-            fileSet = new HashSet<>();
-            fileSet.addAll(mediafileDAO.getByDriveId(actFile.getDrive().getId()));
-        }
-        for (Mediafile mfile: fileSet) {
-            if (mfile.getFilename().equals(actFile.getFilename()) && mfile.getFolder().getPath().equals(actFile.getFolder().getPath())) {
-                return mfile;
+            fileSet = new HashMap<>();
+            final List<Mediafile> byDriveId = mediafileDAO.getByDriveId(actFile.getDrive().getId());
+            for (Mediafile file : byDriveId) {
+                fileSet.put(file.getFolder().getPath() + file.getFilename(), file);
             }
         }
-        return actFile;
+        Mediafile mediafile = fileSet.get(actFile.getFolder().getPath() + actFile.getFilename());
+        return mediafile == null ? actFile : mediafile;
     }
 
     public int getVersionNumber(Image image) {

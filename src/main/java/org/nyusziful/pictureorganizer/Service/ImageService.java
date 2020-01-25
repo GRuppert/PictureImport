@@ -22,9 +22,6 @@ public class ImageService {
 
     public Image getImage(String hash, Mediafile requester) {
         Image getImage = imageDAO.getImageByHash(hash);
-        if (getImage == null) {
-            getImage = new Image(hash, requester.getFilename(), requester.getType());
-        }
         return getImage;
     }
 

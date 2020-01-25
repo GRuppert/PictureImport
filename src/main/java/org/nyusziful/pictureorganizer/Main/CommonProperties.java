@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.util.prefs.Preferences;
 
-import org.nyusziful.pictureorganizer.Service.Rename.TableViewMediaFile.WriteMethod;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile.WriteMethod;
 
 public class CommonProperties {
     private static CommonProperties instance;
@@ -14,6 +14,7 @@ public class CommonProperties {
     private WriteMethod copyOrMove = WriteMethod.COPY;
     private ZoneId zone = ZoneId.systemDefault();
     private String pictureSet = "K";
+    private String version = "K";
     private Path toDir;
     private File fromDir;
     private Preferences prefs = Preferences.userNodeForPackage(PictureOrganizer.class);

@@ -2,9 +2,11 @@ package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.DriveService;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.ImageService;
-import org.nyusziful.pictureorganizer.Service.Rename.FileRenamer;
+import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
@@ -16,6 +18,8 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.sql.Timestamp;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +42,7 @@ public class PresetUseCases {
 //        listFiles(Paths.get("G:\\Pictures\\Photos"), 1, 0);
         final DriveService driveService = new DriveService();
         final List<Drive> drives = driveService.getDrives();
-        listFiles(Paths.get("D:\\Képek"), drives.get(7), 0, false, "arw");
+        listFiles(Paths.get("D:\\Képek"), drives.get(7), 0, false, "arw", ZoneId.systemDefault());
 
 //        listFiles(Paths.get("E:\\temp"), 2, 0);
 //        listFiles(Paths.get("E:\\Képek"), 7, 0);
@@ -331,7 +335,7 @@ public class PresetUseCases {
      * @param path
      * @param start
      */
-    private static void listFiles(Path path, Drive drive, int start, boolean original, String extension) {
+    private static void listFiles(Path path, Drive drive, int start, boolean original, String extension, ZoneId zone) {
         fileSizeCountTotal = 0;
         fileSizeCount = 0;
         fileCountTotal = 0;
@@ -340,7 +344,6 @@ public class PresetUseCases {
         int blockSize = 1000;
         boolean force = false;
         final MediafileService mediafileService = new MediafileService();
-        final ImageService imageService = new ImageService();
         List<Mediafile> mediafiles = mediafileService.getMediafiles();
         try {
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
@@ -380,10 +383,10 @@ public class PresetUseCases {
                         long startTime = System.nanoTime();
                         long toSeconds = 0;
                         boolean fileToSave = false;
-                        Mediafile actFile = mediafileService.getMediaFile(new Mediafile(drive, file, attrs.size(), new java.sql.Timestamp(attrs.lastModifiedTime().toMillis())));
+                        Mediafile actFile = mediafileService.getMediaFile(new Mediafile(drive, file, attrs.size(), new Timestamp(attrs.lastModifiedTime().toMillis())));
                         if (force || actFile.getId() < 0) {
                             System.out.println("Hashing: " + path + "/" + filename);
-                            actFile.setImage(imageService.getImage(getHash(file.toFile()), actFile));
+                            mediafileService.checkImage(actFile);
                             actFile.setFilehash(getFullHash(file.toFile()));
                             toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
                             if (toSeconds > 0)
@@ -395,25 +398,13 @@ public class PresetUseCases {
                             fileSizeCountTotal -= attrs.size();
                             fileCountTotal--;
                         }
-                        final Image actFileImage = actFile.getImage();
-                        String desiredFileName = FileRenamer.getFileName(
-                                "6",
-                                CommonProperties.getInstance().getPictureSet(),
-                                actFileImage.getOriginalFilename(),
-                                actFileImage.getActualDate(),
-                                actFile.getFilehash(),
-                                actFileImage.getHash(),
-                                mediafileService.getVersionNumber(actFileImage)
-                        );
-
-                        if (!actFile.getFilename().equals(desiredFileName)) {
-
-                            fileToSave = true;
-                        }
+                        if (RenameService.rename(actFile)) fileToSave = true;
+/*
                         long toSeconds2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
-//                        System.out.println((toSeconds2-toSeconds) + "s to DAL.");
+                        System.out.println((toSeconds2-toSeconds) + "s to DAL.");
                         long secondsBetween = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-prevTime);
-//                        System.out.println(secondsBetween + "s since the last iteration.");
+                        System.out.println(secondsBetween + "s since the last iteration.");
+*/
                         prevTime = System.nanoTime();
                         if (fileToSave) {
                             files.add(actFile);

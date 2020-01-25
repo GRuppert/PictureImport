@@ -8,7 +8,13 @@ import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
+import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSet;
+import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSetTableViewController;
+import org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController;
 import org.nyusziful.pictureorganizer.UI.DirectoryElement;
+import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
+import org.nyusziful.pictureorganizer.UI.Model.SimpleMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
@@ -42,7 +48,7 @@ import javafx.scene.layout.BorderPane;
 
 import javax.swing.JOptionPane;
 
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWrite;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 
 //Exiftool must be in PATH
 // <2GB file support
@@ -325,7 +331,7 @@ public class MainController implements Initializable {
         ZonedDateTime previousFileDate = ZonedDateTime.now();
 
         for (File file : fileList) {
-            ZonedDateTime fileDate = FileRenamer.getV(file.getName()).date;
+            ZonedDateTime fileDate = FileNameFactory.getV(file.getName()).date;
             if (!fileDate.truncatedTo(ChronoUnit.DAYS).equals(previousFileDate.truncatedTo(ChronoUnit.DAYS))) {
                 previousFileDate = fileDate;
                 File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
@@ -345,13 +351,14 @@ public class MainController implements Initializable {
     }
 
     //Input mediafiles Output standard
-    public Collection<AnalyzingMediaFile> itWasImport(Collection<String> directories) {
+    public Collection<TableViewMediaFile> itWasImport(Collection<String> directories) {
         Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType(name));
-        ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
+        ArrayList<TableViewMediaFile> files = new ArrayList<>();
         Progress instance = Progress.getInstance();
         instance.reset();
         instance.setGoal(directoryElements.size());
-        directoryElements.stream().forEach((directoryElement) -> {files.add(new AnalyzingMediaFile(directoryElement.file, commonProperties.getZone(), commonProperties.getPictureSet(), commonProperties.getToDir().toString(), false)); instance.increaseProgress();});
+        final RenameService renameService = new RenameService(commonProperties.getZone(), commonProperties.getPictureSet());
+        directoryElements.stream().forEach((directoryElement) -> {files.add(renameService.fileToTableViewMediaFile(directoryElement.file, commonProperties.getZone(), commonProperties.getPictureSet(), commonProperties.getToDir().toString(), false)); instance.increaseProgress();});
 /*
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
@@ -365,7 +372,7 @@ public class MainController implements Initializable {
     }
 
     //import and rename are basically the same
-    private Collection<AnalyzingMediaFile> importFiles() {
+    private Collection<TableViewMediaFile> importFiles() {
         Collection<String> directories = org.nyusziful.pictureorganizer.UI.StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
         Path backupdrive = null;
             if ((backupdrive = Services.backupMounted()) == null) {
@@ -382,7 +389,7 @@ public class MainController implements Initializable {
         Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType(name));
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
-        return ExifReadWrite.readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
+        return ExifService.readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
     }
 
 
