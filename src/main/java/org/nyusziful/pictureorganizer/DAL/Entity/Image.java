@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 
@@ -9,7 +10,7 @@ import java.util.Collection;
         name = "image",
         uniqueConstraints = {@UniqueConstraint(columnNames = {"odid", "type"})}
 )
-public class Image extends TrackingEntity {
+public class Image extends TrackingEntity implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)

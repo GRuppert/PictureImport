@@ -36,9 +36,14 @@ public class MediaFileHash {
 
         private final String name;
         private final String[] extensions;
+
         Type(String name, String[] extensions) {
             this.name = name;
             this.extensions = extensions;
+        }
+
+        public String getDBName() {
+            return name;
         }
 
         public static Type getType(File file) {
@@ -72,7 +77,7 @@ public class MediaFileHash {
         Type type = Type.UNKNOWN;
         try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
             type = Type.getType(file);
-            imageDTO.type = type.name;
+            imageDTO.type = type.getDBName();
             switch (type) {
                 case TIFF:
                     digest = TIFFHash.readDigest(file, fileStream);

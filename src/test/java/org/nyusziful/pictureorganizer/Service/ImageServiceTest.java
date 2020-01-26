@@ -15,7 +15,7 @@ public class ImageServiceTest {
         final ImageService imageService = new ImageService();
         ImageDTO imageSearch = new ImageDTO();
         imageSearch.hash = "001ccb41c7eb77075051f3febdcafe71";
-        imageSearch.type = MediaFileHash.Type.TIFF.name();
+        imageSearch.type = MediaFileHash.Type.TIFF.getDBName();
         Image image = imageService.getImage(imageSearch);
         assertTrue(image.getId()>-1);
         image.setOriginalFilename("test2");

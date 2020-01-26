@@ -28,7 +28,7 @@ public class Mediafile extends TrackingEntity {
     private String filename;
 
     @ManyToOne
-    @JoinColumn(name="image_id", referencedColumnName="odid")
+    @JoinColumn(name="image_id", referencedColumnName="id")
     private Image image;
 
     private String filehash;

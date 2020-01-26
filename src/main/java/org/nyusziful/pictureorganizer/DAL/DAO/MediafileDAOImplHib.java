@@ -7,6 +7,7 @@ import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
+import javax.persistence.TypedQuery;
 import javax.persistence.criteria.CriteriaBuilder;
 import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.Root;
@@ -30,8 +31,11 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements Med
 
     @Override
     public Mediafile getByFile(MediafileDTO mediafileDTO) {
-        final List resultList = hibConnection.getCurrentSession().createQuery("SELECT i from Mediafile i WHERE i.drive.id='" + mediafileDTO.driveId + "' and i.folder.path ='" + mediafileDTO.path + "' and i.filename ='" + mediafileDTO.filename + "'").getResultList();
-        if (resultList == null || resultList.size() < 1) return null;
-        return (Mediafile) resultList.get(0);
+        final EntityManager entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
+        TypedQuery<Mediafile> typedQuery = entityManager.createQuery("SELECT i from Mediafile i WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", Mediafile.class);
+        typedQuery.setParameter("driveId", mediafileDTO.driveId);
+        typedQuery.setParameter("path", mediafileDTO.path);
+        typedQuery.setParameter("filename", mediafileDTO.filename);
+        return typedQuery.getSingleResult();
     }
 }

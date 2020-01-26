@@ -34,8 +34,8 @@ public class fileRenamerTest {
     @Parameters    
     public static Collection data() {
         return Arrays.asList(new Object[][] {
-            { "6", "K", "DSC0001.JPG", ZonedDateTime.of(2016, 11, 04, 16, 10, 38, 00, ZoneId.of("+0100")), null, "a3a650e9653d8c59a40571e6cf18b24d", 0, "V6_K2016-11-0_4@15-1_0-38(+0100)(Fri)-a3a650e9653d8c59a40571e6cf18b24d-00-DSC0001.JPG" },
-            { "6", "K", "DSC0001.JPG", ZonedDateTime.of(2016, 11, 04, 0, 10, 38, 00, ZoneId.of("+0100")), null, "a3a650e9653d8c59a40571e6cf18b24d", 90, "V6_K2016-11-0_3@23-1_0-38(+0100)(Fri)-a3a650e9653d8c59a40571e6cf18b24d-90-DSC0001.JPG" }
+            { "6", "K", "DSC0001.JPG", ZonedDateTime.of(2016, 11, 04, 16, 10, 38, 00, ZoneId.of("+0100")), null, "a3a650e9653d8c59a40571e6cf18b24d", 0, "V6_K2016-11-0_4@15-1_0-38(+0100)(Fri)-a3a650e9653d8c59a40571e6cf18b24d-0-DSC0001.JPG" },
+            { "6", "K", "DSC0001.JPG", ZonedDateTime.of(2016, 11, 04, 0, 10, 38, 00, ZoneId.of("+0100")), null, "a3a650e9653d8c59a40571e6cf18b24d", 9, "V6_K2016-11-0_3@23-1_0-38(+0100)(Fri)-a3a650e9653d8c59a40571e6cf18b24d-9-DSC0001.JPG" }
         });
     }    
     

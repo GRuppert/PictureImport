@@ -229,7 +229,7 @@ public class FileNameFactory {
                 return "V" + ver + "_" + pictureSet + dateFormat(date) + iID + "-" + dID + "-" + originalName;
 
             case "6":
-                return String.format("V" + ver + "_" + pictureSet + dateFormat(date) + dID + "-%02d-" + originalName, versionNumber);
+                return String.format("V" + ver + "_" + pictureSet + dateFormat(date) + dID + "-%01d-" + originalName, versionNumber);
             default:
                 return null;
         }
