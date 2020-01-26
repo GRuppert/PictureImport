@@ -36,15 +36,6 @@ public class Folder extends TrackingEntity {
 
     public String getPath() {
         return path;
-/*        String path = name;
-        FolderDTO cursor = parent;
-        while(true) {
-            if (cursor == null) {
-                return drive.getLetter() + ":\\" + path;
-            }
-            path = cursor.getName() + "\\" + path;
-            cursor = cursor.getParent();
-        }*/
     }
 
     public Folder getParent() {
@@ -82,4 +73,5 @@ public class Folder extends TrackingEntity {
     public void setName(String name) {
         this.name = name;
     }
+
 }

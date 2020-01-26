@@ -5,7 +5,10 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 
 @Entity
-@Table(name = "image")
+@Table(
+        name = "image",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"odid", "type"})}
+)
 public class Image extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,7 +22,7 @@ public class Image extends TrackingEntity {
     private ZonedDateTime dateCorrected;
     @Column(name = "original_filename")
     private String originalFilename;
-    @Column(name = "type")
+    @Column(name = "type", updatable = false, nullable = false)
     private String type;
     private String latitude;
     private String longitude;
@@ -32,16 +35,21 @@ public class Image extends TrackingEntity {
     @OneToMany(mappedBy = "image")
     private Collection<Mediafile> mediaFiles;
 
-    public Image() {
+    protected Image() {}
 
+    public Image(String hash, String type) {
+        this.hash = hash;
+        this.type = type;
     }
 
+/*
     public Image(String hash, ZonedDateTime dateTaken, String oringinalFilename, String type) {
         this.hash = hash;
         this.dateTaken = dateTaken;
         this.originalFilename = oringinalFilename;
         this.type = type;
     }
+*/
 
     public String getHash() {
         return hash;
@@ -49,6 +57,10 @@ public class Image extends TrackingEntity {
 
     public ZonedDateTime getDateTaken() {
         return dateTaken;
+    }
+
+    public void setDateTaken(ZonedDateTime dateTaken) {
+        this.dateTaken = dateTaken;
     }
 
     public String getOriginalFilename() {
@@ -140,4 +152,6 @@ public class Image extends TrackingEntity {
     public void setId(int id) {
         this.id = id;
     }
+
+
 }

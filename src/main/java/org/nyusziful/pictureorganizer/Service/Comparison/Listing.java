@@ -15,6 +15,8 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
 import javafx.concurrent.Task;
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.UI.Progress;
 
 /*
@@ -113,11 +115,11 @@ public class Listing extends Task implements FileVisitor<Path>
             return FileVisitResult.TERMINATE;
         }
         if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString())) {
-            String hash = getHash(file.toFile());
+            ImageDTO image = getHash(file.toFile());
 //            String hash = "Test";
             sb.append(start + fileCount).append(delimiter);
-            sb.append(hash).append(delimiter);
-            sb.append(hash).append(delimiter);
+            sb.append(image.hash).append(delimiter);
+            sb.append(image.hash).append(delimiter);
             sb.append(delimiter);
             sb.append(file.getParent().toString().substring(2)).append(delimiter);
             sb.append(file.getFileName()).append(delimiter);

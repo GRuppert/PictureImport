@@ -2,6 +2,7 @@ package org.nyusziful.pictureorganizer.UI.Model;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
+import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 
 public abstract class AbstractTableViewMediaFile implements TableViewMediaFile {
     protected SimpleBooleanProperty processing;
@@ -9,6 +10,7 @@ public abstract class AbstractTableViewMediaFile implements TableViewMediaFile {
     protected SimpleStringProperty newName;
     protected SimpleStringProperty note;
     protected SimpleBooleanProperty xmpMissing;
+    protected MediafileDTO mediafileDTO;
 
 
 

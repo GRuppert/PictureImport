@@ -2,6 +2,7 @@ package org.nyusziful.pictureorganizer.UI.Model;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
+import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.AbstractTableViewMediaFile;
 
@@ -9,16 +10,16 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class SimpleMediaFile extends AbstractTableViewMediaFile {
+public class RenameMediaFile extends AbstractTableViewMediaFile {
     private Path path;
     private Path newPath;
     private String targetDirectory;
+    private MediafileDTO renamedMediaFileDTO;
 
-    public SimpleMediaFile() {
-
+    public RenameMediaFile() {
     }
 
-    public SimpleMediaFile(Path path, Path newPath) {
+    public RenameMediaFile(Path path, Path newPath) {
         this.path = path;
         this.newPath = newPath;
         processing = new SimpleBooleanProperty(true);
@@ -32,6 +33,7 @@ public class SimpleMediaFile extends AbstractTableViewMediaFile {
         if (processing.get()) {
             return RenameService.write(path, newPath, writeMethod);
         }
+        return false;
     }
 
     public String getTargetDirectory() {return targetDirectory;}

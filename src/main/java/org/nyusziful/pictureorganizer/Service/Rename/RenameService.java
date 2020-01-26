@@ -5,11 +5,13 @@ import javafx.beans.property.SimpleStringProperty;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash;
-import org.nyusziful.pictureorganizer.UI.Model.SimpleMediaFile;
+import org.nyusziful.pictureorganizer.Service.MediafileService;
+import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import java.io.File;
@@ -21,6 +23,8 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.*;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
@@ -31,6 +35,7 @@ public class RenameService {
     private static String version = "6";
     private ZoneId zone;
     private String pictureSet;
+    private MediafileService mediafileService;
     private boolean forceRewrite = false;
 
 /*    private File file;
@@ -48,6 +53,10 @@ public class RenameService {
     //    private HashMap<String, String> exifPar = new HashMap<>();
     private ArrayList<String> exifMissing = new ArrayList<>();*/
 
+    public RenameService() {
+        this(CommonProperties.getInstance().getZone(), CommonProperties.getInstance().getPictureSet());
+    }
+
     public RenameService(ZoneId zone, String pictureSet) {
         this(zone, pictureSet, version);
     }
@@ -56,23 +65,19 @@ public class RenameService {
         this.zone = zone;
         this.pictureSet = pictureSet;
         this.version = version;
+        mediafileService = new MediafileService();
     }
 
-    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod, File fileXmp) {
+
+    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod) {
         try {
             validPath(newPath);
-            updateExif();
-//                if (iID == null && supportedMediaFileType(currentName.get())) setiID();
             switch (writeMethod) {
                 case COPY:
                     Files.copy(path, newPath);
-                    if (fileXmp != null && fileXmp.exists())
-                        Files.copy(fileXmp.toPath(), Paths.get(newPath + ".xmp"));
                     break;
                 case MOVE:
                     Files.move(path, newPath);
-                    if (fileXmp != null && fileXmp.exists())
-                        Files.move(fileXmp.toPath(), Paths.get(newPath + ".xmp"));
                     break;
             }
             return true;
@@ -91,7 +96,7 @@ public class RenameService {
         }
     }
 
-    public static boolean rename(Mediafile actFile) {
+    public boolean rename(Mediafile actFile) {
         final Image actFileImage = actFile.getImage();
         String desiredFileName = FileNameFactory.getFileName(
                 "6",
@@ -103,7 +108,8 @@ public class RenameService {
                 mediafileService.getVersionNumber(actFileImage)
         );
         if (!actFile.getFilename().equals(desiredFileName)) {
-            if (write())  {
+            final Path path = mediafileService.getFile(actFile).toPath();
+            if (write(path, Paths.get(path.getParent() + desiredFileName), TableViewMediaFile.WriteMethod.MOVE))  {
                 actFile.setFilename(desiredFileName);
                 return true;
             }
@@ -112,13 +118,10 @@ public class RenameService {
     }
 
 
-    private void setiID() {
-        this.iID = getFullHash(file);
-        newName.set(getNewFileName("5"));
-    }
 
     public TableViewMediaFile fileToTableViewMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
-        final SimpleMediaFile simpleMediaFile = new SimpleMediaFile();
+        throw new UnsupportedOperationException("Not implemented");
+/*        final RenameMediaFile renameMediaFile = new RenameMediaFile();
         this.file = fileIn;
         this.zone = zone;
         this.pictureSet = pictureSet;
@@ -170,7 +173,41 @@ public class RenameService {
 
             newName = new SimpleStringProperty(getNewFileName(version));
         }
-        return simpleMediaFile;
+        return simpleMediaFile;*/
+    }
+
+
+/*
+    public static boolean write(MediafileDTO path, MediafileDTO newPath, TableViewMediaFile.WriteMethod writeMethod) {
+        try {
+            validPath(newPath);
+            updateExif();
+//                if (iID == null && supportedMediaFileType(currentName.get())) setiID();
+            switch (writeMethod) {
+                case COPY:
+                    Files.copy(path, newPath);
+                    if (fileXmp != null && fileXmp.exists())
+                        Files.copy(fileXmp.toPath(), Paths.get(newPath + ".xmp"));
+                    break;
+                case MOVE:
+                    Files.move(path, newPath);
+                    if (fileXmp != null && fileXmp.exists())
+                        Files.move(fileXmp.toPath(), Paths.get(newPath + ".xmp"));
+                    break;
+            }
+            return true;
+        } catch (IOException e) {
+            System.out.println(e);
+            //Todo logging, All for error OK
+//                errorOut(this.getNewName(), e);
+        }
+        return false;
+    }
+
+
+    private void setiID() {
+        this.iID = getFullHash(file);
+        newName.set(getNewFileName("5"));
     }
 
     private String getNewFileName(String ver) {
@@ -385,5 +422,40 @@ public class RenameService {
         if (critical) processing.set(false);
     }
 
-
+    private Meta repairMP4(Meta metaExif) {
+        ArrayList<String> meta = ExifService.getExif(new String[]{"-DateTimeOriginal", "-DeviceManufacturer", "-DeviceModelName", "-CreationDateValue"}, getFile());
+        Iterator<String> iterator = meta.iterator();
+        String dto = null;
+        String cdv = null;
+        String model = null;
+        String make = null;
+        while (iterator.hasNext()) {
+            String line = iterator.next();
+            String tagValue = line.substring(34);
+            switch (line.substring(0, 9)) {
+                case "Date/Time":
+                    dto = tagValue;
+                    break;
+                case "Creation ":
+                    cdv = tagValue;
+                    break;
+                case "Device Ma":
+                    make = tagValue;
+                    break;
+                case "Device Mo":
+                    model = tagValue;
+                    break;
+            }
+        }
+        if (cdv != null && dto == null) {
+            metaExif.model = model;
+            addExif("Model", metaExif.model);
+            metaExif.date = getZonedTimeFromStr(cdv);
+            addExif(metaExif.date);
+            addExif("Make", make);
+//            String[] commandAndOptions2 = {"exiftool", "-P", "-overwrite_original", "-DateTimeOriginal<CreationDateValue", "-Make<DeviceManufacturer", "-Model<DeviceModelName", getFile().getName()};
+        }
+        return metaExif;
+    }
+*/
 }

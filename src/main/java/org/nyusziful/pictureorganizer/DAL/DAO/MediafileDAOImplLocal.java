@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -20,6 +21,11 @@ public class MediafileDAOImplLocal implements MediafileDAO {
 
     @Override
     public List<Mediafile> getByDriveId(int id) {
+        return null;
+    }
+
+    @Override
+    public Mediafile getByFile(MediafileDTO mediafileDTO) {
         return null;
     }
 

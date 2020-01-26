@@ -13,7 +13,7 @@ import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSetTableViewC
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController;
 import org.nyusziful.pictureorganizer.UI.DirectoryElement;
 import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
-import org.nyusziful.pictureorganizer.UI.Model.SimpleMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
@@ -318,7 +318,7 @@ public class MainController implements Initializable {
 
     //TODO reads dir:
     //Input processed mediafiles Output dated directory+old filename
-    private Collection<SimpleMediaFile> sortToDateDirectories(Collection<String> directories) {
+    private Collection<RenameMediaFile> sortToDateDirectories(Collection<String> directories) {
         Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
@@ -326,7 +326,7 @@ public class MainController implements Initializable {
                     }});
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
-        ArrayList<SimpleMediaFile> files = new ArrayList<>();
+        ArrayList<RenameMediaFile> files = new ArrayList<>();
         Path target = null;
         ZonedDateTime previousFileDate = ZonedDateTime.now();
 
@@ -344,7 +344,7 @@ public class MainController implements Initializable {
                     }
                 }
             }
-            files.add(new SimpleMediaFile(file.toPath(), Paths.get(target + "\\" + file.getName())));
+            files.add(new RenameMediaFile(file.toPath(), Paths.get(target + "\\" + file.getName())));
 //            System.out.println(file.toString() + " -> " + target);
         }
         return files;

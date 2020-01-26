@@ -17,6 +17,8 @@ import java.util.Arrays;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 
@@ -26,74 +28,85 @@ import org.nyusziful.pictureorganizer.UI.StaticTools;
  */
 public class MediaFileHash {
     public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
-    private static final Logger LOG = LogManager.getLogger(MediaFileHash.class);
-    
-    private static String getType(File file) {
-        String ext = FilenameUtils.getExtension(file.getName().toLowerCase());
-        switch (ext) {
-            case "mp4":
-                return "mp4";
-            case "jpg":
-            case "jpeg":
-                return "jpeg";
-            case "arw":
-            case "dng":
-            case "nef":
-            case "tif":
-            case "tiff":
-                return "tiff";
+    public enum Type {
+        MP4 ("mp4", new String[] {"mp4"}),
+        JPG ("jpg", new String[] {"jpg", "jpeg"}),
+        TIFF ("tif", new String[] {"arw", "dng", "nef", "tif", "tiff"}),
+        UNKNOWN ("n/a", new String[] {});
+
+        private final String name;
+        private final String[] extensions;
+        Type(String name, String[] extensions) {
+            this.name = name;
+            this.extensions = extensions;
         }
-        return "";
-    }
-   
+
+        public static Type getType(File file) {
+            String ext = FilenameUtils.getExtension(file.getName().toLowerCase());
+            for (Type type : Type.values()) {
+                for (String extension : type.extensions) {
+                    if (extension.equals(ext)) return type;
+                }
+            }
+            return UNKNOWN;
+        }
+    };
+
+    private static final Logger LOG = LogManager.getLogger(MediaFileHash.class);
+
     /**
      * 
      * @param file
      * @return the Hash of the media data in the file for known file types
      */
-    public static String getHash(File file) {
+    public static ImageDTO getHash(File file) {
         MessageDigest md5Digest = null;
+        ImageDTO imageDTO = new ImageDTO();
         try {
             md5Digest = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException ex) {
-            return EMPTYHASH;
+            return imageDTO;
         }
         byte[] digestDef = md5Digest.digest();
         byte[] digest = null;
+        Type type = Type.UNKNOWN;
         try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
-            switch (getType(file)) {
-                case "tiff":
+            type = Type.getType(file);
+            imageDTO.type = type.name;
+            switch (type) {
+                case TIFF:
                     digest = TIFFHash.readDigest(file, fileStream);
                     break;
-                case "jpeg":
+                case JPG:
                     digest = JPGHash.readDigest(file, fileStream, md5Digest, in);
                     break;
-                case "mp4":
+                case MP4:
                     digest = MP4Hash.readDigest(file, fileStream, md5Digest, in);
                     break;
-                case "heif":
+/*                case "heif":
                 case "heifs":
                 case "heic":
                 case "heics":
                 case "avci":
                 case "avcs":
-                    break;
+                    break;*/
             }
         }  catch(IOException e) {
 //            errorOut("Hash", e);
-            return EMPTYHASH;
+            return imageDTO;
         }
         if (digest == null) {
-            return EMPTYHASH;
+            return imageDTO;
         }
         if (Arrays.equals(digest, digestDef)) {
-            return EMPTYHASH;
+            return imageDTO;
         }
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < digest.length; ++i) {
             sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1,3));
         }
-        return sb.toString();
+        imageDTO.hash = sb.toString();
+        return imageDTO;
     }
     
     private static String getFullHashPS(File file) throws FileNotFoundException, IOException {

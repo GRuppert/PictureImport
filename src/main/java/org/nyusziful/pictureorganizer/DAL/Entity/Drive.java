@@ -10,8 +10,8 @@ public class Drive {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false, nullable = false)
     private int id;
-    private String letter;
     private String description;
+    private String volumeSN;
     private boolean backup;
 
     public Drive() {
@@ -23,14 +23,6 @@ public class Drive {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    public String getLetter() {
-        return letter;
-    }
-
-    public void setLetter(String letter) {
-        this.letter = letter;
     }
 
     public String getDescription() {
@@ -53,9 +45,17 @@ public class Drive {
     public String toString() {
         return "DriveDTO{" +
                 "id=" + id +
-                ", letter='" + letter + '\'' +
+                ", volumeSN='" + volumeSN + '\'' +
                 ", description='" + description + '\'' +
                 ", backup=" + backup +
                 '}';
+    }
+
+    public String getVolumeSN() {
+        return volumeSN;
+    }
+
+    public void setVolumeSN(String volumeSN) {
+        this.volumeSN = volumeSN;
     }
 }

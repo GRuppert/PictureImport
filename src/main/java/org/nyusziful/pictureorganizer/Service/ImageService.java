@@ -4,7 +4,7 @@ import org.nyusziful.pictureorganizer.DAL.HibConnection;
 import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 
 import java.util.List;
 
@@ -20,9 +20,13 @@ public class ImageService {
         return getImages;
     }
 
-    public Image getImage(String hash, Mediafile requester) {
-        Image getImage = imageDAO.getImageByHash(hash);
+    public Image getImage(ImageDTO image) {
+        Image getImage = imageDAO.getImageByHash(image);
         return getImage;
+    }
+
+    public ImageDTO getImageDTO(Image image) {
+        throw new java.lang.UnsupportedOperationException("Not implemented");
     }
 
     public Image saveImage(Image image) throws Exception {
@@ -33,19 +37,4 @@ public class ImageService {
     public void updateImage(Image image) throws Exception {
         imageDAO.merge(image);
     }
-
-    public static void main(String[] args) {
-        final ImageService imageService = new ImageService();
-        Image image = imageService.getImage("001ccb41c7eb77075051f3febdcafe71", new Mediafile());
-        System.out.println(image);
-        image.setOriginalFilename("test2");
-        try {
-            imageService.updateImage(image);
-            HibConnection.getInstance().commit();
-        } catch (Exception e) {
-            HibConnection.getInstance().rollback();
-            e.printStackTrace();
-        }
-    }
-
 }

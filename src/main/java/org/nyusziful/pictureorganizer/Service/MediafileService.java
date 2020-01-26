@@ -5,39 +5,31 @@ import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
+import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 
 import java.io.File;
 import java.util.*;
 
+import static org.nyusziful.pictureorganizer.Service.FolderService.dataToWinPath;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 
 public class MediafileService {
     private MediafileDAO mediafileDAO;
+    private DriveService driveService;
     private HashMap<String, Mediafile> fileSet = null;
-    private ImageService imageService;
 
 
     public MediafileService() {
+        driveService = new DriveService();
         mediafileDAO = new MediafileDAOImplHib();
-        imageService = new ImageService();
     }
 
     public List<Mediafile> getMediafiles() {
         List<Mediafile> getMediafiles = mediafileDAO.getAll();
         return getMediafiles;
-    }
-
-    public void checkImage(Mediafile mediafile) {
-        File file = mediafile.getFile();
-        final String hash = getHash(file);
-        Image image = imageService.getImage(hash, mediafile);
-        if (image == null) {
-            Meta meta = ExifService.readMeta(file, zone);
-            image = new Image(hash, meta.date, mediafile.getFilename(), mediafile.getType());
-        }
-        mediafile.setImage(image);
     }
 
 /*
@@ -48,6 +40,22 @@ public class MediafileService {
         return getMediafile;
     }
 */
+    public Mediafile getMediafile(MediafileDTO mediafileDTO) {
+        Mediafile getMediafile = mediafileDAO.getByFile(mediafileDTO);
+        return getMediafile;
+    }
+
+    public MediafileDTO MediafileDTO(Mediafile mediafile) {
+        throw new java.lang.UnsupportedOperationException("Not implemented");
+    }
+
+    public File getFile(Mediafile mediafile) {
+        return new File(driveService.getLocalLetter(mediafile.getDrive()) + ":\\" + mediafile.getFolder() + "\\" + mediafile.getFilename());
+    }
+
+    public File getFile(MediafileDTO mediafile) {
+        return new File(mediafile.letter + ":\\" + dataToWinPath(mediafile.path) + "\\" + mediafile.filename);
+    }
 
     public Mediafile saveMediafile(Mediafile mediafile) {
         return saveMediafile(Collections.singleton(mediafile)).get(0);
@@ -98,15 +106,5 @@ public class MediafileService {
         if (image == null) return -1;
         if (image.getParent() == null) return 0;
         return getVersionNumber(image.getParent()) + 1;
-/*
-        int version = 1;
-        for (Mediafile mediafile : filesForImage) {
-            if (mediafile..getFilehash().equals(actFile.getFilehash())
-            final Meta v = FileRenamer.getV(mediafile.getFilename());
-            if (v != null) {
-                version = Math.max(version, v.orig);
-            }
-        }
-*/
     }
 }

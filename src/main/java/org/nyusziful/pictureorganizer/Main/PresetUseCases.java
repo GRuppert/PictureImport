@@ -2,6 +2,7 @@ package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.DriveService;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
@@ -20,6 +21,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Timestamp;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -344,6 +346,8 @@ public class PresetUseCases {
         int blockSize = 1000;
         boolean force = false;
         final MediafileService mediafileService = new MediafileService();
+        final ImageService imageService = new ImageService();
+        final RenameService renameService = new RenameService();
         List<Mediafile> mediafiles = mediafileService.getMediafiles();
         try {
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
@@ -376,18 +380,33 @@ public class PresetUseCases {
             JDialog progressDialog = progressDiag(progressBar);
             Set<Mediafile> files = new HashSet<>();
             long startTime = System.nanoTime();
+            HashMap<String,Image> images = new HashMap<String, Image>();
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                 @Override public FileVisitResult
-                visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(file.getFileName().toString()) && (extension != null && file.getFileName().endsWith(extension)) ) {
+                visitFile(Path filePath, BasicFileAttributes attrs) {
+                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString()) && (extension != null && filePath.getFileName().endsWith(extension)) ) {
                         long startTime = System.nanoTime();
                         long toSeconds = 0;
                         boolean fileToSave = false;
-                        Mediafile actFile = mediafileService.getMediaFile(new Mediafile(drive, file, attrs.size(), new Timestamp(attrs.lastModifiedTime().toMillis())));
+                        Mediafile actFile = mediafileService.getMediaFile(new Mediafile(drive, filePath, attrs.size(), new Timestamp(attrs.lastModifiedTime().toMillis())));
                         if (force || actFile.getId() < 0) {
                             System.out.println("Hashing: " + path + "/" + filename);
-                            mediafileService.checkImage(actFile);
-                            actFile.setFilehash(getFullHash(file.toFile()));
+                            ImageDTO imageDTO = getHash(filePath.toFile());
+                            Image image;
+                            if (images.containsKey(imageDTO.hash+imageDTO.type)) {
+                                image = images.get(imageDTO.hash+imageDTO.type);
+                            } else {
+                                image = imageService.getImage(imageDTO);
+                                if (image.getId() < 0) {
+                                    Meta meta = ExifService.readMeta(filePath.toFile(), zone);
+                                    image.setDateTaken(meta.date);
+                                    image.setOriginalFilename(actFile.getFilename());
+                                    images.put(image.getHash()+image.getType(), image);
+                                }
+                            }
+                            actFile.setImage(image);
+
+                            actFile.setFilehash(getFullHash(filePath.toFile()));
                             toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
                             if (toSeconds > 0)
                                 System.out.println(toSeconds + "s. Hash speed " + attrs.size() * 2 / 1048576 / toSeconds + "MB/s");
@@ -398,7 +417,7 @@ public class PresetUseCases {
                             fileSizeCountTotal -= attrs.size();
                             fileCountTotal--;
                         }
-                        if (RenameService.rename(actFile)) fileToSave = true;
+                        if (renameService.rename(actFile)) fileToSave = true;
 /*
                         long toSeconds2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
                         System.out.println((toSeconds2-toSeconds) + "s to DAL.");
@@ -474,9 +493,9 @@ public class PresetUseCases {
                     return supportedMediaFileType(name);
                 }});
             for(int i = 0; i < content.length; i++) {
-                String hash = getHash(content[i]);
-                str.append(hash + "\t" + content[i] + "\n");
-                content[i].renameTo(new File(content[i].getParentFile() + "\\" + hash + content[i].getName()));
+                ImageDTO image = getHash(content[i]);
+                str.append(image.hash + "\t" + content[i] + "\n");
+                content[i].renameTo(new File(content[i].getParentFile() + "\\" + image.hash + content[i].getName()));
             }
         }
         return str;

@@ -13,6 +13,7 @@ import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 
 /**
  *
@@ -81,8 +82,8 @@ public class HashTest {
     @Test
     public void testHash() {
         File file = new File(this.getClass().getClassLoader().getResource(filename).getFile());
-        String result = MediaFileHash.getHash(file);
-        assertEquals("Hash of file(" + filename + ") counted: " + result + " awaited: " + Hash, Hash, result);
+        ImageDTO result = MediaFileHash.getHash(file);
+        assertEquals("Hash of file(" + filename + ") counted: " + result.hash + " awaited: " + Hash, Hash, result.hash);
     }
 
     public HashTest(TestData data) {

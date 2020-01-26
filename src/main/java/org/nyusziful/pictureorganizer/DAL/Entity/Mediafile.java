@@ -144,8 +144,4 @@ public class Mediafile extends TrackingEntity {
     public String getType() {
         return FilenameUtils.getExtension(filename);
     }
-
-    public File getFile() {
-        return new File(drive.getLetter() + ":\\" + folder + "\\" + filename);
-    }
 }

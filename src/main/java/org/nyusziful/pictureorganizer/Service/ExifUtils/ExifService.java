@@ -54,40 +54,6 @@ public class ExifService {
         ExifReadWriteET.updateExif(valuePairs, directory);
     }
 
-    private Meta repairMP4(Meta metaExif) {
-        ArrayList<String> meta = ExifService.getExif(new String[]{"-DateTimeOriginal", "-DeviceManufacturer", "-DeviceModelName", "-CreationDateValue"}, getFile());
-        Iterator<String> iterator = meta.iterator();
-        String dto = null;
-        String cdv = null;
-        String model = null;
-        String make = null;
-        while (iterator.hasNext()) {
-            String line = iterator.next();
-            String tagValue = line.substring(34);
-            switch (line.substring(0, 9)) {
-                case "Date/Time":
-                    dto = tagValue;
-                    break;
-                case "Creation ":
-                    cdv = tagValue;
-                    break;
-                case "Device Ma":
-                    make = tagValue;
-                    break;
-                case "Device Mo":
-                    model = tagValue;
-                    break;
-            }
-        }
-        if (cdv != null && dto == null) {
-            metaExif.model = model;
-            addExif("Model", metaExif.model);
-            metaExif.date = getZonedTimeFromStr(cdv);
-            addExif(metaExif.date);
-            addExif("Make", make);
-//            String[] commandAndOptions2 = {"exiftool", "-P", "-overwrite_original", "-DateTimeOriginal<CreationDateValue", "-Make<DeviceManufacturer", "-Model<DeviceModelName", getFile().getName()};
-        }
-        return metaExif;
-    }
+
 
 }
