@@ -36,6 +36,20 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements Med
         typedQuery.setParameter("driveId", mediafileDTO.driveId);
         typedQuery.setParameter("path", mediafileDTO.path);
         typedQuery.setParameter("filename", mediafileDTO.filename);
-        return typedQuery.getSingleResult();
+        List<Mediafile> results = typedQuery.getResultList();
+        if (!results.isEmpty())
+            return results.get(0);
+        else
+        return null;
     }
+
+    @Override
+    public List<Mediafile> getByPath(MediafileDTO mediafileDTO) {
+        final EntityManager entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
+        TypedQuery<Mediafile> typedQuery = entityManager.createQuery("SELECT i from Mediafile i WHERE i.drive.id=:driveId and i.folder.path like:path", Mediafile.class);
+        typedQuery.setParameter("driveId", mediafileDTO.driveId);
+        typedQuery.setParameter("path", mediafileDTO.path);
+        return typedQuery.getResultList();
+    }
+
 }

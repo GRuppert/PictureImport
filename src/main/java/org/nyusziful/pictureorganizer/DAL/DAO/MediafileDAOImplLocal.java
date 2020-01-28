@@ -25,6 +25,11 @@ public class MediafileDAOImplLocal implements MediafileDAO {
     }
 
     @Override
+    public List<Mediafile> getByPath(MediafileDTO mediafileDTO) {
+        return null;
+    }
+
+    @Override
     public Mediafile getByFile(MediafileDTO mediafileDTO) {
         return null;
     }

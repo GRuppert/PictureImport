@@ -1,34 +1,17 @@
 package org.nyusziful.pictureorganizer.Service.Rename;
 
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
-import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
-import org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
-import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Iterator;
-
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.*;
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class RenameService {
 
@@ -69,16 +52,19 @@ public class RenameService {
     }
 
 
-    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod) {
+    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean isXMPattached) {
         try {
             validPath(newPath);
             switch (writeMethod) {
                 case COPY:
                     Files.copy(path, newPath);
+                    if (isXMPattached)
+                        Files.copy(Paths.get(path + ".xmp"), Paths.get(newPath + ".xmp"));
                     break;
                 case MOVE:
                     Files.move(path, newPath);
-                    break;
+                    if (isXMPattached)
+                        Files.move(Paths.get(path + ".xmp"), Paths.get(newPath + ".xmp"));
             }
             return true;
         } catch (IOException e) {
@@ -109,7 +95,7 @@ public class RenameService {
         );
         if (!actFile.getFilename().equals(desiredFileName)) {
             final Path path = mediafileService.getFile(actFile).toPath();
-            if (write(path, Paths.get(path.getParent() + desiredFileName), TableViewMediaFile.WriteMethod.MOVE))  {
+            if (write(path, Paths.get(path.getParent() + "\\" + desiredFileName), TableViewMediaFile.WriteMethod.MOVE, actFile.isXMPattached()))  {
                 actFile.setFilename(desiredFileName);
                 return true;
             }

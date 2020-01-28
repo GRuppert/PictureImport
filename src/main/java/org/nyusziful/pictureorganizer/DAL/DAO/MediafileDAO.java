@@ -9,5 +9,6 @@ import java.util.List;
 public interface MediafileDAO extends CRUDDAO<Mediafile> {
     public Mediafile getById(int id);
     public List<Mediafile> getByDriveId(int id);
+    public List<Mediafile> getByPath(MediafileDTO mediafileDTO);
     public Mediafile getByFile(MediafileDTO mediafileDTO);
 }

@@ -5,7 +5,10 @@ import java.nio.file.Path;
 import java.util.Collection;
 
 @Entity
-@Table(name = "folder")
+@Table(
+    name = "folder",
+    uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "path"})}
+)
 public class Folder extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,7 +16,7 @@ public class Folder extends TrackingEntity {
     private int id;
     private String path;
     private String name;
-    @ManyToOne
+    @ManyToOne(cascade=CascadeType.PERSIST)
     private Folder parent;
     @OneToMany(mappedBy = "parent")
     private Collection<Folder> children;

@@ -3,6 +3,7 @@ package org.nyusziful.pictureorganizer.Service;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
+import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
@@ -11,6 +12,7 @@ import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.nyusziful.pictureorganizer.Service.FolderService.dataToWinPath;
@@ -19,7 +21,6 @@ import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 public class MediafileService {
     private MediafileDAO mediafileDAO;
     private DriveService driveService;
-    private HashMap<String, Mediafile> fileSet = null;
 
 
     public MediafileService() {
@@ -45,16 +46,25 @@ public class MediafileService {
         return getMediafile;
     }
 
-    public MediafileDTO MediafileDTO(Mediafile mediafile) {
-        throw new java.lang.UnsupportedOperationException("Not implemented");
+    public MediafileDTO getMediafileDTO(Mediafile mediafile) {
+        MediafileDTO mediafileDTO = new MediafileDTO();
+        if (mediafile != null) {
+            if (mediafile.getImage() != null) mediafileDTO.driveId = mediafile.getImage().getId();
+            if (mediafile.getFolder() != null) mediafileDTO.path = mediafile.getFolder().getPath();
+            mediafileDTO.filename = mediafile.getFilename();
+            mediafileDTO.dateMod = mediafile.getDateMod();
+            mediafileDTO.filehash = mediafile.getFilehash();
+            mediafileDTO.size = mediafile.getSize();
+        }
+        return mediafileDTO;
     }
 
     public File getFile(Mediafile mediafile) {
-        return new File(driveService.getLocalLetter(mediafile.getDrive()) + ":\\" + mediafile.getFolder() + "\\" + mediafile.getFilename());
+        return new File(driveService.getLocalLetter(mediafile.getDrive()) + ":\\" + dataToWinPath(mediafile.getFolder().getPath()) + "\\" + mediafile.getFilename());
     }
 
     public File getFile(MediafileDTO mediafile) {
-        return new File(mediafile.letter + ":\\" + dataToWinPath(mediafile.path) + "\\" + mediafile.filename);
+        return new File(mediafile.letter + ":" + dataToWinPath(mediafile.path) + "\\" + mediafile.filename);
     }
 
     public Mediafile saveMediafile(Mediafile mediafile) {
@@ -63,10 +73,8 @@ public class MediafileService {
 
     public List<Mediafile> saveMediafile(Collection<Mediafile> mediafile) {
         List<Mediafile> mediafileDTOList = new ArrayList<>();
-        for (Mediafile file: mediafile
-             ) {
+        for (Mediafile file: mediafile) {
             mediafileDTOList.add(mediafileDAO.save(file));
-
         }
         return mediafileDTOList;
     }
@@ -91,15 +99,16 @@ public class MediafileService {
     }
 
     public Mediafile getMediaFile(Mediafile actFile) {
-        if (fileSet == null) {
-            fileSet = new HashMap<>();
-            final List<Mediafile> byDriveId = mediafileDAO.getByDriveId(actFile.getDrive().getId());
-            for (Mediafile file : byDriveId) {
-                fileSet.put(file.getFolder().getPath() + file.getFilename(), file);
-            }
-        }
-        Mediafile mediafile = fileSet.get(actFile.getFolder().getPath() + actFile.getFilename());
-        return mediafile == null ? actFile : mediafile;
+        return mediafileDAO.getByFile(getMediafileDTO(actFile));
+    }
+
+    public List<Mediafile> getMediaFilesFromPath(Path path) {
+        MediafileDTO mediafileDTO = new MediafileDTO();
+        final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
+        mediafileDTO.driveId = localDrive.getId();
+        final Folder folder = new Folder(localDrive, path);
+        mediafileDTO.path = folder.getPath();
+        return mediafileDAO.getByPath(mediafileDTO);
     }
 
     public int getVersionNumber(Image image) {

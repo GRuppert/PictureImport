@@ -6,20 +6,18 @@ USE `picture`;
 -- ------------------------------------------------------
 -- Server version	8.0.15
 
- SET NAMES utf8 ;
+
 
 --
 -- Table structure for table `drive`
 --
 
-DROP TABLE IF EXISTS `drive`;
  SET character_set_client = utf8mb4 ;
 CREATE TABLE `drive` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `volumeSN` varchar(20) DEFAULT NULL,
-  `letter` varchar(1) NOT NULL,
   `description` varchar(45) DEFAULT NULL,
-  `backup` tinyint(1) NOT NULL,
+  `backup` bit(1) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `volumeSN_UNIQUE` (`volumeSN`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
@@ -28,9 +26,7 @@ CREATE TABLE `drive` (
 -- Table structure for table `folder`
 --
 
-DROP TABLE IF EXISTS `folder`;
- SET character_set_client = utf8mb4 ;
-CREATE TABLE `folder` (
+ CREATE TABLE `folder` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `parent_id` int(11) unsigned DEFAULT NULL,
   `drive_id` int(11) unsigned NOT NULL,
@@ -43,6 +39,7 @@ CREATE TABLE `folder` (
   `actfold` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `path_UNIQUE` (`drive_id`,`path`),
   KEY `drive_id_idx` (`drive_id`),
   KEY `folder_folder_idx` (`parent_id`),
   CONSTRAINT `drive_id` FOREIGN KEY (`drive_id`) REFERENCES `drive` (`id`),
@@ -53,8 +50,6 @@ CREATE TABLE `folder` (
 -- Table structure for table `image`
 --
 
-DROP TABLE IF EXISTS `image`;
- SET character_set_client = utf8mb4 ;
 CREATE TABLE `image` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `odid` varchar(32) NOT NULL,
@@ -81,14 +76,13 @@ CREATE TABLE `image` (
 -- Table structure for table `media_file`
 --
 
-DROP TABLE IF EXISTS `media_file`;
- SET character_set_client = utf8mb4 ;
 CREATE TABLE `media_file` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-  `image_id` int(11) DEFAULT NULL,
+  `image_id` int(11) unsigned DEFAULT NULL,
   `drive_id` int(11) unsigned NOT NULL,
   `folder_id` int(11) unsigned NOT NULL DEFAULT '0',
   `filename` varchar(256) NOT NULL,
+  `XMPattached` bit(1) NOT NULL,
   `parent` int(11) unsigned DEFAULT NULL,
   `filehash` varchar(32) DEFAULT NULL,
   `size` bigint(19) unsigned DEFAULT NULL,
@@ -100,13 +94,14 @@ CREATE TABLE `media_file` (
   `updater` varchar(255) DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `file_UNIQUE` (`drive_id`,`folder_id`,`filename`),
   KEY `mfile_drive_idx` (`drive_id`),
   KEY `mfile_image_idx` (`image_id`),
   KEY `mfile_folder_idx` (`folder_id`),
   KEY `mfile_parent_idx` (`parent`),
   CONSTRAINT `mfile_drive` FOREIGN KEY (`drive_id`) REFERENCES `drive` (`id`),
   CONSTRAINT `mfile_folder` FOREIGN KEY (`folder_id`) REFERENCES `folder` (`id`),
-  CONSTRAINT `mfile_image` FOREIGN KEY (`image_id`) REFERENCES `image` (`odid`),
+  CONSTRAINT `mfile_image` FOREIGN KEY (`image_id`) REFERENCES `image` (`id`),
   CONSTRAINT `mfile_parent` FOREIGN KEY (`parent`) REFERENCES `media_file` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1039693 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 

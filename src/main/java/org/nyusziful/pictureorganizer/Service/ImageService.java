@@ -21,8 +21,7 @@ public class ImageService {
     }
 
     public Image getImage(ImageDTO image) {
-        Image getImage = imageDAO.getImageByHash(image);
-        return getImage;
+        return imageDAO.getImageByHash(image);
     }
 
     public ImageDTO getImageDTO(Image image) {

@@ -3,13 +3,17 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.persistence.*;
-import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.util.Objects;
 
 @Entity
-@Table(name = "media_file")
+@Table(
+    name = "media_file",
+    uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "folder_id", "filename"})}
+)
 public class Mediafile extends TrackingEntity {
 
     @Id
@@ -18,22 +22,25 @@ public class Mediafile extends TrackingEntity {
     private int id = -1;
 
     @ManyToOne
-    @JoinColumn(name="folder_id", referencedColumnName="id")
-    private Folder folder;
-
-    @ManyToOne
-    @JoinColumn(name="drive_id", referencedColumnName="id")
+    @JoinColumn(name="drive_id", referencedColumnName="id", nullable=false)
     private Drive drive;
+
+    @ManyToOne(cascade=CascadeType.PERSIST)
+    @JoinColumn(name="folder_id", referencedColumnName="id", nullable=false)
+    private Folder folder;
 
     private String filename;
 
-    @ManyToOne
+    @ManyToOne(cascade=CascadeType.PERSIST)
     @JoinColumn(name="image_id", referencedColumnName="id")
     private Image image;
+
+    private boolean XMPattached;
 
     private String filehash;
 
     private Long size;
+
     @Column(name = "date_mod")
     private Timestamp dateMod;
 
@@ -44,6 +51,7 @@ public class Mediafile extends TrackingEntity {
 
     public Mediafile(Drive drive, Path path, long size, Timestamp dateMod) {
         this.filename = path.getFileName().toString();
+        this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
         this.drive = drive;
         this.folder = new Folder(drive, path.getParent());
         this.size = size;
@@ -143,5 +151,13 @@ public class Mediafile extends TrackingEntity {
 
     public String getType() {
         return FilenameUtils.getExtension(filename);
+    }
+
+    public boolean isXMPattached() {
+        return XMPattached;
+    }
+
+    public void setXMPattached(boolean XMPattached) {
+        this.XMPattached = XMPattached;
     }
 }

@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 
 import javax.persistence.EntityManager;
@@ -14,6 +15,11 @@ public class ImageDAOImplHib extends CRUDDAOImpHib<Image> implements ImageDAO {
         TypedQuery<Image> typedQuery = entityManager.createQuery("SELECT i from Image i WHERE i.hash=:hash and i.type =:type", Image.class);
         typedQuery.setParameter("hash", image.hash);
         typedQuery.setParameter("type", image.type);
-        return typedQuery.getSingleResult();
+        List<Image> results = typedQuery.getResultList();
+        if (!results.isEmpty())
+            return results.get(0);
+        else
+            return null;
+
     }
 }
