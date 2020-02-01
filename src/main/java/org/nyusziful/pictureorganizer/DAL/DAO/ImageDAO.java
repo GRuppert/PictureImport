@@ -6,5 +6,5 @@ import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import java.util.List;
 
 public interface ImageDAO extends CRUDDAO<Image> {
-    public Image getImageByHash(ImageDTO image);
+    public Image getImageByHash(ImageDTO imageDTO);
 }

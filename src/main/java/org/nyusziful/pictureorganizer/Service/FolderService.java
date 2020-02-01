@@ -22,26 +22,21 @@ public class FolderService {
         folderDAO = new FolderDAOImplHib();
     }
 
-    public File getFile(Folder folder) {
-        return new File(driveService.getLocalLetter(folder.getDrive()) + ":\\" + dataToWinPath(folder.getPath()));
-    }
-
-    public File getFile(FolderDTO folder) {
-        return new File(folder.letter + ":" + dataToWinPath(folder.path));
-    }
-
-
 
     public static String winToDataPath(String path) {
         return path.replaceAll("\\\\", "/");
+    }
+
+    public static String winToDataPath(Path path) {
+        return path.toString().substring(2).replaceAll("\\\\", "/");
     }
 
     public static String dataToWinPath(String path) {
         return path.replaceAll("/", "\\\\");
     }
 
-    public Folder getFolder(FolderDTO folder) {
-        return folderDAO.getFolderByPath(folder);
+    public Folder getFolder(Drive drive, Path path) {
+        return folderDAO.getFolderByPath(drive, path);
     }
 
     public FolderDTO getFolderDTO(Drive drive, Path folder) {

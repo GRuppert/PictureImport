@@ -23,7 +23,7 @@ public class DriveService {
         return getDrives;
     }
 
-    private String getVolumeSN(String letter) {
+    private static String getVolumeSN(String letter) {
         String volumeSN = "";
         try {
             Process p = Runtime.getRuntime().exec("cmd /c vol "+ letter + ":");
@@ -49,7 +49,7 @@ public class DriveService {
         return null;
     }
 
-    public String getLocalLetter(Drive drive) {
+    public static String getLocalLetter(Drive drive) {
         final File[] files = File.listRoots();
         for (File file : files) {
             if (getVolumeSN(file.getAbsolutePath().substring(0, 1)).equals(drive.getVolumeSN()))

@@ -1,6 +1,8 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.pictureorganizer.Service.DriveService;
+import org.nyusziful.pictureorganizer.Service.FolderService;
 
 import javax.persistence.*;
 import java.nio.file.Files;
@@ -44,16 +46,24 @@ public class Mediafile extends TrackingEntity {
     @Column(name = "date_mod")
     private Timestamp dateMod;
 
+    @Transient
+    private Path filePath;
+
+    @PostLoad
+    private void loadPath() {
+        filePath = Paths.get(folder.getJavaPath().toString() + "\\" + filename);
+    }
+
     public Mediafile() {
         // this form used by Hibernate
     }
 
-
-    public Mediafile(Drive drive, Path path, long size, Timestamp dateMod) {
+    public Mediafile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod) {
+        filePath = path;
         this.filename = path.getFileName().toString();
         this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
         this.drive = drive;
-        this.folder = new Folder(drive, path.getParent());
+        this.folder = folder;
         this.size = size;
         this.dateMod = dateMod;
         this.dateMod.setNanos(0);
@@ -65,6 +75,7 @@ public class Mediafile extends TrackingEntity {
 
     public void setFilename(String filename) {
         this.filename = filename;
+        loadPath();
     }
 
     public String getFilehash() {
@@ -129,16 +140,8 @@ public class Mediafile extends TrackingEntity {
         return folder;
     }
 
-    public void setFolder(Folder folder) {
-        this.folder = folder;
-    }
-
     public Drive getDrive() {
         return drive;
-    }
-
-    public void setDrive(Drive drive) {
-        this.drive = drive;
     }
 
     public Image getImage() {
@@ -159,5 +162,9 @@ public class Mediafile extends TrackingEntity {
 
     public void setXMPattached(boolean XMPattached) {
         this.XMPattached = XMPattached;
+    }
+
+    public Path getFilePath() {
+        return filePath;
     }
 }

@@ -8,33 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.util.List;
 
-public class MediafileDAOImplLocal implements MediafileDAO {
-    @Override
-    public List<Mediafile> getAll() {
-        return null;
-    }
-
-    @Override
-    public Mediafile getById(int id) {
-        return null;
-    }
-
-    @Override
-    public List<Mediafile> getByDriveId(int id) {
-        return null;
-    }
-
-    @Override
-    public List<Mediafile> getByPath(MediafileDTO mediafileDTO) {
-        return null;
-    }
-
-    @Override
-    public Mediafile getByFile(MediafileDTO mediafileDTO) {
-        return null;
-    }
-
-    @Override
+public class MediafileDAOImplLocal {
     public Mediafile save(Mediafile item) {
         //TODO from global param
         String delimiter = "\t";
@@ -57,13 +31,4 @@ public class MediafileDAOImplLocal implements MediafileDAO {
         return item;
     }
 
-    @Override
-    public Mediafile merge(Mediafile item) {
-        return null;
-    }
-
-    @Override
-    public void delete(Mediafile item) {
-
-    }
 }

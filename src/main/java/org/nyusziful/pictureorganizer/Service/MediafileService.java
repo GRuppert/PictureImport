@@ -41,8 +41,8 @@ public class MediafileService {
         return getMediafile;
     }
 */
-    public Mediafile getMediafile(MediafileDTO mediafileDTO) {
-        Mediafile getMediafile = mediafileDAO.getByFile(mediafileDTO);
+    public Mediafile getMediafile(Drive drive, Path path) {
+        Mediafile getMediafile = mediafileDAO.getByFile(drive, path);
         return getMediafile;
     }
 
@@ -50,17 +50,13 @@ public class MediafileService {
         MediafileDTO mediafileDTO = new MediafileDTO();
         if (mediafile != null) {
             if (mediafile.getImage() != null) mediafileDTO.driveId = mediafile.getImage().getId();
-            if (mediafile.getFolder() != null) mediafileDTO.path = mediafile.getFolder().getPath();
+            if (mediafile.getFolder() != null) mediafileDTO.path = FolderService.winToDataPath(mediafile.getFolder().getJavaPath());
             mediafileDTO.filename = mediafile.getFilename();
             mediafileDTO.dateMod = mediafile.getDateMod();
             mediafileDTO.filehash = mediafile.getFilehash();
             mediafileDTO.size = mediafile.getSize();
         }
         return mediafileDTO;
-    }
-
-    public File getFile(Mediafile mediafile) {
-        return new File(driveService.getLocalLetter(mediafile.getDrive()) + ":\\" + dataToWinPath(mediafile.getFolder().getPath()) + "\\" + mediafile.getFilename());
     }
 
     public File getFile(MediafileDTO mediafile) {
@@ -90,25 +86,19 @@ public class MediafileService {
         );
         final Drive driveDTO = new Drive();
         driveDTO.setId(100);
-        mediafileDTO.setDrive(driveDTO);
-        final Mediafile b = mediafileService.getMediaFile(mediafileDTO);
-        System.out.println(b);
 /*        MediafileDTO mediafile = mediafileService.getMediafile("001ccb41c7eb77075051f3febdcafe71");
         System.out.println(mediafile);
         mediafileService.updateMediafile(mediafile);*/
     }
 
-    public Mediafile getMediaFile(Mediafile actFile) {
-        return mediafileDAO.getByFile(getMediafileDTO(actFile));
+    public Mediafile getMediaFile(Path path) {
+        final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
+        return mediafileDAO.getByFile(localDrive, path);
     }
 
     public List<Mediafile> getMediaFilesFromPath(Path path) {
-        MediafileDTO mediafileDTO = new MediafileDTO();
         final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        mediafileDTO.driveId = localDrive.getId();
-        final Folder folder = new Folder(localDrive, path);
-        mediafileDTO.path = folder.getPath();
-        return mediafileDAO.getByPath(mediafileDTO);
+        return mediafileDAO.getByPath(localDrive, path);
     }
 
     public int getVersionNumber(Image image) {

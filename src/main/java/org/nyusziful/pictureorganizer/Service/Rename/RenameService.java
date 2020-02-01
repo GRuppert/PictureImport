@@ -94,7 +94,7 @@ public class RenameService {
                 mediafileService.getVersionNumber(actFileImage)
         );
         if (!actFile.getFilename().equals(desiredFileName)) {
-            final Path path = mediafileService.getFile(actFile).toPath();
+            final Path path = actFile.getFilePath();
             if (write(path, Paths.get(path.getParent() + "\\" + desiredFileName), TableViewMediaFile.WriteMethod.MOVE, actFile.isXMPattached()))  {
                 actFile.setFilename(desiredFileName);
                 return true;
