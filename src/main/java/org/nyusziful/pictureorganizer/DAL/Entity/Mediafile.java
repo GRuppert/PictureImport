@@ -1,14 +1,13 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
-import org.nyusziful.pictureorganizer.Service.DriveService;
-import org.nyusziful.pictureorganizer.Service.FolderService;
 
 import javax.persistence.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
+import java.time.ZonedDateTime;
 import java.util.Objects;
 
 @Entity
@@ -17,11 +16,10 @@ import java.util.Objects;
     uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "folder_id", "filename"})}
 )
 public class Mediafile extends TrackingEntity {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(updatable = false, nullable = false)
-    private int id = -1;
+    @Column(name = "id", updatable = false, nullable = false)
+    protected int id = -1;
 
     @ManyToOne
     @JoinColumn(name="drive_id", referencedColumnName="id", nullable=false)
@@ -46,19 +44,30 @@ public class Mediafile extends TrackingEntity {
     @Column(name = "date_mod")
     private Timestamp dateMod;
 
+    @Column(name = "date_stored", updatable = false)
+    private ZonedDateTime dateStored;
+    private String latitude;
+    private String longitude;
+    private String altitude;
+
+
     @Transient
     private Path filePath;
+
+    @Transient
+    private boolean original;
 
     @PostLoad
     private void loadPath() {
         filePath = Paths.get(folder.getJavaPath().toString() + "\\" + filename);
+        original = filehash.equals(image.getOriginalFileHash());
     }
 
     public Mediafile() {
         // this form used by Hibernate
     }
 
-    public Mediafile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod) {
+    public Mediafile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
         this.filePath = path;
         this.filename = path.getFileName().toString();
         this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
@@ -67,6 +76,7 @@ public class Mediafile extends TrackingEntity {
         this.size = size;
         this.dateMod = dateMod;
         this.dateMod.setNanos(0);
+        this.original = original;
     }
 
     public String getFilename() {
@@ -84,6 +94,9 @@ public class Mediafile extends TrackingEntity {
 
     public void setFilehash(String filehash) {
         this.filehash = filehash;
+        if (image != null && image.getOriginalFileHash() != null) {
+            original = filehash.equals(image.getOriginalFileHash());
+        }
     }
 
     public long getSize() {
@@ -166,5 +179,45 @@ public class Mediafile extends TrackingEntity {
 
     public Path getFilePath() {
         return filePath;
+    }
+
+    public boolean isOriginal() {
+        return original;
+    }
+
+    public void setOriginal(boolean original) {
+        this.original = original;
+    }
+
+    public ZonedDateTime getDateStored() {
+        return dateStored;
+    }
+
+    public void setDateStored(ZonedDateTime dateCorrected) {
+        this.dateStored = dateCorrected;
+    }
+
+    public String getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(String latitude) {
+        this.latitude = latitude;
+    }
+
+    public String getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(String longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getAltitude() {
+        return altitude;
+    }
+
+    public void setAltitude(String altitude) {
+        this.altitude = altitude;
     }
 }

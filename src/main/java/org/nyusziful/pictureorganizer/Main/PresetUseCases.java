@@ -385,43 +385,43 @@ public class PresetUseCases {
             Set<Folder> folderstosave = new HashSet<>();
             for (Path folder : mediafolders) {
                 Folder folderSaved = folderService.getFolder(drive, folder);
-                if (folderSaved != null) {
-                    folders.put(folderSaved.getJavaPath().toString(), folderSaved);
-                } else {
+                if (folderSaved == null) {
                     folderSaved = new Folder(drive, folder);
                     folderstosave.add(folderSaved);
                 }
+                folders.put(folderSaved.getJavaPath().toString(), folderSaved);
             }
             folderService.persistFolder(folderstosave);
-            for (Folder f : folderstosave) {
-                folders.put(f.getJavaPath().toString(), f);
-            }
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
             JDialog progressDialog = progressDiag(progressBar);
             Set<Mediafile> files = new HashSet<>();
-            long startTime = System.nanoTime();
+            final long startTime = System.nanoTime();
             HashMap<String,Image> images = new HashMap<String, Image>();
             HashMap<String, Mediafile> fileSet = new HashMap<>();
-            final List<Mediafile> byDriveId = mediafileService.getMediaFilesFromPath(path);
+            List<Mediafile> byDriveId = mediafileService.getMediaFilesFromPath(path);
             for (Mediafile file : byDriveId) {
                 fileSet.put(file.getFilePath().toString(), file);
             }
-
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                 @Override public FileVisitResult
                 visitFile(Path filePath, BasicFileAttributes attrs) {
                     if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString()) && (extension == null || filePath.getFileName().toString().toLowerCase().endsWith(extension)) ) {
-                        long startTime = System.nanoTime();
-                        long toSeconds = 0;
+                        boolean fileOriginal = original;
                         boolean fileToSave = false;
-                        Mediafile actFile = fileSet.get(path.toString());
+                        Mediafile actFile = fileSet.get(filePath.toString());
                         final Folder folder = folders.get(filePath.getParent().toString());
                         assert folder != null;
+                        final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
+                        final long fileSize = attrs.size();
                         if (actFile == null) {
-                            actFile = new Mediafile(drive, folder, filePath, attrs.size(), new Timestamp(attrs.lastModifiedTime().toMillis()));
+                            actFile = new Mediafile(drive, folder, filePath, fileSize, dateMod, fileOriginal);
+                        } else {
+                            fileOriginal = fileOriginal && actFile.isOriginal();
                         }
-                        if (force || actFile.getId() < 0) {
-                            System.out.println("Hashing: " + path + "/" + filename);
+                        if (force || actFile.getId() < 0 || actFile.getSize() != fileSize || actFile.getDateMod().compareTo(dateMod) != 0) {
+                            System.out.println("Hashing: " + filePath + "/" + filename);
+                            actFile.setDateMod(dateMod);
+                            actFile.setSize(fileSize);
                             ImageDTO imageDTO = getHash(filePath.toFile());
                             Image image;
                             if (images.containsKey(imageDTO.hash+imageDTO.type)) {
@@ -430,25 +430,33 @@ public class PresetUseCases {
                                 image = imageService.getImage(imageDTO);
                                 if (image == null) {
                                     image = new Image(imageDTO.hash, imageDTO.type);
-                                    Meta meta = ExifService.readMeta(filePath.toFile(), zone);
-                                    image.setDateTaken(meta.date);
-                                    final Meta metaOrig = getV(actFile.getFilename());
-                                    image.setOriginalFilename((metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : actFile.getFilename());
                                     imageService.persistImage(image);
                                 }
                                 images.put(image.getHash()+image.getType(), image);
                             }
+                            final String fullHash = getFullHash(filePath.toFile());
+                            Meta meta = ExifService.readMeta(filePath.toFile(), zone);
+                            actFile.setDateStored(meta.date);
+                            if (fileOriginal) {
+                                if (image.getOriginalFileHash() == null) {
+                                    image.setOriginalFileHash(fullHash);
+                                }
+                                if (image.getDateTaken() == null) {
+                                    image.setDateTaken(meta.date);
+                                }
+                                if (image.getOriginalFilename() == null) {
+                                    final Meta metaOrig = getV(actFile.getFilename());
+                                    image.setOriginalFilename((metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : actFile.getFilename());
+                                }
+                            }
                             actFile.setImage(image);
+                            actFile.setFilehash(fullHash);
 
-                            actFile.setFilehash(getFullHash(filePath.toFile()));
-                            toSeconds = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime);
-                            if (toSeconds > 0)
-                                System.out.println(toSeconds + "s. Hash speed " + attrs.size() * 2 / 1048576 / toSeconds + "MB/s");
                             fileToSave = true;
-                            fileSizeCount += attrs.size();
+                            fileSizeCount += fileSize;
                             fileCount++;
                         } else {
-                            fileSizeCountTotal -= attrs.size();
+                            fileSizeCountTotal -= fileSize;
                             fileCountTotal--;
                         }
                         if (renameService.rename(actFile)) fileToSave = true;
@@ -461,7 +469,7 @@ public class PresetUseCases {
                         prevTime = System.nanoTime();
                         if (fileToSave) {
                             files.add(actFile);
-                            fileSet.put(actFile.getFolder().getJavaPath() + "/" + actFile.getFilename(), actFile);
+                            fileSet.put(actFile.getFilePath().toString(), actFile);
                         }
                         if (files.size() > 0 && (files.size() % blockSize) == 0) {
                             System.out.println("Writting files to DAL");

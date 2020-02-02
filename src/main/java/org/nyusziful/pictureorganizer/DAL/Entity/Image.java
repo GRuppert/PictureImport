@@ -14,9 +14,11 @@ public class Image extends TrackingEntity implements Serializable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private int id = -1;
+    protected int id = -1;
     @Column(name = "odid", updatable = false, nullable = false)
     private String hash;
+    @Column(name = "original_file_hash", updatable = false)
+    private String originalFileHash;
     @Column(name = "date_taken", updatable = false)
     private ZonedDateTime dateTaken;
     @Column(name = "date_corrected", updatable = false)
@@ -155,4 +157,11 @@ public class Image extends TrackingEntity implements Serializable {
     }
 
 
+    public String getOriginalFileHash() {
+        return originalFileHash;
+    }
+
+    public void setOriginalFileHash(String originalFileHash) {
+        this.originalFileHash = originalFileHash;
+    }
 }

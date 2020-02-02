@@ -1,26 +1,29 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.PrePersist;
-import javax.persistence.PreUpdate;
+import javax.persistence.*;
 import java.sql.Timestamp;
 
-public class TrackingEntity {
-    private Timestamp credate;
-    private String creator;
-    private Timestamp upddate;
-    private String updater;
+@MappedSuperclass
+public abstract class TrackingEntity {
+    @Column
+    protected Timestamp credate;
+    @Column
+    protected String creator;
+    @Column
+    protected Timestamp upddate;
+    @Column
+    protected String updater;
 
     @PrePersist
-    private void creator() {
-        credate = new java.sql.Timestamp(System.nanoTime());
+    protected void creator() {
+        credate = new java.sql.Timestamp(System.currentTimeMillis());
         creator = System.getenv("COMPUTERNAME");
-        upddate = new java.sql.Timestamp(System.nanoTime());
-        updater = System.getenv("COMPUTERNAME");
+        updater();
     }
 
     @PreUpdate
-    private void updater() {
-        upddate = new java.sql.Timestamp(System.nanoTime());
+    protected void updater() {
+        upddate = new java.sql.Timestamp(System.currentTimeMillis());
         updater = System.getenv("COMPUTERNAME");
     }
 }

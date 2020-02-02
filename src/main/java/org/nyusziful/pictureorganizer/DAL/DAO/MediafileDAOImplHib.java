@@ -10,10 +10,9 @@ import org.nyusziful.pictureorganizer.Service.FolderService;
 import javax.persistence.EntityManager;
 import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 
 public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements MediafileDAO {
@@ -49,10 +48,9 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements Med
     @Override
     public List<Mediafile> getByPath(Drive drive, Path path) {
         final EntityManager entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
-        TypedQuery<Mediafile> typedQuery = entityManager.createQuery("SELECT i from Mediafile i WHERE i.drive.id=:driveId and i.folder.path like:path", Mediafile.class);
+        TypedQuery<Mediafile> typedQuery = entityManager.createQuery("SELECT i from Mediafile i WHERE i.drive.id=:driveId and i.folder.path like :path", Mediafile.class);
         typedQuery.setParameter("driveId", drive.getId());
-        typedQuery.setParameter("path", FolderService.winToDataPath(path));
+        typedQuery.setParameter("path", FolderService.winToDataPath(path) + "%");
         return typedQuery.getResultList();
     }
-
 }

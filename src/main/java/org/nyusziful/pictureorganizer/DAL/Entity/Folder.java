@@ -17,7 +17,7 @@ public class Folder extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
-    private int id;
+    protected int id = -1;
     private String path;
     private String name;
     @ManyToOne(cascade = CascadeType.PERSIST)
