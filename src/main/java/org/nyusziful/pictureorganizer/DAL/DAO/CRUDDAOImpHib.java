@@ -3,6 +3,8 @@ package org.nyusziful.pictureorganizer.DAL.DAO;
 import org.hibernate.Session;
 import org.nyusziful.pictureorganizer.DAL.HibConnection;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityTransaction;
 import javax.persistence.criteria.CriteriaQuery;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
@@ -10,9 +12,12 @@ import java.util.List;
 public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     private Class<T> entityBeanType;
     protected HibConnection hibConnection;
+    protected EntityManager entityManager;
+
     public CRUDDAOImpHib() {
         this.entityBeanType = ((Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
         hibConnection = HibConnection.getInstance();
+        entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
     }
 
 
@@ -29,9 +34,28 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
         return (T) hibConnection.getCurrentSession().get(entityBeanType, id);
     }
 
-    @Override
-    public T save(final T item){
-        return (T) hibConnection.getCurrentSession().save(item);
+    public void persist(final T item) {
+        EntityTransaction transaction = null;
+        try{
+            transaction = entityManager.getTransaction();
+            transaction.begin();
+            entityManager.persist(item);
+            transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+/*
+        }finally{
+            if(session!=null){
+                session.close();
+            }
+*/
+        }
+
     }
 
     @Override
@@ -42,6 +66,11 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     @Override
     public void delete(final T item){
         hibConnection.getCurrentSession().delete(item);
+    }
+
+    @Override
+    public void flush() {
+        HibConnection.getInstance().getCurrentSession().flush();
     }
 
 }

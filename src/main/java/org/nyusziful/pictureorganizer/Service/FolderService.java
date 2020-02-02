@@ -9,9 +9,7 @@ import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 public class FolderService {
     private FolderDAO folderDAO;
@@ -47,12 +45,10 @@ public class FolderService {
         return folderDTO;
     }
 
-    public List<Folder> saveFolder(Collection<Folder> folders) {
-        List<Folder> folderList = new ArrayList<>();
+    public void persistFolder(Collection<Folder> folders) {
         for (Folder folder: folders) {
-            folderList.add(folderDAO.save(folder));
+            folderDAO.persist(folder);
         }
-        return folderList;
     }
 
 }

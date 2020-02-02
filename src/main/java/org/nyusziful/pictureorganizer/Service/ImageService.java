@@ -28,9 +28,8 @@ public class ImageService {
         throw new java.lang.UnsupportedOperationException("Not implemented");
     }
 
-    public Image saveImage(Image image) {
-        Image getImage = imageDAO.save(image);
-        return getImage;
+    public void persistImage(Image image) {
+        imageDAO.persist(image);
     }
 
     public void updateImage(Image image) {

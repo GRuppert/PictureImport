@@ -3,20 +3,15 @@ package org.nyusziful.pictureorganizer.Service;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
-import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
-import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
-import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
 import static org.nyusziful.pictureorganizer.Service.FolderService.dataToWinPath;
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 
 public class MediafileService {
     private MediafileDAO mediafileDAO;
@@ -63,16 +58,14 @@ public class MediafileService {
         return new File(mediafile.letter + ":" + dataToWinPath(mediafile.path) + "\\" + mediafile.filename);
     }
 
-    public Mediafile saveMediafile(Mediafile mediafile) {
-        return saveMediafile(Collections.singleton(mediafile)).get(0);
+    public void persistMediafile(Mediafile mediafile) {
+        persistMediafile(Collections.singleton(mediafile));
     }
 
-    public List<Mediafile> saveMediafile(Collection<Mediafile> mediafile) {
-        List<Mediafile> mediafileDTOList = new ArrayList<>();
+    public void persistMediafile(Collection<Mediafile> mediafile) {
         for (Mediafile file: mediafile) {
-            mediafileDTOList.add(mediafileDAO.save(file));
+            mediafileDAO.persist(file);
         }
-        return mediafileDTOList;
     }
 
     public void updateMediafile(Mediafile Mediafile) {
@@ -105,5 +98,9 @@ public class MediafileService {
         if (image == null) return -1;
         if (image.getParent() == null) return 0;
         return getVersionNumber(image.getParent()) + 1;
+    }
+
+    public void flush() {
+        mediafileDAO.flush();
     }
 }

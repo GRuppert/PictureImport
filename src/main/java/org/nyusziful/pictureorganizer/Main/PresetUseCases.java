@@ -31,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
+import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.supportedMediaFileType;
@@ -335,7 +336,6 @@ public class PresetUseCases {
      * File
      *
      * @param path
-     * @param start
      */
     private static void listFiles(Path path, boolean original, String extension, ZoneId zone) {
         fileSizeCountTotal = 0;
@@ -343,7 +343,7 @@ public class PresetUseCases {
         fileCountTotal = 0;
         fileCount = 0;
         String filename = "";
-        int blockSize = 1;
+        int blockSize = 100;
 //        int blockSize = 1000;
         boolean force = false;
         final DriveService driveService = new DriveService();
@@ -360,7 +360,7 @@ public class PresetUseCases {
                     if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString()) && (extension == null || filePath.getFileName().toString().toLowerCase().endsWith(extension)) ) {
                         fileSizeCountTotal += attrs.size();
                         fileCountTotal++;
-                        mediafolders.add(path.getParent());
+                        mediafolders.add(filePath.getParent());
 //                            System.out.println(file.getFileName());
                     }
                     return FileVisitResult.CONTINUE;
@@ -392,8 +392,8 @@ public class PresetUseCases {
                     folderstosave.add(folderSaved);
                 }
             }
-            final List<Folder> folders1 = folderService.saveFolder(folderstosave);
-            for (Folder f : folders1) {
+            folderService.persistFolder(folderstosave);
+            for (Folder f : folderstosave) {
                 folders.put(f.getJavaPath().toString(), f);
             }
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
@@ -414,15 +414,11 @@ public class PresetUseCases {
                         long startTime = System.nanoTime();
                         long toSeconds = 0;
                         boolean fileToSave = false;
-//                        final Mediafile searchMediafile = new Mediafile(drive, filePath, attrs.size(), new Timestamp(attrs.lastModifiedTime().toMillis()));
                         Mediafile actFile = fileSet.get(path.toString());
-/*
+                        final Folder folder = folders.get(filePath.getParent().toString());
+                        assert folder != null;
                         if (actFile == null) {
-                            actFile = mediafileService.getMediaFile(searchMediafile);
-                        }
-*/
-                        if (actFile == null) {
-                            actFile = new Mediafile(drive, folders.get(filePath.getParent().toString()), filePath, attrs.size(), new Timestamp(attrs.lastModifiedTime().toMillis()));
+                            actFile = new Mediafile(drive, folder, filePath, attrs.size(), new Timestamp(attrs.lastModifiedTime().toMillis()));
                         }
                         if (force || actFile.getId() < 0) {
                             System.out.println("Hashing: " + path + "/" + filename);
@@ -436,8 +432,9 @@ public class PresetUseCases {
                                     image = new Image(imageDTO.hash, imageDTO.type);
                                     Meta meta = ExifService.readMeta(filePath.toFile(), zone);
                                     image.setDateTaken(meta.date);
-                                    image.setOriginalFilename(actFile.getFilename());
-                                    imageService.saveImage(image);
+                                    final Meta metaOrig = getV(actFile.getFilename());
+                                    image.setOriginalFilename((metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : actFile.getFilename());
+                                    imageService.persistImage(image);
                                 }
                                 images.put(image.getHash()+image.getType(), image);
                             }
@@ -469,8 +466,9 @@ public class PresetUseCases {
                         if (files.size() > 0 && (files.size() % blockSize) == 0) {
                             System.out.println("Writting files to DAL");
                             long insertTime = System.nanoTime();
-                            final List<Mediafile> mediafiles = mediafileService.saveMediafile(files);
+                            mediafileService.persistMediafile(files);
                             files.clear();
+                            mediafileService.flush();
                             System.out.println(blockSize + " files written to DAL in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-insertTime));
                         }
                         if (fileCount > 0 && (fileCount % 10000) == 0) {
@@ -481,7 +479,6 @@ public class PresetUseCases {
                             } else {
                                 System.out.println();
                             }
-//                            pw.flush();
                         }
                         progressBar.setValue((int)(fileSizeCount/1000000));
                     }
@@ -503,7 +500,7 @@ public class PresetUseCases {
                     return FileVisitResult.CONTINUE;
                 }
             });
-            mediafileService.saveMediafile(files);
+            mediafileService.persistMediafile(files);
             System.out.println("Rédi");
             progressDialog.dispose();
         } catch (IOException e) {

@@ -27,13 +27,13 @@ public class Mediafile extends TrackingEntity {
     @JoinColumn(name="drive_id", referencedColumnName="id", nullable=false)
     private Drive drive;
 
-    @ManyToOne(cascade=CascadeType.PERSIST)
+    @ManyToOne
     @JoinColumn(name="folder_id", referencedColumnName="id", nullable=false)
     private Folder folder;
 
     private String filename;
 
-    @ManyToOne(cascade=CascadeType.PERSIST)
+    @ManyToOne
     @JoinColumn(name="image_id", referencedColumnName="id")
     private Image image;
 
@@ -59,7 +59,7 @@ public class Mediafile extends TrackingEntity {
     }
 
     public Mediafile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod) {
-        filePath = path;
+        this.filePath = path;
         this.filename = path.getFileName().toString();
         this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
         this.drive = drive;
