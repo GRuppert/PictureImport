@@ -60,7 +60,10 @@ public class StaticTools {
         }
         return true;
     }
-    
+
+    public static boolean hasValue(String object) {
+        return object != null && !"".equals(object);
+    }
 
     
 }

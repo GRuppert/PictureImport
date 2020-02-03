@@ -5,6 +5,7 @@
  */
 package org.nyusziful.pictureorganizer.Service.Rename;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.time.LocalDateTime;
@@ -14,6 +15,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.Locale;
+
+import static org.nyusziful.pictureorganizer.Service.Rename.StaticTools.hasValue;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.errorOut;
 
 /**
@@ -223,16 +226,17 @@ public class FileNameFactory {
         return dateS;
     }// "K2016-11-0_3@07-5_0-24(+0100)(Thu)-"
 
-    public static String getFileName(String ver, String pictureSet, String originalName, ZonedDateTime date, String iID, String dID, int versionNumber) {
-        switch (ver) {
-            case "5":
-                return "V" + ver + "_" + pictureSet + dateFormat(date) + iID + "-" + dID + "-" + originalName;
+    public static String getFileName(String ver, String pictureSet, String originalName, ZonedDateTime date, String iID, String dID, int versionNumber) throws InvalidArgumentException {
+        if (hasValue(originalName) && hasValue(dID) && hasValue(pictureSet) && date != null) {
+            switch (ver) {
+                case "5":
+                    return "V" + ver + "_" + pictureSet + dateFormat(date) + iID + "-" + dID + "-" + originalName;
 
-            case "6":
-                return String.format("V" + ver + "_" + pictureSet + dateFormat(date) + dID + "-%01d-" + originalName, versionNumber);
-            default:
-                return null;
+                case "6":
+                    return String.format("V" + ver + "_" + pictureSet + dateFormat(date) + dID + "-%01d-" + originalName, versionNumber);
+            }
         }
+        throw new InvalidArgumentException(new String[]{"Not enough information"});
     }
-    
+
 }

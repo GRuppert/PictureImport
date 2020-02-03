@@ -10,6 +10,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
@@ -69,7 +70,12 @@ public class fileRenamerTest {
     @Test
     public void testGetFileName() {
         System.out.println("getFileName");
-        String result = FileNameFactory.getFileName(ver, pictureSet, originalName, date, iID, dID, original);
+        String result = null;
+        try {
+            result = FileNameFactory.getFileName(ver, pictureSet, originalName, date, iID, dID, original);
+        } catch (InvalidArgumentException e) {
+            e.printStackTrace();
+        }
         assertEquals("Rename of file(" + originalName + ") result: " + result + " awaited: " + expResult, expResult, result);
     }
     

@@ -2,9 +2,7 @@ package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.hibernate.Session;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
-import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
 import javax.persistence.EntityManager;
@@ -12,7 +10,6 @@ import javax.persistence.NoResultException;
 import javax.persistence.TypedQuery;
 import javax.persistence.criteria.*;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
 
 public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements MediafileDAO {
@@ -52,5 +49,11 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements Med
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path) + "%");
         return typedQuery.getResultList();
+    }
+
+    public List<String> getByHash(String hash) {
+        Session session = hibConnection.getCurrentSession();
+        final List list = session.createSQLQuery("SELECT distinct(filename) FROM picture.media_file WHERE image_id_oldtodel = '" + hash + "' and drive_id = 7").list();
+        return list;
     }
 }

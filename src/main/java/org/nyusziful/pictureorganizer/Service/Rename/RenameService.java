@@ -1,7 +1,9 @@
 package org.nyusziful.pictureorganizer.Service.Rename;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
@@ -12,6 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
+
+import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
+import static org.nyusziful.pictureorganizer.Service.Rename.StaticTools.hasValue;
 
 public class RenameService {
 
@@ -54,6 +59,7 @@ public class RenameService {
 
     public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean isXMPattached) {
         try {
+            if (!path.toString().endsWith(newPath.toString().substring(newPath.toString().length()-4))) return false;
             validPath(newPath);
             switch (writeMethod) {
                 case COPY:
@@ -84,15 +90,31 @@ public class RenameService {
 
     public boolean rename(Mediafile actFile) {
         final Image actFileImage = actFile.getImage();
-        String desiredFileName = FileNameFactory.getFileName(
-                "6",
-                CommonProperties.getInstance().getPictureSet(),
-                actFileImage.getOriginalFilename(),
-                actFileImage.getActualDate(),
-                actFile.getFilehash(),
-                actFileImage.getHash(),
-                mediafileService.getVersionNumber(actFileImage)
-        );
+        String desiredFileName = null;
+        String oldFilename;
+        if (hasValue(actFileImage.getOriginalFilename())) {
+            oldFilename = actFileImage.getOriginalFilename();
+        } else {
+            final Meta v = getV(actFile.getFilename());
+            if (hasValue(v.originalFilename)) {
+                oldFilename = v.originalFilename;
+            } else {
+                oldFilename = actFile.getFilename();
+            }
+        }
+        try {
+            desiredFileName = FileNameFactory.getFileName(
+                    "6",
+                    CommonProperties.getInstance().getPictureSet(),
+                    oldFilename,
+                    actFileImage.getActualDate() != null ? actFileImage.getActualDate() : actFile.getDateStored(),
+                    actFile.getFilehash(),
+                    actFileImage.getHash(),
+                    mediafileService.getVersionNumber(actFileImage)
+            );
+        } catch (InvalidArgumentException e) {
+            return false;
+        }
         if (!actFile.getFilename().equals(desiredFileName)) {
             final Path path = actFile.getFilePath();
             if (write(path, Paths.get(path.getParent() + "\\" + desiredFileName), TableViewMediaFile.WriteMethod.MOVE, actFile.isXMPattached()))  {

@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.Main;
 
+import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
@@ -10,6 +11,7 @@ import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 import org.nyusziful.pictureorganizer.Service.ImageService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
@@ -48,7 +50,9 @@ public class PresetUseCases {
 //        listFiles(Paths.get("D:\\Képek"), drives.get(7), 0, false, "arw", ZoneId.systemDefault());
 
 //        listFiles(Paths.get("E:\\temp"), 2, 0);
-        listFiles(Paths.get("E:\\Képek"), false,"arw", ZoneId.systemDefault());
+
+//        recover();
+        listFiles(Paths.get("E:\\Képek\\200"), false,"arw", ZoneId.systemDefault());
     }
 
     private void osNev() {
@@ -330,6 +334,49 @@ public class PresetUseCases {
     }
 
 
+    private static void recover()  {
+        Path path = Paths.get("E:\\Képek");
+        MediafileDAOImplHib dao = new MediafileDAOImplHib();
+        try {
+            Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
+                @Override public FileVisitResult
+                visitFile(Path filePath, BasicFileAttributes attrs) {
+                    if (!attrs.isDirectory() && attrs.isRegularFile() && filePath.getFileName().toString().endsWith("-null") ) {
+                        String hash = filePath.getFileName().toString().substring(39, 71);
+                        List<String> mediaFile = dao.getByHash(hash);
+                        if (mediaFile.size()==1) {
+                            String oldFilename = mediaFile.get(0);
+                            if (oldFilename.matches("D.C[0-9]{5}\\.ARW"))
+                                RenameService.write(filePath, Paths.get(filePath.getParent() + "\\" + oldFilename), TableViewMediaFile.WriteMethod.MOVE, (Files.exists(Paths.get(filePath + ".xmp"))));
+                        } else {
+                            System.out.println("More filenames");
+                        }
+
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                visitFileFailed(Path file, IOException exc) {
+    //                        StaticTools.errorOut(file.toString(), exc);
+                    // Skip folders that can't be traversed
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override public FileVisitResult
+                postVisitDirectory (Path dir, IOException exc) {
+    //                        if (exc != null)
+    //                        StaticTools.errorOut(dir.toString(), exc);
+                    // Ignore errors traversing a folder
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     /**
      * Media Hash
      * Hash
@@ -402,10 +449,11 @@ public class PresetUseCases {
             for (Mediafile file : byDriveId) {
                 fileSet.put(file.getFilePath().toString(), file);
             }
+            HashSet<Path> processed = new HashSet<>();
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                 @Override public FileVisitResult
                 visitFile(Path filePath, BasicFileAttributes attrs) {
-                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString()) && (extension == null || filePath.getFileName().toString().toLowerCase().endsWith(extension)) ) {
+                    if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString()) && (extension == null || filePath.getFileName().toString().toLowerCase().endsWith(extension)) && !processed.contains(filePath)) {
                         boolean fileOriginal = original;
                         boolean fileToSave = false;
                         Mediafile actFile = fileSet.get(filePath.toString());
@@ -466,6 +514,7 @@ public class PresetUseCases {
                         long secondsBetween = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-prevTime);
                         System.out.println(secondsBetween + "s since the last iteration.");
 */
+                        processed.add(actFile.getFilePath());
                         prevTime = System.nanoTime();
                         if (fileToSave) {
                             files.add(actFile);
