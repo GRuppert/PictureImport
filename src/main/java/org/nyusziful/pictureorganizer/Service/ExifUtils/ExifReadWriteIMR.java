@@ -5,17 +5,21 @@
  */
 package org.nyusziful.pictureorganizer.Service.ExifUtils;
 
-import static org.nyusziful.pictureorganizer.UI.StaticTools.ExifDateFormat;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.getTimeFromStr;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.getZonedTimeFromStr;
-
+import com.drew.imaging.avi.AviMetadataReader;
+import com.drew.imaging.bmp.BmpMetadataReader;
+import com.drew.imaging.gif.GifMetadataReader;
+import com.drew.imaging.heif.HeifMetadataReader;
+import com.drew.imaging.jpeg.JpegMetadataReader;
+import com.drew.imaging.mp4.Mp4MetadataReader;
+import com.drew.imaging.png.PngMetadataReader;
+import com.drew.imaging.quicktime.QuickTimeMetadataReader;
+import com.drew.imaging.tiff.TiffMetadataReader;
 import org.nyusziful.pictureorganizer.DTO.Meta;
-import com.adobe.xmp.XMPException;
-import com.adobe.xmp.XMPIterator;
-import com.adobe.xmp.XMPMeta;
-import com.adobe.xmp.XMPMetaFactory;
-import com.adobe.xmp.properties.XMPPropertyInfo;
+import com.adobe.internal.xmp.XMPException;
+import com.adobe.internal.xmp.XMPIterator;
+import com.adobe.internal.xmp.XMPMeta;
+import com.adobe.internal.xmp.XMPMetaFactory;
+import com.adobe.internal.xmp.properties.XMPPropertyInfo;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.Directory;
@@ -23,9 +27,7 @@ import com.drew.metadata.Metadata;
 import com.drew.metadata.Tag;
 import com.drew.metadata.xmp.XmpDirectory;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -33,6 +35,8 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.commons.io.FilenameUtils;
+
+import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 /**
  *
@@ -69,6 +73,7 @@ public class ExifReadWriteIMR {
             switch (tag[0]) {
                 case "Model":
                 case "tiff:Model":
+                case "Device Model Name":
                     model = tag[1];
                     break;
                 case "xmpMM:InstanceID":
@@ -92,14 +97,19 @@ public class ExifReadWriteIMR {
                     if (wTZ != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
                         dateFormat = true;
                     break;
+                case "Creation Time":
+                    if (FilenameUtils.getExtension(file.getName().toLowerCase()).equals("mp4"))
+                        try {
+                            wTZ = ZonedDateTime.parse(tag[1], MP4DateFormatTZ);
+                        } catch (DateTimeParseException exc) {
+                        }
                 case "exif:DateTimeOriginal":
                     try {
                         wTZ = ZonedDateTime.parse(tag[1], XmpDateFormatTZ);
                         if ((captureDate != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
                                 || FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp"))
                             dateFormat = true;
-                    }
-                    catch (DateTimeParseException exc) {
+                    } catch (DateTimeParseException exc) {
                     }
                     break;
             }
@@ -119,7 +129,6 @@ public class ExifReadWriteIMR {
 
     //_tagType == exiftool TagId
     public static ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException {
-        //TODO mp4
         Metadata metadata;
         ArrayList<String[]> tags = new ArrayList();
         Collection<XmpDirectory> xmpDirectories = null;
@@ -136,14 +145,14 @@ public class ExifReadWriteIMR {
             ArrayList<XmpDirectory> collect = new ArrayList<>();
             collect.add(directory);
             xmpDirectories = collect;
-        }   else {
-            metadata = ImageMetadataReader.readMetadata(file);
+        } else {
+            metadata = readDrew(file);
             for (Directory directory : metadata.getDirectories()) {
                 if (!directory.getClass().equals(XmpDirectory.class))
                     for (Tag tag : directory.getTags()) {
                         String[] temp = {tag.getTagName(), tag.getDescription()};
                         String value = tag.getDescription();
-                        if (value != null && !value.replaceAll("\\s+","").equals("")) tags.add(temp);
+                        if (value != null && !value.replaceAll("\\s+", "").equals("")) tags.add(temp);
                     }
             }
             xmpDirectories = metadata.getDirectoriesOfType(XmpDirectory.class);
@@ -154,8 +163,8 @@ public class ExifReadWriteIMR {
             try {
                 iterator = xmpMeta.iterator();
                 while (iterator.hasNext()) {
-                    XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo)iterator.next();
-                    if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+","").equals("")) {
+                    XMPPropertyInfo xmpPropertyInfo = (XMPPropertyInfo) iterator.next();
+                    if (xmpPropertyInfo.getPath() != null && xmpPropertyInfo.getValue() != null && !xmpPropertyInfo.getValue().replaceAll("\\s+", "").equals("")) {
                         String[] temp = {xmpPropertyInfo.getPath(), xmpPropertyInfo.getValue()};
                         tags.add(temp);
                     }
@@ -166,10 +175,44 @@ public class ExifReadWriteIMR {
         return tags;
     }
 
+
     public static ArrayList<String[]> readMetaNew(File file) throws ImageProcessingException, IOException {
         ArrayList<String[]> tags = new ArrayList();
-        Metadata metadata = ImageMetadataReader.readMetadata(file);
-        metadata.getDirectories().forEach(directory -> directory.getTags().stream().forEach(tag -> {if (tag.getDescription() != null && !tag.getDescription().replaceAll("\\s+","").equals("")) tags.add(new String[]{tag.getTagName(), tag.getDescription()});}));
+        Metadata metadata = readDrew(file);
+        metadata.getDirectories().forEach(directory -> directory.getTags().stream().forEach(tag -> {
+            if (tag.getDescription() != null && !tag.getDescription().replaceAll("\\s+", "").equals(""))
+                tags.add(new String[]{tag.getTagName(), tag.getDescription()});
+        }));
         return tags;
+    }
+
+    private static Metadata readDrew(File file) throws ImageProcessingException, IOException {
+        String ext = FilenameUtils.getExtension(file.getName()).toLowerCase();
+        switch(ext) {
+            case "jpeg":
+            case "jpg":
+                return JpegMetadataReader.readMetadata(file);
+            case "tiff":
+            case "tif":
+            case "arw":
+            case "nef":
+                return TiffMetadataReader.readMetadata(file);
+            case "png":
+                return PngMetadataReader.readMetadata(file);
+            case "bmp":
+                return BmpMetadataReader.readMetadata(file);
+            case "gif":
+                return GifMetadataReader.readMetadata(file);
+            case "avi":
+                return AviMetadataReader.readMetadata(file);
+            case "mov":
+                return QuickTimeMetadataReader.readMetadata(file);
+            case "mp4":
+                return Mp4MetadataReader.readMetadata(file);
+            case "heif":
+                return HeifMetadataReader.readMetadata(new FileInputStream(file));
+            default:
+                throw new ImageProcessingException("File format could not be determined");
+        }
     }
 }

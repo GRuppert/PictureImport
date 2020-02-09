@@ -57,9 +57,10 @@ public class RenameService {
     }
 
 
-    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean isXMPattached) {
+    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod) {
         try {
-            if (!path.toString().endsWith(newPath.toString().substring(newPath.toString().length()-4))) return false;
+            if (!path.toString().toLowerCase().endsWith(newPath.toString().toLowerCase().substring(newPath.toString().length()-4))) return false;
+            boolean isXMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
             validPath(newPath);
             switch (writeMethod) {
                 case COPY:
@@ -96,7 +97,7 @@ public class RenameService {
             oldFilename = actFileImage.getOriginalFilename();
         } else {
             final Meta v = getV(actFile.getFilename());
-            if (hasValue(v.originalFilename)) {
+            if (v != null && hasValue(v.originalFilename)) {
                 oldFilename = v.originalFilename;
             } else {
                 oldFilename = actFile.getFilename();
@@ -117,7 +118,7 @@ public class RenameService {
         }
         if (!actFile.getFilename().equals(desiredFileName)) {
             final Path path = actFile.getFilePath();
-            if (write(path, Paths.get(path.getParent() + "\\" + desiredFileName), TableViewMediaFile.WriteMethod.MOVE, actFile.isXMPattached()))  {
+            if (write(path, Paths.get(path.getParent() + "\\" + desiredFileName), TableViewMediaFile.WriteMethod.MOVE))  {
                 actFile.setFilename(desiredFileName);
                 return true;
             }

@@ -11,10 +11,7 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.*;
@@ -35,6 +32,16 @@ public class StaticTools {
     public static DateTimeFormatter ExifDateFormatTZ = DateTimeFormatter.ofPattern("yyyy:MM:dd HH:mm:ssXXX");//2016:11:24 20:05:46+02:00
     public static DateTimeFormatter XmpDateFormat = DateTimeFormatter.ISO_DATE_TIME;//2016-11-24T20:05:46
     public static DateTimeFormatter XmpDateFormatTZ = DateTimeFormatter.ISO_OFFSET_DATE_TIME;//2016-11-24T20:05:46+02:00
+    public static DateTimeFormatter MP4DateFormatTZ = DateTimeFormatter.ofPattern("E MMM dd HH:mm:ss XXX yyyy");//Do Sep 06 20:36:46 +02:00 2018
+
+    public static void main(String[] args) {
+        DateTimeFormatter MP4DateFormatTZ = DateTimeFormatter.ofPattern("E MMM dd HH:mm:ss XXX yyyy");//Do Sep 06 20:36:46 +02:00 2018
+        ZonedDateTime zdt = ZonedDateTime.of ( LocalDate.of ( 2018 , 9 , 6 ) , LocalTime.of ( 20 , 36, 46 ) , ZoneId.systemDefault() );
+        String zdtString = MP4DateFormatTZ.format(zdt);
+        System.out.println(zdtString);
+    }
+
+
     static String[] imageFiles = {
         "jpg",
         "jpeg",
@@ -310,5 +317,6 @@ public class StaticTools {
         }
 
     }
+
 
 }

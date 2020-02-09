@@ -1,8 +1,7 @@
 package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
-import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
-import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
+import org.nyusziful.pictureorganizer.DAL.Entity.*;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
@@ -13,7 +12,6 @@ import org.nyusziful.pictureorganizer.Service.ImageService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 
 import javax.swing.*;
@@ -31,12 +29,11 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.supportedMediaFileType;
+import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class PresetUseCases {
     private static long fileSizeCountTotal = 0;
@@ -52,7 +49,7 @@ public class PresetUseCases {
 //        listFiles(Paths.get("E:\\temp"), 2, 0);
 
 //        recover();
-        listFiles(Paths.get("E:\\Képek\\200"), false,"arw", ZoneId.systemDefault());
+        listFiles(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
     }
 
     private void osNev() {
@@ -333,7 +330,6 @@ public class PresetUseCases {
         return progressDialog;
     }
 
-
     private static void recover()  {
         Path path = Paths.get("E:\\Képek");
         MediafileDAOImplHib dao = new MediafileDAOImplHib();
@@ -347,7 +343,7 @@ public class PresetUseCases {
                         if (mediaFile.size()==1) {
                             String oldFilename = mediaFile.get(0);
                             if (oldFilename.matches("D.C[0-9]{5}\\.ARW"))
-                                RenameService.write(filePath, Paths.get(filePath.getParent() + "\\" + oldFilename), TableViewMediaFile.WriteMethod.MOVE, (Files.exists(Paths.get(filePath + ".xmp"))));
+                                RenameService.write(filePath, Paths.get(filePath.getParent() + "\\" + oldFilename), TableViewMediaFile.WriteMethod.MOVE);
                         } else {
                             System.out.println("More filenames");
                         }
@@ -436,7 +432,7 @@ public class PresetUseCases {
                     folderSaved = new Folder(drive, folder);
                     folderstosave.add(folderSaved);
                 }
-                folders.put(folderSaved.getJavaPath().toString(), folderSaved);
+                folders.put(folderSaved.getJavaPath().toString().toLowerCase(), folderSaved);
             }
             folderService.persistFolder(folderstosave);
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
@@ -447,24 +443,30 @@ public class PresetUseCases {
             HashMap<String, Mediafile> fileSet = new HashMap<>();
             List<Mediafile> byDriveId = mediafileService.getMediaFilesFromPath(path);
             for (Mediafile file : byDriveId) {
-                fileSet.put(file.getFilePath().toString(), file);
+                fileSet.put(file.getFilePath().toString().toLowerCase(), file);
             }
             HashSet<Path> processed = new HashSet<>();
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                 @Override public FileVisitResult
                 visitFile(Path filePath, BasicFileAttributes attrs) {
                     if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString()) && (extension == null || filePath.getFileName().toString().toLowerCase().endsWith(extension)) && !processed.contains(filePath)) {
-                        boolean fileOriginal = original;
+                        Boolean fileOriginal = original;
                         boolean fileToSave = false;
-                        Mediafile actFile = fileSet.get(filePath.toString());
-                        final Folder folder = folders.get(filePath.getParent().toString());
+                        Mediafile actFile = fileSet.get(filePath.toString().toLowerCase());
+                        final Folder folder = folders.get(filePath.getParent().toString().toLowerCase());
                         assert folder != null;
                         final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
+                        dateMod.setNanos(0);
                         final long fileSize = attrs.size();
                         if (actFile == null) {
-                            actFile = new Mediafile(drive, folder, filePath, fileSize, dateMod, fileOriginal);
+                            if (supportedRAWFileType(filePath.getFileName().toString())) {
+                                actFile = new RAWMediaFile(drive, folder, filePath, fileSize, dateMod, original);
+                                createXmp(filePath.toFile());
+                            } else {
+                                actFile = new Mediafile(drive, folder, filePath, fileSize, dateMod, original);
+                            }
                         } else {
-                            fileOriginal = fileOriginal && actFile.isOriginal();
+                            fileOriginal = !Boolean.FALSE.equals(fileOriginal) && !Boolean.FALSE.equals(actFile.isOriginal()) && !(fileOriginal == null && actFile.isOriginal() == null);
                         }
                         if (force || actFile.getId() < 0 || actFile.getSize() != fileSize || actFile.getDateMod().compareTo(dateMod) != 0) {
                             System.out.println("Hashing: " + filePath + "/" + filename);
@@ -485,21 +487,8 @@ public class PresetUseCases {
                             final String fullHash = getFullHash(filePath.toFile());
                             Meta meta = ExifService.readMeta(filePath.toFile(), zone);
                             actFile.setDateStored(meta.date);
-                            if (fileOriginal) {
-                                if (image.getOriginalFileHash() == null) {
-                                    image.setOriginalFileHash(fullHash);
-                                }
-                                if (image.getDateTaken() == null) {
-                                    image.setDateTaken(meta.date);
-                                }
-                                if (image.getOriginalFilename() == null) {
-                                    final Meta metaOrig = getV(actFile.getFilename());
-                                    image.setOriginalFilename((metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : actFile.getFilename());
-                                }
-                            }
                             actFile.setImage(image);
                             actFile.setFilehash(fullHash);
-
                             fileToSave = true;
                             fileSizeCount += fileSize;
                             fileCount++;
@@ -507,6 +496,16 @@ public class PresetUseCases {
                             fileSizeCountTotal -= fileSize;
                             fileCountTotal--;
                         }
+                        if (Boolean.TRUE.equals(fileOriginal)) {
+                            try {
+                                fileToSave = mediafileService.updateOriginalImage(actFile);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+
+
+
                         if (renameService.rename(actFile)) fileToSave = true;
 /*
                         long toSeconds2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
@@ -514,11 +513,14 @@ public class PresetUseCases {
                         long secondsBetween = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-prevTime);
                         System.out.println(secondsBetween + "s since the last iteration.");
 */
+                        if (actFile instanceof RAWMediaFile && !((RAWMediaFile)actFile).isXMPattached()) {
+                            createXmp(filePath.toFile());
+                        }
                         processed.add(actFile.getFilePath());
                         prevTime = System.nanoTime();
                         if (fileToSave) {
                             files.add(actFile);
-                            fileSet.put(actFile.getFilePath().toString(), actFile);
+                            fileSet.put(actFile.getFilePath().toString().toLowerCase(), actFile);
                         }
                         if (files.size() > 0 && (files.size() % blockSize) == 0) {
                             System.out.println("Writting files to DAL");

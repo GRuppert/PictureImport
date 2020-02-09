@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
+import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
 import java.nio.file.Files;
@@ -10,7 +11,10 @@ import java.sql.Timestamp;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 
+import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
+
 @Entity
+@Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @Table(
     name = "media_file",
     uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "folder_id", "filename"})}
@@ -31,11 +35,9 @@ public class Mediafile extends TrackingEntity {
 
     private String filename;
 
-    @ManyToOne
+    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
     @JoinColumn(name="image_id", referencedColumnName="id")
     private Image image;
-
-    private boolean XMPattached;
 
     private String filehash;
 
@@ -45,7 +47,11 @@ public class Mediafile extends TrackingEntity {
     private Timestamp dateMod;
 
     @Column(name = "date_stored", updatable = false)
+    private String dateStoredString;
+
+    @Transient
     private ZonedDateTime dateStored;
+
     private String latitude;
     private String longitude;
     private String altitude;
@@ -55,12 +61,31 @@ public class Mediafile extends TrackingEntity {
     private Path filePath;
 
     @Transient
-    private boolean original;
+    private Boolean original;
+
+    @PrePersist
+    private void dateToString() {
+        if (dateStored != null)
+            dateStoredString = XmpDateFormatTZ.format(dateStored);
+    }
 
     @PostLoad
+    private void fillTransients() {
+        stringToDate();
+        loadPath();
+    }
+
+    private void stringToDate() {
+        if (dateStoredString != null)
+            dateStored = ZonedDateTime.parse(dateStoredString, XmpDateFormatTZ);
+
+    }
+
     private void loadPath() {
         filePath = Paths.get(folder.getJavaPath().toString() + "\\" + filename);
-        original = filehash.equals(image.getOriginalFileHash());
+        if (image != null && image.getOriginalFileHash() != null) {
+            original = filehash.equals(image.getOriginalFileHash());
+        }
     }
 
     public Mediafile() {
@@ -70,7 +95,6 @@ public class Mediafile extends TrackingEntity {
     public Mediafile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
         this.filePath = path;
         this.filename = path.getFileName().toString();
-        this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
         this.drive = drive;
         this.folder = folder;
         this.size = size;
@@ -162,30 +186,40 @@ public class Mediafile extends TrackingEntity {
     }
 
     public void setImage(Image image) {
+        setImage(image, false);
+    }
+
+    public void setImage(Image image, boolean cross) {
+        //prevent endless loop
+        if (sameAsFormer(image))
+            return;
+        //set new owner
+        if (this.image!=null && !cross)
+            this.image.removeMediaFile(this, true);
         this.image = image;
+        //remove from the old owner
+        //set myself to new owner
+        if (image!=null && !cross)
+            image.addMediaFile(this, true);
+    }
+
+    private boolean sameAsFormer(Image newImage) {
+        return image==null? newImage == null : image.equals(newImage);
     }
 
     public String getType() {
         return FilenameUtils.getExtension(filename);
     }
 
-    public boolean isXMPattached() {
-        return XMPattached;
-    }
-
-    public void setXMPattached(boolean XMPattached) {
-        this.XMPattached = XMPattached;
-    }
-
     public Path getFilePath() {
         return filePath;
     }
 
-    public boolean isOriginal() {
+    public Boolean isOriginal() {
         return original;
     }
 
-    public void setOriginal(boolean original) {
+    public void setOriginal(Boolean original) {
         this.original = original;
     }
 

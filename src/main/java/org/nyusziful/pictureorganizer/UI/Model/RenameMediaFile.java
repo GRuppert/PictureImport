@@ -31,7 +31,7 @@ public class RenameMediaFile extends AbstractTableViewMediaFile {
 
     public boolean write(WriteMethod writeMethod) {
         if (processing.get()) {
-            return RenameService.write(path, newPath, writeMethod, mediafileDTO.hasXMP);
+            return RenameService.write(path, newPath, writeMethod);
         }
         return false;
     }

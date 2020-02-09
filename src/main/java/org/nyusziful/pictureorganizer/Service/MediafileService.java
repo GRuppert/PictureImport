@@ -6,12 +6,14 @@ import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
 import static org.nyusziful.pictureorganizer.Service.FolderService.dataToWinPath;
+import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 
 public class MediafileService {
     private MediafileDAO mediafileDAO;
@@ -64,7 +66,10 @@ public class MediafileService {
 
     public void persistMediafile(Collection<Mediafile> mediafile) {
         for (Mediafile file: mediafile) {
-            mediafileDAO.persist(file);
+            if (file.getId() > -1)
+                mediafileDAO.merge(file);
+            else
+                mediafileDAO.persist(file);
         }
     }
 
@@ -103,4 +108,29 @@ public class MediafileService {
     public void flush() {
         mediafileDAO.flush();
     }
+
+    /**
+     *
+     * @param mediaFile
+     * @return true if data has been written into the image entity, which has to be persisted
+     * @throws Exception if the data in the "original" media file does not match what was already saved into the image
+     */
+    public boolean updateOriginalImage(Mediafile mediaFile) throws Exception {
+        final Image image = mediaFile.getImage();
+        final Meta metaOrig = getV(mediaFile.getFilename());
+        String origFileName = (metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : mediaFile.getFilename();
+        if (image.getOriginalFileHash() == null && image.getDateTaken() == null && image.getOriginalFilename() == null) {
+            image.setOriginalFileHash(mediaFile.getFilehash());
+            image.setDateTaken(mediaFile.getDateStored());
+            image.setOriginalFilename(origFileName);
+            mediaFile.setOriginal(true);
+            return true;
+        } else {
+            if (!origFileName.equals(image.getOriginalFilename()) || !mediaFile.getFilehash().equals(image.getOriginalFileHash()) || (!mediaFile.getDateStored().isEqual(image.getDateTaken()) && !mediaFile.getDateStored().isEqual(image.getDateCorrected()))) {
+                throw new Exception("Mismatch");
+            }
+        }
+        return false;
+    }
+
 }

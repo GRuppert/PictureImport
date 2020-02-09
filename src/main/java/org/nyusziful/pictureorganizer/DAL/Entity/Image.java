@@ -5,6 +5,8 @@ import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.Collection;
 
+import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
+
 @Entity
 @Table(
         name = "image",
@@ -20,8 +22,12 @@ public class Image extends TrackingEntity implements Serializable {
     @Column(name = "original_file_hash", updatable = false)
     private String originalFileHash;
     @Column(name = "date_taken", updatable = false)
+    private String dateTakenString;
+    @Transient
     private ZonedDateTime dateTaken;
     @Column(name = "date_corrected", updatable = false)
+    private String dateCorrectedString;
+    @Transient
     private ZonedDateTime dateCorrected;
     @Column(name = "original_filename")
     private String originalFilename;
@@ -37,6 +43,24 @@ public class Image extends TrackingEntity implements Serializable {
     private Collection<Image> children;
     @OneToMany(mappedBy = "image")
     private Collection<Mediafile> mediaFiles;
+
+
+    @PrePersist
+    private void dateToString() {
+        if (dateTaken != null)
+            dateTakenString = XmpDateFormatTZ.format(dateTaken);
+        if (dateCorrected != null)
+            dateCorrectedString = XmpDateFormatTZ.format(dateCorrected);
+    }
+
+    @PostLoad
+    private void stringToDate() {
+        if (dateTakenString != null)
+            dateTaken = ZonedDateTime.parse(dateTakenString, XmpDateFormatTZ);
+        if (dateCorrectedString != null)
+            dateCorrected = ZonedDateTime.parse(dateCorrectedString, XmpDateFormatTZ);
+    }
+
 
     protected Image() {}
 
@@ -94,6 +118,39 @@ public class Image extends TrackingEntity implements Serializable {
 
     public Collection<Mediafile> getMediaFiles() {
         return mediaFiles;
+    }
+
+    public void addMediaFile(Mediafile mediaFile) {
+        addMediaFile(mediaFile, false);
+    }
+
+    public void addMediaFile(Mediafile mediaFile, boolean cross) {
+        //prevent endless loop
+        if (mediaFiles.contains(mediaFile))
+            return ;
+        //add new account
+        mediaFiles.add(mediaFile);
+        //set myself into the twitter account
+        if (!cross) mediaFile.setImage(this, true);
+    }
+
+    /**
+     * Removes the account from the person. The method keeps
+     * relationships consistency:
+     * * the account will no longer reference this person as its owner
+     */
+    public void removeMediaFile(Mediafile mediaFile) {
+        removeMediaFile(mediaFile, false);
+    }
+
+    public void removeMediaFile(Mediafile mediaFile, boolean cross) {
+        //prevent endless loop
+        if (!mediaFiles.contains(mediaFile))
+            return ;
+        //remove the account
+        mediaFiles.remove(mediaFile);
+        //remove myself from the twitter account
+        if (!cross) mediaFile.setImage(null, true);
     }
 
     public Image getParent() {
