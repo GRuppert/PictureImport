@@ -13,6 +13,10 @@ public abstract class TrackingEntity {
     protected Timestamp upddate;
     @Column
     protected String updater;
+/*
+    @Version
+    private long version;
+*/
 
     @PrePersist
     protected void creator() {

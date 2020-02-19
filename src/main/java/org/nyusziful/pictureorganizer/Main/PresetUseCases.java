@@ -49,7 +49,7 @@ public class PresetUseCases {
 //        listFiles(Paths.get("E:\\temp"), 2, 0);
 
 //        recover();
-        listFiles(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
+        listFiles(Paths.get("e:\\Képek\\PreImportTest\\Run"), false,null, ZoneId.systemDefault());
     }
 
     private void osNev() {
@@ -437,7 +437,8 @@ public class PresetUseCases {
             folderService.persistFolder(folderstosave);
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
             JDialog progressDialog = progressDiag(progressBar);
-            Set<Mediafile> files = new HashSet<>();
+            Set<Mediafile> filesToSave = new HashSet<>();
+            Set<Image> imagesToSave = new HashSet<>();
             final long startTime = System.nanoTime();
             HashMap<String,Image> images = new HashMap<String, Image>();
             HashMap<String, Mediafile> fileSet = new HashMap<>();
@@ -483,6 +484,7 @@ public class PresetUseCases {
                                     imageService.persistImage(image);
                                 }
                                 images.put(image.getHash()+image.getType(), image);
+                                imagesToSave.add(image);
                             }
                             final String fullHash = getFullHash(filePath.toFile());
                             Meta meta = ExifService.readMeta(filePath.toFile(), zone);
@@ -498,7 +500,9 @@ public class PresetUseCases {
                         }
                         if (Boolean.TRUE.equals(fileOriginal)) {
                             try {
-                                fileToSave = mediafileService.updateOriginalImage(actFile);
+                                final boolean updated = mediafileService.updateOriginalImage(actFile);
+                                fileToSave = fileToSave || updated;
+                                if (updated) imagesToSave.add(actFile.getImage());
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -519,14 +523,14 @@ public class PresetUseCases {
                         processed.add(actFile.getFilePath());
                         prevTime = System.nanoTime();
                         if (fileToSave) {
-                            files.add(actFile);
+                            filesToSave.add(actFile);
                             fileSet.put(actFile.getFilePath().toString().toLowerCase(), actFile);
                         }
-                        if (files.size() > 0 && (files.size() % blockSize) == 0) {
+                        if (filesToSave.size() > 0 && (filesToSave.size() % blockSize) == 0) {
                             System.out.println("Writting files to DAL");
                             long insertTime = System.nanoTime();
-                            mediafileService.persistMediafile(files);
-                            files.clear();
+                            mediafileService.persistMediafile(filesToSave);
+                            filesToSave.clear();
                             mediafileService.flush();
                             System.out.println(blockSize + " files written to DAL in " + TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-insertTime));
                         }
@@ -559,7 +563,7 @@ public class PresetUseCases {
                     return FileVisitResult.CONTINUE;
                 }
             });
-            mediafileService.persistMediafile(files);
+            mediafileService.persistMediafile(filesToSave);
             System.out.println("Rédi");
             progressDialog.dispose();
         } catch (IOException e) {

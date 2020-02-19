@@ -55,17 +55,58 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
             }
 */
         }
-
     }
 
     @Override
     public T merge(final T o)   {
-        return (T) hibConnection.getCurrentSession().merge(o);
+        EntityTransaction transaction = null;
+        try{
+            transaction = entityManager.getTransaction();
+            transaction.begin();
+            Object res = entityManager.merge(o);
+            transaction.commit();
+            return (T) res;
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+                return null;
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+/*
+        }finally{
+            if(session!=null){
+                session.close();
+            }
+*/
+        }
     }
 
     @Override
     public void delete(final T item){
-        hibConnection.getCurrentSession().delete(item);
+//        hibConnection.getCurrentSession().delete(item);
+        EntityTransaction transaction = null;
+        try{
+            transaction = entityManager.getTransaction();
+            transaction.begin();
+            entityManager.remove(item);
+            transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+/*
+        }finally{
+            if(session!=null){
+                session.close();
+            }
+*/
+        }
+
     }
 
     @Override

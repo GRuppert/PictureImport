@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
+import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -7,6 +8,7 @@ import java.nio.file.Paths;
 import java.sql.Timestamp;
 
 @Entity
+@DiscriminatorValue("RAW")
 public class RAWMediaFile extends Mediafile {
     private boolean XMPattached;
 

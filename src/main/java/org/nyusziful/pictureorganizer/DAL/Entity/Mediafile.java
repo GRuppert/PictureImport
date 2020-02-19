@@ -19,6 +19,7 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
     name = "media_file",
     uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "folder_id", "filename"})}
 )
+@DiscriminatorColumn(name = "type")
 public class Mediafile extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

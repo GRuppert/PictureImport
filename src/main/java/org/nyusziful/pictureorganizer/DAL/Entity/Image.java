@@ -3,6 +3,7 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
@@ -40,9 +41,9 @@ public class Image extends TrackingEntity implements Serializable {
     @JoinColumn(name="parent_id", referencedColumnName="id")
     private Image parent;
     @OneToMany(mappedBy = "parent")
-    private Collection<Image> children;
+    private Collection<Image> children = new ArrayList<>();
     @OneToMany(mappedBy = "image")
-    private Collection<Mediafile> mediaFiles;
+    private Collection<Mediafile> mediaFiles = new ArrayList<>();
 
 
     @PrePersist

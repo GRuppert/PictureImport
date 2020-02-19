@@ -93,6 +93,7 @@ CREATE TABLE `media_file` (
   `latitude` varchar(45) DEFAULT NULL,
   `longitude` varchar(45) DEFAULT NULL,
   `altitude` varchar(45) DEFAULT NULL,
+  `type` varchar(5) DEFAULT NULL,
   `credate` datetime DEFAULT NULL,
   `upddate` datetime DEFAULT NULL,
   `creator` varchar(255) DEFAULT NULL,
