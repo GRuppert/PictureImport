@@ -53,6 +53,10 @@ public class StaticTools {
         "dng",
         "nar"            
     };
+    static String[] JPGFiles = {
+        "jpg",
+        "jpeg"
+    };
     static String[] RAWFiles = {
         "tif",
         "arw",
@@ -94,10 +98,7 @@ public class StaticTools {
         for (String extSupported : imageFiles) {
             if (ext.equals(extSupported)) return true;
         }
-        for (String extSupported : videoFiles) {
-            if (ext.equals(extSupported)) return true;
-        }
-        return false;
+        return supportedVideoFileType(name);
     }
     public static Boolean supportedVideoFileType(String name) {
         String ext = FilenameUtils.getExtension(name.toLowerCase());
@@ -114,6 +115,15 @@ public class StaticTools {
         return false;
 
     }
+    public static Boolean supportedJPGFileType(String name) {
+        String ext = FilenameUtils.getExtension(name.toLowerCase());
+        for (String extSupported : JPGFiles) {
+            if (ext.equals(extSupported)) return true;
+        }
+        return false;
+
+    }
+
 
 
     /**

@@ -58,7 +58,7 @@ public class MediaFile extends TrackingEntity {
 
 
     @Transient
-    private Path filePath;
+    protected Path filePath;
 
     @Transient
     private Boolean original;
@@ -249,5 +249,9 @@ public class MediaFile extends TrackingEntity {
 
     public void setAltitude(String altitude) {
         this.altitude = altitude;
+    }
+
+    public void remove() {
+        setImage(null);
     }
 }

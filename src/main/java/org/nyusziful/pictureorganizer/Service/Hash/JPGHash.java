@@ -70,7 +70,9 @@ public class JPGHash implements Hasher {
     //TODO use it
     public static boolean addBackupExif(File file) {
         final JPEGMediaFileStruct fileStruct = scan(file);
+        boolean result = true;
         if (!fileStruct.isBackup()) {
+            result = false;
             byte[] buffer = new byte[4096];
             try {
                 FileInputStream fis = new FileInputStream(file);
@@ -85,18 +87,17 @@ public class JPGHash implements Hasher {
                     if (segment.getId().equals("Exif\0\0")) {
                         bytes = turnExiftoBackup(bytes);
                         bos.write(bytes);
+                        result = true;
                     }
                 }
 
                 bis.close();
                 bos.close();
-                return true;
             } catch (IOException e)
             {
-                return false;
             }
         }
-        return true;
+        return result;
     }
 
     public static boolean checkBackupExif(File file) {

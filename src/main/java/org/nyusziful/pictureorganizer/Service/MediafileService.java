@@ -60,16 +60,23 @@ public class MediafileService {
         return new File(mediafile.letter + ":" + dataToWinPath(mediafile.path) + "\\" + mediafile.filename);
     }
 
-    public void persistMediafile(MediaFile mediafile) {
-        persistMediafile(Collections.singleton(mediafile));
+    public void persistMediaFiles(MediaFile mediafile) {
+        persistMediaFiles(Collections.singleton(mediafile));
     }
 
-    public void persistMediafile(Collection<? extends MediaFile> mediafile) {
-        for (MediaFile file: mediafile) {
+    public void persistMediaFiles(Collection<? extends MediaFile> mediaFiles) {
+        for (MediaFile file: mediaFiles) {
             if (file.getId() > -1)
                 mediafileDAO.merge(file);
             else
                 mediafileDAO.persist(file);
+        }
+    }
+
+    public void deleteMediaFiles(Collection<? extends MediaFile> mediaFiles) {
+        for (MediaFile file: mediaFiles) {
+            if (file.getId() > -1)
+                mediafileDAO.delete(file);
         }
     }
 

@@ -21,13 +21,13 @@ public class Image extends TrackingEntity implements Serializable {
     protected int id = -1;
     @Column(name = "odid", updatable = false, nullable = false)
     private String hash;
-    @Column(name = "original_file_hash", updatable = false)
+    @Column(name = "original_file_hash")
     private String originalFileHash;
-    @Column(name = "date_taken", updatable = false)
+    @Column(name = "date_taken")
     private String dateTakenString;
     @Transient
     private ZonedDateTime dateTaken;
-    @Column(name = "date_corrected", updatable = false)
+    @Column(name = "date_corrected")
     private String dateCorrectedString;
     @Transient
     private ZonedDateTime dateCorrected;
@@ -46,14 +46,6 @@ public class Image extends TrackingEntity implements Serializable {
     @OneToMany(mappedBy = "image")
     private Set<MediaFile> mediaFiles = new HashSet<>();
 
-
-    @PrePersist
-    private void dateToString() {
-        if (dateTaken != null)
-            dateTakenString = XmpDateFormatTZ.format(dateTaken);
-        if (dateCorrected != null)
-            dateCorrectedString = XmpDateFormatTZ.format(dateCorrected);
-    }
 
     @PostLoad
     private void stringToDate() {
@@ -90,6 +82,11 @@ public class Image extends TrackingEntity implements Serializable {
 
     public void setDateTaken(ZonedDateTime dateTaken) {
         this.dateTaken = dateTaken;
+        if (dateTaken != null)
+            dateTakenString = XmpDateFormatTZ.format(dateTaken);
+        else
+            dateTakenString = null;
+
     }
 
     public String getOriginalFilename() {
@@ -173,6 +170,10 @@ public class Image extends TrackingEntity implements Serializable {
 
     public void setDateCorrected(ZonedDateTime dateCorrected) {
         this.dateCorrected = dateCorrected;
+        if (dateCorrected != null)
+            dateCorrectedString = XmpDateFormatTZ.format(dateCorrected);
+        else
+            dateCorrectedString = null;
     }
 
     public String getLatitude() {
