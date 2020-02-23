@@ -1,10 +1,8 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
-import org.hibernate.annotations.Cascade;
 
 import javax.persistence.*;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
@@ -20,7 +18,8 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
     uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "folder_id", "filename"})}
 )
 @DiscriminatorColumn(name = "type")
-public class Mediafile extends TrackingEntity {
+@DiscriminatorValue("DEF")
+public class MediaFile extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
@@ -36,7 +35,7 @@ public class Mediafile extends TrackingEntity {
 
     private String filename;
 
-    @ManyToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
+    @ManyToOne(cascade = {CascadeType.REFRESH})
     @JoinColumn(name="image_id", referencedColumnName="id")
     private Image image;
 
@@ -89,11 +88,11 @@ public class Mediafile extends TrackingEntity {
         }
     }
 
-    public Mediafile() {
+    public MediaFile() {
         // this form used by Hibernate
     }
 
-    public Mediafile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
+    public MediaFile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
         this.filePath = path;
         this.filename = path.getFileName().toString();
         this.drive = drive;
@@ -146,8 +145,8 @@ public class Mediafile extends TrackingEntity {
         if (this == anObject) {
             return true;
         }
-        if (anObject instanceof Mediafile) {
-            Mediafile anotherFile = (Mediafile)anObject;
+        if (anObject instanceof MediaFile) {
+            MediaFile anotherFile = (MediaFile)anObject;
             if (id > -1 && id == anotherFile.id) return true;
             if (this.filename.equals(anotherFile.filename) &&
                 this.folder.equals(anotherFile.folder) &&
@@ -168,10 +167,6 @@ public class Mediafile extends TrackingEntity {
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public Folder getFolder() {
@@ -195,7 +190,7 @@ public class Mediafile extends TrackingEntity {
         if (sameAsFormer(image))
             return;
         //set new owner
-        if (this.image!=null && !cross)
+        if (this.image!=null && !(cross && image == null))
             this.image.removeMediaFile(this, true);
         this.image = image;
         //remove from the old owner

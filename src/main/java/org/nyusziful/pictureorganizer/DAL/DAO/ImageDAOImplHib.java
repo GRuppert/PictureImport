@@ -1,7 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 
 import javax.persistence.EntityManager;

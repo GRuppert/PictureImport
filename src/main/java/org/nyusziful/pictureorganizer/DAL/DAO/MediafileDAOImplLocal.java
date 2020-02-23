@@ -1,15 +1,13 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.util.List;
 
 public class MediafileDAOImplLocal {
-    public Mediafile save(Mediafile item) {
+    public MediaFile save(MediaFile item) {
         //TODO from global param
         String delimiter = "\t";
         int start = 0;

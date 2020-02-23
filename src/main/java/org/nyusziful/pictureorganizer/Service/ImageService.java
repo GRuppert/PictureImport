@@ -1,7 +1,5 @@
 package org.nyusziful.pictureorganizer.Service;
 
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
-import org.nyusziful.pictureorganizer.DAL.HibConnection;
 import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;

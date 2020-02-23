@@ -4,7 +4,7 @@ import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 
@@ -25,8 +25,8 @@ public class MediafileService {
         mediafileDAO = new MediafileDAOImplHib();
     }
 
-    public List<Mediafile> getMediafiles() {
-        List<Mediafile> getMediafiles = mediafileDAO.getAll();
+    public List<MediaFile> getMediafiles() {
+        List<MediaFile> getMediafiles = mediafileDAO.getAll();
         return getMediafiles;
     }
 
@@ -38,12 +38,12 @@ public class MediafileService {
         return getMediafile;
     }
 */
-    public Mediafile getMediafile(Drive drive, Path path) {
-        Mediafile getMediafile = mediafileDAO.getByFile(drive, path);
+    public MediaFile getMediafile(Drive drive, Path path) {
+        MediaFile getMediafile = mediafileDAO.getByFile(drive, path);
         return getMediafile;
     }
 
-    public MediafileDTO getMediafileDTO(Mediafile mediafile) {
+    public MediafileDTO getMediafileDTO(MediaFile mediafile) {
         MediafileDTO mediafileDTO = new MediafileDTO();
         if (mediafile != null) {
             if (mediafile.getImage() != null) mediafileDTO.driveId = mediafile.getImage().getId();
@@ -60,12 +60,12 @@ public class MediafileService {
         return new File(mediafile.letter + ":" + dataToWinPath(mediafile.path) + "\\" + mediafile.filename);
     }
 
-    public void persistMediafile(Mediafile mediafile) {
+    public void persistMediafile(MediaFile mediafile) {
         persistMediafile(Collections.singleton(mediafile));
     }
 
-    public void persistMediafile(Collection<Mediafile> mediafile) {
-        for (Mediafile file: mediafile) {
+    public void persistMediafile(Collection<? extends MediaFile> mediafile) {
+        for (MediaFile file: mediafile) {
             if (file.getId() > -1)
                 mediafileDAO.merge(file);
             else
@@ -73,13 +73,13 @@ public class MediafileService {
         }
     }
 
-    public void updateMediafile(Mediafile Mediafile) {
+    public void updateMediafile(MediaFile Mediafile) {
         mediafileDAO.merge(Mediafile);
     }
 
     public static void main(String[] args) {
         final MediafileService mediafileService = new MediafileService();
-        Mediafile mediafileDTO = new Mediafile(
+        MediaFile mediafileDTO = new MediaFile(
 
         );
         final Drive driveDTO = new Drive();
@@ -89,12 +89,12 @@ public class MediafileService {
         mediafileService.updateMediafile(mediafile);*/
     }
 
-    public Mediafile getMediaFile(Path path) {
+    public MediaFile getMediaFile(Path path) {
         final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
         return mediafileDAO.getByFile(localDrive, path);
     }
 
-    public List<Mediafile> getMediaFilesFromPath(Path path) {
+    public List<MediaFile> getMediaFilesFromPath(Path path) {
         final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
         return mediafileDAO.getByPath(localDrive, path);
     }
@@ -115,7 +115,7 @@ public class MediafileService {
      * @return true if data has been written into the image entity, which has to be persisted
      * @throws Exception if the data in the "original" media file does not match what was already saved into the image
      */
-    public boolean updateOriginalImage(Mediafile mediaFile) throws Exception {
+    public boolean updateOriginalImage(MediaFile mediaFile) throws Exception {
         final Image image = mediaFile.getImage();
         final Meta metaOrig = getV(mediaFile.getFilename());
         String origFileName = (metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : mediaFile.getFilename();

@@ -2,7 +2,7 @@ package org.nyusziful.pictureorganizer.Service.Rename;
 
 import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
@@ -89,7 +89,7 @@ public class RenameService {
         }
     }
 
-    public boolean rename(Mediafile actFile) {
+    public boolean rename(MediaFile actFile) {
         final Image actFileImage = actFile.getImage();
         String desiredFileName = null;
         String oldFilename;

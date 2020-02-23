@@ -9,8 +9,12 @@ import java.sql.Timestamp;
 
 @Entity
 @DiscriminatorValue("RAW")
-public class RAWMediaFile extends Mediafile {
+public class RAWMediaFile extends MediaFile {
     private boolean XMPattached;
+
+    public RAWMediaFile() {
+        // this form used by Hibernate
+    }
 
     public RAWMediaFile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
         super(drive, folder, path, size, dateMod, original);

@@ -3,8 +3,9 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
 
@@ -41,9 +42,9 @@ public class Image extends TrackingEntity implements Serializable {
     @JoinColumn(name="parent_id", referencedColumnName="id")
     private Image parent;
     @OneToMany(mappedBy = "parent")
-    private Collection<Image> children = new ArrayList<>();
+    private Set<Image> children = new HashSet<>();
     @OneToMany(mappedBy = "image")
-    private Collection<Mediafile> mediaFiles = new ArrayList<>();
+    private Set<MediaFile> mediaFiles = new HashSet<>();
 
 
     @PrePersist
@@ -117,21 +118,21 @@ public class Image extends TrackingEntity implements Serializable {
                 '}';
     }
 
-    public Collection<Mediafile> getMediaFiles() {
+    public Collection<MediaFile> getMediaFiles() {
         return mediaFiles;
     }
 
-    public void addMediaFile(Mediafile mediaFile) {
+    public void addMediaFile(MediaFile mediaFile) {
         addMediaFile(mediaFile, false);
     }
 
-    public void addMediaFile(Mediafile mediaFile, boolean cross) {
+    public void addMediaFile(MediaFile mediaFile, boolean cross) {
         //prevent endless loop
         if (mediaFiles.contains(mediaFile))
             return ;
         //add new account
         mediaFiles.add(mediaFile);
-        //set myself into the twitter account
+        //update child if request is not from it
         if (!cross) mediaFile.setImage(this, true);
     }
 
@@ -140,11 +141,11 @@ public class Image extends TrackingEntity implements Serializable {
      * relationships consistency:
      * * the account will no longer reference this person as its owner
      */
-    public void removeMediaFile(Mediafile mediaFile) {
+    public void removeMediaFile(MediaFile mediaFile) {
         removeMediaFile(mediaFile, false);
     }
 
-    public void removeMediaFile(Mediafile mediaFile, boolean cross) {
+    public void removeMediaFile(MediaFile mediaFile, boolean cross) {
         //prevent endless loop
         if (!mediaFiles.contains(mediaFile))
             return ;
@@ -164,10 +165,6 @@ public class Image extends TrackingEntity implements Serializable {
 
     public Collection<Image> getChildren() {
         return children;
-    }
-
-    public void setChildren(Collection<Image> children) {
-        this.children = children;
     }
 
     public ZonedDateTime getDateCorrected() {
@@ -209,11 +206,6 @@ public class Image extends TrackingEntity implements Serializable {
     public int getId() {
         return id;
     }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
 
     public String getOriginalFileHash() {
         return originalFileHash;

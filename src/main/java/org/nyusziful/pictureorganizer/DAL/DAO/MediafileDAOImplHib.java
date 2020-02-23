@@ -2,7 +2,7 @@ package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.hibernate.Session;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
 import javax.persistence.EntityManager;
@@ -12,14 +12,14 @@ import javax.persistence.criteria.*;
 import java.nio.file.Path;
 import java.util.List;
 
-public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements MediafileDAO {
+public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements MediafileDAO<MediaFile> {
     @Override
-    public List<Mediafile> getByDriveId(int id) {
+    public List<MediaFile> getByDriveId(int id) {
         Session session = hibConnection.getCurrentSession();
         EntityManager em = session.getEntityManagerFactory().createEntityManager();
         CriteriaBuilder cb = em.getCriteriaBuilder();
-        CriteriaQuery<Mediafile> query = cb.createQuery(Mediafile.class);
-        Root<Mediafile> root = query.from(Mediafile.class);
+        CriteriaQuery<MediaFile> query = cb.createQuery(MediaFile.class);
+        Root<MediaFile> root = query.from(MediaFile.class);
         query = query.select(root).where(cb.equal(root.get("drive"), id));
         try {
             return em.createQuery(query).getResultList();
@@ -29,13 +29,13 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements Med
     }
 
     @Override
-    public Mediafile getByFile(Drive drive, Path path) {
+    public MediaFile getByFile(Drive drive, Path path) {
         final EntityManager entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
-        TypedQuery<Mediafile> typedQuery = entityManager.createQuery("SELECT i from Mediafile i WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", Mediafile.class);
+        TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", MediaFile.class);
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path));
         typedQuery.setParameter("filename", path.getFileName());
-        List<Mediafile> results = typedQuery.getResultList();
+        List<MediaFile> results = typedQuery.getResultList();
         if (!results.isEmpty())
             return results.get(0);
         else
@@ -43,17 +43,17 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<Mediafile> implements Med
     }
 
     @Override
-    public List<Mediafile> getByPath(Drive drive, Path path) {
+    public List<MediaFile> getByPath(Drive drive, Path path) {
         final EntityManager entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
-        TypedQuery<Mediafile> typedQuery = entityManager.createQuery("SELECT i from Mediafile i WHERE i.drive.id=:driveId and i.folder.path like :path", Mediafile.class);
+        TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path like :path", MediaFile.class);
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path) + "%");
         return typedQuery.getResultList();
     }
 
-    public List<String> getByHash(String hash) {
+    public List<String> getByHash(String hash, int driveId) {
         Session session = hibConnection.getCurrentSession();
-        final List list = session.createSQLQuery("SELECT distinct(filename) FROM picture.media_file WHERE image_id_oldtodel = '" + hash + "' and drive_id = 7").list();
+        final List list = session.createSQLQuery("SELECT distinct(filename) FROM picture.media_file WHERE image_id_oldtodel = '" + hash + "' and drive_id = " + driveId).list();
         return list;
     }
 }

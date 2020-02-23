@@ -32,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
-import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class PresetUseCases {
@@ -339,7 +338,7 @@ public class PresetUseCases {
                 visitFile(Path filePath, BasicFileAttributes attrs) {
                     if (!attrs.isDirectory() && attrs.isRegularFile() && filePath.getFileName().toString().endsWith("-null") ) {
                         String hash = filePath.getFileName().toString().substring(39, 71);
-                        List<String> mediaFile = dao.getByHash(hash);
+                        List<String> mediaFile = dao.getByHash(hash, 7);
                         if (mediaFile.size()==1) {
                             String oldFilename = mediaFile.get(0);
                             if (oldFilename.matches("D.C[0-9]{5}\\.ARW"))
@@ -437,13 +436,14 @@ public class PresetUseCases {
             folderService.persistFolder(folderstosave);
             JProgressBar progressBar = new JProgressBar(0, (int)(fileSizeCountTotal/1000000));
             JDialog progressDialog = progressDiag(progressBar);
-            Set<Mediafile> filesToSave = new HashSet<>();
+            Set<MediaFile> filesToSave = new HashSet<>();
             Set<Image> imagesToSave = new HashSet<>();
             final long startTime = System.nanoTime();
             HashMap<String,Image> images = new HashMap<String, Image>();
-            HashMap<String, Mediafile> fileSet = new HashMap<>();
-            List<Mediafile> byDriveId = mediafileService.getMediaFilesFromPath(path);
-            for (Mediafile file : byDriveId) {
+            imageService.getImages().forEach(image -> {images.put(image.getHash()+image.getType(), image);});
+            HashMap<String, MediaFile> fileSet = new HashMap<>();
+            List<MediaFile> byDriveId = mediafileService.getMediaFilesFromPath(path);
+            for (MediaFile file : byDriveId) {
                 fileSet.put(file.getFilePath().toString().toLowerCase(), file);
             }
             HashSet<Path> processed = new HashSet<>();
@@ -453,7 +453,8 @@ public class PresetUseCases {
                     if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString()) && (extension == null || filePath.getFileName().toString().toLowerCase().endsWith(extension)) && !processed.contains(filePath)) {
                         Boolean fileOriginal = original;
                         boolean fileToSave = false;
-                        Mediafile actFile = fileSet.get(filePath.toString().toLowerCase());
+                        boolean imageToSave = false;
+                        MediaFile actFile = fileSet.get(filePath.toString().toLowerCase());
                         final Folder folder = folders.get(filePath.getParent().toString().toLowerCase());
                         assert folder != null;
                         final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
@@ -464,7 +465,7 @@ public class PresetUseCases {
                                 actFile = new RAWMediaFile(drive, folder, filePath, fileSize, dateMod, original);
                                 createXmp(filePath.toFile());
                             } else {
-                                actFile = new Mediafile(drive, folder, filePath, fileSize, dateMod, original);
+                                actFile = new MediaFile(drive, folder, filePath, fileSize, dateMod, original);
                             }
                         } else {
                             fileOriginal = !Boolean.FALSE.equals(fileOriginal) && !Boolean.FALSE.equals(actFile.isOriginal()) && !(fileOriginal == null && actFile.isOriginal() == null);
@@ -481,10 +482,9 @@ public class PresetUseCases {
                                 image = imageService.getImage(imageDTO);
                                 if (image == null) {
                                     image = new Image(imageDTO.hash, imageDTO.type);
-                                    imageService.persistImage(image);
+                                    imageToSave = true;
                                 }
                                 images.put(image.getHash()+image.getType(), image);
-                                imagesToSave.add(image);
                             }
                             final String fullHash = getFullHash(filePath.toFile());
                             Meta meta = ExifService.readMeta(filePath.toFile(), zone);
@@ -502,7 +502,7 @@ public class PresetUseCases {
                             try {
                                 final boolean updated = mediafileService.updateOriginalImage(actFile);
                                 fileToSave = fileToSave || updated;
-                                if (updated) imagesToSave.add(actFile.getImage());
+                                if (updated) imageToSave = true;
                             } catch (Exception e) {
                                 e.printStackTrace();
                             }
@@ -522,6 +522,9 @@ public class PresetUseCases {
                         }
                         processed.add(actFile.getFilePath());
                         prevTime = System.nanoTime();
+                        if (imageToSave) {
+                            imagesToSave.add(actFile.getImage());
+                        }
                         if (fileToSave) {
                             filesToSave.add(actFile);
                             fileSet.put(actFile.getFilePath().toString().toLowerCase(), actFile);
@@ -529,6 +532,8 @@ public class PresetUseCases {
                         if (filesToSave.size() > 0 && (filesToSave.size() % blockSize) == 0) {
                             System.out.println("Writting files to DAL");
                             long insertTime = System.nanoTime();
+                            imageService.persistImage(imagesToSave);
+                            imagesToSave.clear();
                             mediafileService.persistMediafile(filesToSave);
                             filesToSave.clear();
                             mediafileService.flush();

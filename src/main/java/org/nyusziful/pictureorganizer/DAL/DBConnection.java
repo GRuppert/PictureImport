@@ -1,6 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL;
 
-import org.nyusziful.pictureorganizer.DAL.Entity.Mediafile;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 
 import java.sql.*;
 import java.util.Set;
@@ -107,7 +107,7 @@ public class DBConnection {
 
     }
 
-    public static void saveFile(Set<Mediafile> files) {
+    public static void saveFile(Set<MediaFile> files) {
         try {
             Connection conn = getConnection();
             String sql = "INSERT INTO file (filename, path, drive_id, image_id, size, date_mod, exifbackup, filehash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
@@ -116,7 +116,7 @@ public class DBConnection {
             final int batchSize = 1000;
             int count = 0;
 
-            for (Mediafile actFile: files) {
+            for (MediaFile actFile: files) {
 
                 ps.setString(1, actFile.getFilename());
 //                ps.setString(2, actFile.getPath());
