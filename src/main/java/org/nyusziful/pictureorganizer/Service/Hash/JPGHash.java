@@ -51,8 +51,9 @@ public class JPGHash implements Hasher {
 
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806_bak_digi.jpg");
-        File file  = new File("E:\\Képek\\ExifBackupTest\\try1\\D5C00772.JPG");
+        File file  = new File("E:\\Képek\\ExifBackupTest\\try1\\V6_K2020-02-2_9@08-1_0-05(+0100)(Sat)-39a601482b5d2d78a44bbd786d0d8074-0-D5C00771.JPG");
         final JPEGMediaFileStruct fileStruct = scan(file);
+        final boolean b = validateAgainstBackupExif(file, fileStruct);
         if (checkIntegrity(file, fileStruct))
             addBackupExif(file, fileStruct);
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
@@ -154,11 +155,10 @@ public class JPGHash implements Hasher {
                 byte[] backup = null;
                 for (JPEGSegment segment : fileStruct.getSegments()) {
                     byte[] segmentContent = BasicFileReader.readBytes(bis,(int) segment.getLength());
-                    segment.getStartAddress();
-                    if (segment.getId().equals("Exif\0\0")) {
+                    if (segment.getId().equals("Exif\0\0") && exif == null) {
                         exif = Arrays.copyOfRange(segmentContent, 4+6, (int) (segment.getLength()-4-6));
                     }
-                    if (segment.getId().equals(BACKUPID)) {
+                    if (segment.getId().equals(BACKUPID) && backup == null) {
                         backup = Arrays.copyOfRange(segmentContent, 4+6, (int) (segment.getLength()-4-6));
                     }
                 }

@@ -14,7 +14,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
+import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.EMPTYHASH;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.Service.Rename.StaticTools.hasValue;
 
@@ -117,7 +119,19 @@ public class RenameService {
             return false;
         }
         if (!actFile.getFilename().equals(desiredFileName)) {
+            //Check if the created name has the minimum information
+            final Meta v = getV(desiredFileName);
+            if (
+                v.dID == null ||
+                EMPTYHASH.equals(v.dID) ||
+                v.date == null ||
+                !v.date.isEqual(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : actFile.getDateStored())
+            ) return false;
+
             final Path path = actFile.getFilePath();
+            //Check if renaming would overwrite an existing file
+            if (Files.exists(Paths.get(path.getParent() + "\\" + desiredFileName))) return false;
+
             if (write(path, Paths.get(path.getParent() + "\\" + desiredFileName), TableViewMediaFile.WriteMethod.MOVE))  {
                 actFile.setFilename(desiredFileName);
                 return true;

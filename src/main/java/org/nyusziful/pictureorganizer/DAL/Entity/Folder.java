@@ -46,6 +46,7 @@ public class Folder extends TrackingEntity {
     }
 
     public Path getJavaPath() {
+        if (javaPath == null) loadPath();
         return javaPath;
     }
 }

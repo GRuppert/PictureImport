@@ -388,7 +388,7 @@ public class PresetUseCases {
         String filename = "";
         int blockSize = 100;
 //        int blockSize = 1000;
-        boolean force = false;
+        boolean force = true;
         final DriveService driveService = new DriveService();
         final FolderService folderService = new FolderService();
         final MediafileService mediafileService = new MediafileService();

@@ -82,7 +82,9 @@ public class MediaFile extends TrackingEntity {
     }
 
     private void loadPath() {
-        filePath = Paths.get(folder.getJavaPath().toString() + "\\" + filename);
+        if (folder != null && folder.getJavaPath() != null && filename != null) {
+            filePath = Paths.get(folder.getJavaPath().toString() + "\\" + filename);
+        }
         if (image != null && image.getOriginalFileHash() != null) {
             original = filehash.equals(image.getOriginalFileHash());
         }
