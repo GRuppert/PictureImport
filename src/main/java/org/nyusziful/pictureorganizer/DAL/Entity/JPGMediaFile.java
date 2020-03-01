@@ -2,8 +2,7 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.nyusziful.pictureorganizer.Service.Hash.JPGHash;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import javax.persistence.*;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 
@@ -11,6 +10,7 @@ import java.sql.Timestamp;
 @DiscriminatorValue("JPG")
 public class JPGMediaFile extends MediaFile {
     private boolean exifbackup;
+    private boolean standalone;
 
     public JPGMediaFile() {
         // this form used by Hibernate
@@ -34,4 +34,13 @@ public class JPGMediaFile extends MediaFile {
     public boolean isExifbackup() {
         return exifbackup;
     }
+
+    public void setStandalone(boolean standalone) {
+        this.standalone = standalone;
+    }
+
+    public boolean isStandalone() {
+        return standalone;
+    }
+
 }

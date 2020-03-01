@@ -49,12 +49,11 @@ public class JPGHash implements Hasher {
 
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806_bak_digi.jpg");
-        File file  = new File("e:\\20180717_183213.jpg");
-//        addBackupExif(file);
-        file  = new File("e:\\20180717_183213bak_digi.jpg");
-
-        if (!checkBackupExif(file)) {
-        }
+        File file  = new File("E:\\Képek\\ExifBackupTest\\try1\\D5C00772.JPG");
+        if (checkIntegrity(file))
+            if (!checkBackupExif(file)) {
+                addBackupExif(file);
+            }
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
@@ -67,23 +66,40 @@ public class JPGHash implements Hasher {
 //        fileStruct2.drawMap();
     }
 
+    public static boolean checkIntegrity(File file) {
+        JPEGMediaFileStruct fileStruct = scan(file);
+        long addressFromPrevious = 0;
+        long totalLength = 0;
+        for (JPEGSegment segment : fileStruct.getSegments()) {
+            if (addressFromPrevious != segment.getStartAddress()) {
+                return false;
+            }
+            totalLength += segment.getLength();
+            addressFromPrevious = segment.getStartAddress() + segment.getLength();
+        }
+        if (totalLength != file.length()) return false;
+        return true;
+    }
+
     //TODO use it
     public static boolean addBackupExif(File file) {
         final JPEGMediaFileStruct fileStruct = scan(file);
         boolean result = true;
         if (!fileStruct.isBackup()) {
             result = false;
-            byte[] buffer = new byte[4096];
             try {
                 FileInputStream fis = new FileInputStream(file);
                 BufferedInputStream bis = new BufferedInputStream(fis);
 
                 FileOutputStream fos = new FileOutputStream(file.getPath().concat(".bak"));
                 BufferedOutputStream bos = new BufferedOutputStream(fos);
+                long allSegmentsLength = 0;
+                long totalBytesWritten = 0;
 
                 for (JPEGSegment segment : fileStruct.getSegments()) {
-                    long startAddress = segment.getStartAddress();
+                    allSegmentsLength += segment.getLength();
                     byte[] bytes = writeBytes(bis, bos, segment.getLength());
+                    totalBytesWritten += bytes.length;
                     if (segment.getId().equals("Exif\0\0")) {
                         bytes = turnExiftoBackup(bytes);
                         bos.write(bytes);
@@ -93,8 +109,10 @@ public class JPGHash implements Hasher {
 
                 bis.close();
                 bos.close();
-            } catch (IOException e)
-            {
+                fis.close();
+                fos.close();
+            } catch (IOException e) {
+                result = false;
             }
         }
         return result;
@@ -159,8 +177,7 @@ public class JPGHash implements Hasher {
         int numBytes;
         byte[] buffer = new byte[4096];
         long read = 0;
-        while ((numBytes = bis.read(buffer, 0, (int)(Math.min(buffer.length, length - read))))!= -1 && read < length)
-        {
+        while ((numBytes = bis.read(buffer, 0, (int)(Math.min(buffer.length, length - read))))!= -1 && read < length) {
             read += numBytes;
             byte[] bufferfilled = Arrays.copyOfRange(buffer, 0, numBytes);
             bos.write(bufferfilled);
@@ -280,6 +297,8 @@ public class JPGHash implements Hasher {
             }
             fileStruct.addSegment(new JPEGSegment(cursor.position + 1 - markerLength, 0 + markerLength, 216));
             Boolean marker = false;
+            long padding = 0;
+            long paddingAddress = 0;
             while (scan || (lastReadByte = fileStream.read()) != -1) {
                 if (!scan) {cursor.position++; }
                 else {cursor.position +=2;}
@@ -296,6 +315,12 @@ public class JPGHash implements Hasher {
                             scan = true;
                         } else {
                             marker = false;
+                        }
+                        if (padding > 0) {
+                            fileStruct.addSegment(new JPEGSegment(paddingAddress, padding, 0));
+                            padding = 0;
+                            paddingAddress = 0;
+
                         }
     //                    System.out.print("ff" + Integer.toHexString(lastReadByte) + " ");
                         AtomicInteger segmentMarker = new AtomicInteger(lastReadByte);
@@ -320,12 +345,17 @@ public class JPGHash implements Hasher {
                     if (lastReadByte == 0xFF/*255*/) {marker = true;
     //                } else if (lastReadByte == 0) {//byte stuffing
                     } else if (lastReadByte == 0x00) {
+                        if (paddingAddress == 0) paddingAddress = cursor.position;
+                        padding++;
                         //Padding
                     } else {
                         fileStruct.setTerminationMessage("Not found marker after segment");
                         return fileStruct;
                     }
                 }
+            }
+            if (padding > 0) {
+                fileStruct.addSegment(new JPEGSegment(paddingAddress, padding, 0));
             }
             fileStruct.setTerminationMessage("Reached the end of the file");
         } catch (FileNotFoundException e) {

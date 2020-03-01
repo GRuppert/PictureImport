@@ -16,7 +16,7 @@ public class JPEGSegment implements MediaFileSegment {
     }
 
     public JPEGSegment(long startAddress, long length, int marker) {
-        this(startAddress, length, marker, "");
+        this(startAddress, length, marker, getMarkerText(marker));
     }
 
     @Override
@@ -40,6 +40,9 @@ public class JPEGSegment implements MediaFileSegment {
     public static String getMarkerText(int marker) {
         String markerText = String.format("0xFF%02X ", marker);
         switch (marker) {
+            case 0:
+                markerText = "Padding";
+                break;
             case 216:
                 markerText += "Start Of Image";
                 break;

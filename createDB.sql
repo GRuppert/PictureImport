@@ -89,6 +89,7 @@ CREATE TABLE `media_file` (
   `size` bigint(19) unsigned DEFAULT NULL,
   `date_mod` datetime DEFAULT NULL,
   `exifbackup` tinyint(1) unsigned DEFAULT NULL,
+  `standalone` tinyint(1) unsigned DEFAULT NULL,
   `date_stored` varchar(32) DEFAULT NULL,
   `latitude` varchar(45) DEFAULT NULL,
   `longitude` varchar(45) DEFAULT NULL,
