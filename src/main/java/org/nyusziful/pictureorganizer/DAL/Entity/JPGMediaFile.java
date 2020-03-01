@@ -9,8 +9,8 @@ import java.sql.Timestamp;
 @Entity
 @DiscriminatorValue("JPG")
 public class JPGMediaFile extends MediaFile {
-    private boolean exifbackup;
-    private boolean standalone;
+    private boolean exifbackup = false;
+    private boolean standalone = true;
 
     public JPGMediaFile() {
         // this form used by Hibernate
@@ -19,15 +19,19 @@ public class JPGMediaFile extends MediaFile {
     public JPGMediaFile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
         super(drive, folder, path, size, dateMod, original);
         if (original) {
-            exifbackup = JPGHash.addBackupExif(filePath.toFile());
+            exifbackup = addExifbackup();
         } else {
-            addExifbackup();
+            exifbackup = checkBackupExif();
         }
-        //exifbackup
     }
 
     public boolean addExifbackup() {
         exifbackup = JPGHash.addBackupExif(filePath.toFile());
+        return exifbackup;
+    }
+
+    public boolean checkBackupExif() {
+        exifbackup = JPGHash.checkBackupExif(filePath.toFile());
         return exifbackup;
     }
 
@@ -41,6 +45,17 @@ public class JPGMediaFile extends MediaFile {
 
     public boolean isStandalone() {
         return standalone;
+    }
+
+    public void setWithQuality(String quality) {
+        if (quality == null) return;
+        switch (quality) {
+            case "RAW + JPEG":
+                setStandalone(false);
+                break;
+            default:
+                setStandalone(true);
+        }
     }
 
 }

@@ -48,7 +48,8 @@ public class PresetUseCases {
 //        updateFolder(Paths.get("E:\\temp"), 2, 0);
 
 //        recover();
-        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
+        updateFolder(Paths.get("E:\\Képek\\ExifBackupTest\\try1"), true,null, ZoneId.systemDefault());
+//        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
     }
 
     private void osNev() {
@@ -499,6 +500,9 @@ public class PresetUseCases {
                             }
                             final String fullHash = getFullHash(filePath.toFile());
                             Meta meta = ExifService.readMeta(filePath.toFile(), zone);
+                            if (actFile instanceof JPGMediaFile) {
+                                ((JPGMediaFile) actFile).setWithQuality(meta.quality);
+                            }
                             actFile.setDateStored(meta.date);
                             actFile.setImage(image);
                             actFile.setFilehash(fullHash);
@@ -586,7 +590,7 @@ public class PresetUseCases {
             //Clean up removed files
             processed.keySet().forEach(key -> {fileSet.remove(key);});
             mediafileService.deleteMediaFiles(fileSet.values());
-            System.out.println("Failed Filas:");
+            System.out.println("Failed Files:");
             filesFailing.forEach(file -> System.out.println(file.getFilePath()));
 
             System.out.println("Rédi");

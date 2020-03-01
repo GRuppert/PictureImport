@@ -23,6 +23,7 @@ public class Meta {
     public String note = "";
     public int orig;
     public Boolean dateFormat;
+    public String quality;
 
     /**
      *
@@ -35,8 +36,9 @@ public class Meta {
      * @param odID
      * @param note
      * @param orig
+     * @param quality
      */
-    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, int orig) {
+    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, int orig, String quality) {
         this.originalFilename = originalFilename;
         this.date = date;
         this.dateFormat = dateFormat;
@@ -45,6 +47,7 @@ public class Meta {
         this.dID = dID;
         this.iID = iID;
         this.orig = orig;
+        this.quality = quality;
     }
 
     public Meta(Meta meta) {
@@ -56,6 +59,7 @@ public class Meta {
         this.dID = meta.dID;
         this.iID = meta.iID;
         this.orig = meta.orig;
+        this.quality = meta.quality;
     }
 
     @Override
@@ -78,6 +82,8 @@ public class Meta {
             .append(note)
             .append(" ")
             .append(orig)
+                .append(" ")
+            .append(quality)
             ;
         return sb.toString();
     }

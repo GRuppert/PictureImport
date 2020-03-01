@@ -7,6 +7,8 @@ package org.nyusziful.pictureorganizer.Service.Hash;
 
 import java.io.*;
 import java.lang.reflect.Array;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.util.Arrays;
@@ -50,10 +52,9 @@ public class JPGHash implements Hasher {
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20160627_183440_GT-I9195I-20160627_173440.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\DSC08806_bak_digi.jpg");
         File file  = new File("E:\\Képek\\ExifBackupTest\\try1\\D5C00772.JPG");
-        if (checkIntegrity(file))
-            if (!checkBackupExif(file)) {
-                addBackupExif(file);
-            }
+        final JPEGMediaFileStruct fileStruct = scan(file);
+        if (checkIntegrity(file, fileStruct))
+            addBackupExif(file, fileStruct);
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
@@ -68,6 +69,10 @@ public class JPGHash implements Hasher {
 
     public static boolean checkIntegrity(File file) {
         JPEGMediaFileStruct fileStruct = scan(file);
+        return checkIntegrity(file, fileStruct);
+    }
+
+    public static boolean checkIntegrity(File file, JPEGMediaFileStruct fileStruct) {
         long addressFromPrevious = 0;
         long totalLength = 0;
         for (JPEGSegment segment : fileStruct.getSegments()) {
@@ -81,9 +86,18 @@ public class JPGHash implements Hasher {
         return true;
     }
 
+    public static boolean checkBackupExif(File file) {
+        final JPEGMediaFileStruct fileStruct = scan(file);
+        return fileStruct.isBackup();
+    }
+
     //TODO use it
     public static boolean addBackupExif(File file) {
         final JPEGMediaFileStruct fileStruct = scan(file);
+        return addBackupExif(file, fileStruct);
+    }
+
+    public static boolean addBackupExif(File file, JPEGMediaFileStruct fileStruct) {
         boolean result = true;
         if (!fileStruct.isBackup()) {
             result = false;
@@ -91,7 +105,8 @@ public class JPGHash implements Hasher {
                 FileInputStream fis = new FileInputStream(file);
                 BufferedInputStream bis = new BufferedInputStream(fis);
 
-                FileOutputStream fos = new FileOutputStream(file.getPath().concat(".bak"));
+                File outFile = new File(file.getPath().concat(".new"));
+                FileOutputStream fos = new FileOutputStream(outFile);
                 BufferedOutputStream bos = new BufferedOutputStream(fos);
                 long allSegmentsLength = 0;
                 long totalBytesWritten = 0;
@@ -111,6 +126,13 @@ public class JPGHash implements Hasher {
                 bos.close();
                 fis.close();
                 fos.close();
+                if (checkIntegrity(outFile)) {
+                    Files.move(file.toPath(), Paths.get(file.getPath().concat(".bak")));
+                    Files.move(outFile.toPath(), file.toPath());
+                } else {
+                    Files.delete(outFile.toPath());
+                    result = false;
+                }
             } catch (IOException e) {
                 result = false;
             }
@@ -118,8 +140,12 @@ public class JPGHash implements Hasher {
         return result;
     }
 
-    public static boolean checkBackupExif(File file) {
+    public static boolean validateAgainstBackupExif(File file) {
         final JPEGMediaFileStruct fileStruct = scan(file);
+        return validateAgainstBackupExif(file, fileStruct);
+    }
+
+    public static boolean validateAgainstBackupExif(File file, JPEGMediaFileStruct fileStruct) {
         if (fileStruct.isBackup()) {
             try {
                 FileInputStream fis = new FileInputStream(file);
