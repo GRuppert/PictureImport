@@ -90,24 +90,8 @@ public class FolderService {
                     }
                     return FileVisitResult.CONTINUE;
                 }
-
-                @Override public FileVisitResult
-                visitFileFailed(Path file, IOException exc) {
-                    StaticTools.errorOut(file.toString(), exc);
-                    // Skip folders that can't be traversed
-                    return FileVisitResult.CONTINUE;
-                }
-
-                @Override public FileVisitResult
-                postVisitDirectory (Path dir, IOException exc) {
-                    if (exc != null)
-                        StaticTools.errorOut(dir.toString(), exc);
-                    // Ignore errors traversing a folder
-                    return FileVisitResult.CONTINUE;
-                }
             });
         } catch (IOException e) {
-            throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
         }
         return mediafolders;
     }

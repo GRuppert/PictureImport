@@ -1,5 +1,5 @@
-CREATE DATABASE  IF NOT EXISTS `picture` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */;
-USE `picture`;
+CREATE DATABASE  IF NOT EXISTS `pictureorganizer` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */;
+USE `pictureorganizer`;
 -- MySQL dump 10.13  Distrib 8.0.15, for Win64 (x86_64)
 --
 -- Host: localhost    Database: picture
@@ -83,13 +83,13 @@ CREATE TABLE `media_file` (
   `drive_id` int(11) unsigned NOT NULL,
   `folder_id` int(11) unsigned NOT NULL DEFAULT '0',
   `filename` varchar(256) NOT NULL,
-  `XMPattached` bit(1) NOT NULL,
+  `XMPattached` bit(1) DEFAULT NULL,
   `parent` int(11) unsigned DEFAULT NULL,
   `filehash` varchar(32) DEFAULT NULL,
   `size` bigint(19) unsigned DEFAULT NULL,
   `date_mod` datetime DEFAULT NULL,
-  `exifbackup` tinyint(1) unsigned DEFAULT NULL,
-  `standalone` tinyint(1) unsigned DEFAULT NULL,
+  `exifbackup` bit(1) unsigned DEFAULT NULL,
+  `standalone` bit(1) unsigned DEFAULT NULL,
   `date_stored` varchar(32) DEFAULT NULL,
   `latitude` varchar(45) DEFAULT NULL,
   `longitude` varchar(45) DEFAULT NULL,

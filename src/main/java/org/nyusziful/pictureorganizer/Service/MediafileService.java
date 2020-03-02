@@ -162,17 +162,17 @@ public class MediafileService {
         progress.reset();
         Set<MediaFile> mediaFiles = new HashSet<>();
         for (Path subpath : FolderService.getMediaFoldersRec(path, progress)) {
-            mediaFiles.addAll(readMediaFilesFromFolder(subpath, original, force, zone, filesFailing));
-            progress.increaseProgress();
+            mediaFiles.addAll(readMediaFilesFromFolder(subpath, original, force, zone, filesFailing, progress));
         }
         System.out.println("Failed Files:");
         filesFailing.forEach(file -> System.out.println(file.getFilePath()));
         return mediaFiles;
     }
 
-    public Set<MediaFile> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
+    public Set<MediaFile> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing, ProgressDTO progress) {
         Set<MediaFile> mediaFiles = new HashSet<>();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
+        if (drive == null) return mediaFiles;
         Folder folder = folderService.getFolder(path);
         List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path);
         HashMap<String, MediaFile> fileSet = new HashMap<>();
@@ -183,6 +183,7 @@ public class MediafileService {
         for (File file : files) {
             MediaFile mediaFile = readMediaFile(file, fileSet, folder, original, force, zone, filesFailing);
             mediaFiles.add(mediaFile);
+            progress.increaseProgress();
         }
         filesInFolderFromDB.removeAll(mediaFiles);
         deleteMediaFiles(filesInFolderFromDB);
@@ -257,9 +258,6 @@ public class MediafileService {
                 } catch (Exception e) {
                     filesFailing.add(actFile);
                 }
-            }
-            if (actFile instanceof RAWMediaFile && !((RAWMediaFile) actFile).isXMPattached()) {
-                createXmp(filePath.toFile());
             }
             if (imageToSave) {
                 imageService.persistImage(actFile.getImage());

@@ -126,7 +126,7 @@ public class ExifReadWriteET {
     public static File createXmp(File file) {
         String[] commandAndOptions = {"exiftool", file.getName(), "-o", file.getName() + ".xmp"};
         List<String> result = exifTool(commandAndOptions, file.getParentFile());
-        if (result.get(0).endsWith("files created")) return new File(file.getAbsolutePath() + ".xmp");
+        if (result.size() > 0 && result.get(0).endsWith("files created")) return new File(file.getAbsolutePath() + ".xmp");
         return null;
     }
 
