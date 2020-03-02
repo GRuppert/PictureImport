@@ -6,6 +6,7 @@ import org.nyusziful.pictureorganizer.DAL.Entity.*;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.DTO.ProgressDTO;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
@@ -157,7 +158,7 @@ public class MediafileService {
     }
 
     public Set<MediaFile> readMediaFilesFromFolderRecursive(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
-        Progress progress = Progress.getInstance();
+        ProgressDTO progress = new ProgressDTO();
         progress.reset();
         Set<MediaFile> mediaFiles = new HashSet<>();
         for (Path subpath : FolderService.getMediaFoldersRec(path, progress)) {
