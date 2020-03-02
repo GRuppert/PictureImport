@@ -16,8 +16,8 @@ public class JPGMediaFile extends MediaFile {
         // this form used by Hibernate
     }
 
-    public JPGMediaFile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
-        super(drive, folder, path, size, dateMod, original);
+    public JPGMediaFile(Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
+        super(folder, path, size, dateMod, original);
         if (original) {
             exifbackup = addExifbackup();
         } else {

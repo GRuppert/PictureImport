@@ -1,18 +1,11 @@
 package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
-import org.nyusziful.pictureorganizer.DAL.Entity.*;
-import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
-import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.Service.DriveService;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
-import org.nyusziful.pictureorganizer.Service.FolderService;
-import org.nyusziful.pictureorganizer.Service.ImageService;
+import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
-import org.nyusziful.pictureorganizer.UI.StaticTools;
-import org.nyusziful.pictureorganizer.Service.MediafileService;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,16 +14,12 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
-import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
@@ -48,7 +37,13 @@ public class PresetUseCases {
 //        updateFolder(Paths.get("E:\\temp"), 2, 0);
 
 //        recover();
-        updateFolder(Paths.get("E:\\Képek\\ExifBackupTest\\try1"), true,null, ZoneId.systemDefault());
+//        updateFolder(Paths.get("E:\\Képek\\ExifBackupTest\\try1"), true,null, ZoneId.systemDefault());
+        Set<MediaFile> filesFailing = new HashSet<>();
+        MediafileService mfs = new MediafileService();
+        final Set<MediaFile> mediaFiles = mfs.readMediaFilesFromFolderRecursive(Paths.get("E:\\Képek\\ExifBackupTest\\try1"), true, false, ZoneId.systemDefault(), filesFailing);
+        HashMap<String, MediaFile> renaming = new HashMap<>();
+        mediaFiles.forEach(mf -> renaming.put(mfs.getMediaFileName(mf, "6"), mf));
+        renaming.forEach((newName,mf) -> mfs.renameMediaFile(mf, Paths.get(mf.getFilePath().getParent()+newName), TableViewMediaFile.WriteMethod.MOVE, false));
 //        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
     }
 
@@ -343,7 +338,7 @@ public class PresetUseCases {
                         if (mediaFile.size()==1) {
                             String oldFilename = mediaFile.get(0);
                             if (oldFilename.matches("D.C[0-9]{5}\\.ARW"))
-                                RenameService.write(filePath, Paths.get(filePath.getParent() + "\\" + oldFilename), TableViewMediaFile.WriteMethod.MOVE);
+                                RenameService.write(filePath, Paths.get(filePath.getParent() + "\\" + oldFilename), TableViewMediaFile.WriteMethod.MOVE, false);
                         } else {
                             System.out.println("More filenames");
                         }
@@ -380,7 +375,7 @@ public class PresetUseCases {
      *
      * @param path
      */
-    private static void updateFolder(Path path, boolean original, String extension, ZoneId zone) {
+/*    private static void updateFolder(Path path, boolean original, String extension, ZoneId zone) {
         fileSizeCountTotal = 0;
         fileSizeCount = 0;
         fileCountTotal = 0;
@@ -526,12 +521,12 @@ public class PresetUseCases {
 
 
                         if (renameService.rename(actFile)) fileToSave = true;
-/*
-                        long toSeconds2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
-                        System.out.println((toSeconds2-toSeconds) + "s to DAL.");
-                        long secondsBetween = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-prevTime);
-                        System.out.println(secondsBetween + "s since the last iteration.");
-*/
+
+//                        long toSeconds2 = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-startTime);
+//                        System.out.println((toSeconds2-toSeconds) + "s to DAL.");
+//                        long secondsBetween = TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-prevTime);
+//                        System.out.println(secondsBetween + "s since the last iteration.");
+
                         if (actFile instanceof RAWMediaFile && !((RAWMediaFile)actFile).isXMPattached()) {
                             createXmp(filePath.toFile());
                         }
@@ -599,7 +594,7 @@ public class PresetUseCases {
             throw new AssertionError ("walkFileTree will not throw IOException if the FileVisitor does not");
         }
     }
-
+*/
     /**
      * Renames each @supportedMediaFileType to "hash + name"
      * @param dir

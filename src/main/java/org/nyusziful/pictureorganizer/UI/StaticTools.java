@@ -35,12 +35,22 @@ public class StaticTools {
     public static DateTimeFormatter MP4DateFormatTZ = DateTimeFormatter.ofPattern("E MMM dd HH:mm:ss XXX yyyy");//Do Sep 06 20:36:46 +02:00 2018
 
     public static void main(String[] args) {
+        final Collection<String> strings = importDirectories(new File("E:\\work\\DATA\\FolderTest"));
         DateTimeFormatter MP4DateFormatTZ = DateTimeFormatter.ofPattern("E MMM dd HH:mm:ss XXX yyyy");//Do Sep 06 20:36:46 +02:00 2018
         ZonedDateTime zdt = ZonedDateTime.of ( LocalDate.of ( 2018 , 9 , 6 ) , LocalTime.of ( 20 , 36, 46 ) , ZoneId.systemDefault() );
         String zdtString = MP4DateFormatTZ.format(zdt);
         System.out.println(zdtString);
     }
 
+    static String[] Sony = {
+            "\\DCIM\\",
+            "\\PRIVATE\\AVCHD\\BDMV\\STREAM\\",
+            "\\PRIVATE\\M4ROOT\\CLIP\\"
+    };
+    static String[] Android = {
+            "\\DCIM\\Camera",
+            "\\WhatsApp\\Media\\WhatsApp Images"
+    };
 
     static String[] imageFiles = {
         "jpg",
@@ -132,18 +142,9 @@ public class StaticTools {
      */
     public static Collection<String> defaultImportDirectories(File nonExt) {
         ArrayList<File> drives = new ArrayList<>();
-        ArrayList<String> list = new ArrayList<>();
         File[] paths;
         FileSystemView fsv = FileSystemView.getFileSystemView();
         paths = File.listRoots();
-        ArrayList<String> Sony = new ArrayList<>();
-        Sony.add("\\DCIM\\");
-        Sony.add("\\PRIVATE\\AVCHD\\BDMV\\STREAM\\");
-        Sony.add("\\PRIVATE\\M4ROOT\\CLIP\\");
-        ArrayList<String> Samsung = new ArrayList<>();
-        Samsung.add("\\DCIM\\Camera");
-        Samsung.add("\\WhatsApp\\Media\\WhatsApp Images");
-
         for(File path:paths) {
             String desc = fsv.getSystemTypeDescription(path);
             if (desc.startsWith("USB") || desc.startsWith("SD")) drives.add(path);
@@ -154,27 +155,33 @@ public class StaticTools {
                 if (path.isDirectory()) drives.add(path);
             }
         }
-
+        Set<String> results = new HashSet<>();
         for(File drive:drives) {
-            boolean valid = true;
-            for(String criteria:Sony) {
-                //TODO might not work when drive is just a drive: double backslash
-                File probe = new File(drive+criteria);
-                if(probe.exists() && probe.isDirectory()) {
-                    continue;
-                }
-                valid = false;
-                break;
-            }
-            if (valid) {
-                for (File subdir:new File(drive+Sony.get(0)).listFiles((File dir, String name) -> dir.isDirectory())) {
-                    list.add(subdir.toString());
-                }
-                list.add(drive+Sony.get(1));
-                list.add(drive+Sony.get(2));
-            }
+            results.addAll(importDirectories(drive));
         }
-        return list;
+        return results;
+    }
+
+    public static Collection<String> importDirectories(File folder) {
+        boolean valid = true;
+        Set<String> resultDirs = new HashSet<>();
+        for(String criteria:Sony) {
+            //TODO might not work when folder is just a drive: double backslash
+            File probe = new File(folder+criteria);
+            if(probe.exists() && probe.isDirectory()) {
+                continue;
+            }
+            valid = false;
+            break;
+        }
+        if (valid) {
+            for (File subdir:new File(folder+Sony[0]).listFiles((File dir, String name) -> dir.isDirectory())) {
+                resultDirs.add(subdir.toString());
+            }
+            resultDirs.add(folder+Sony[1]);
+            resultDirs.add(folder+Sony[2]);
+        }
+        return resultDirs;
     }
 
     /**

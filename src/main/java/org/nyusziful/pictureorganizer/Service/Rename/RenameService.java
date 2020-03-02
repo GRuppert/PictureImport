@@ -59,7 +59,8 @@ public class RenameService {
     }
 
 
-    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod) {
+    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
+        if (Files.exists(newPath) && !overwrite) return false;
         try {
             if (!path.toString().toLowerCase().endsWith(newPath.toString().toLowerCase().substring(newPath.toString().length()-4))) return false;
             boolean isXMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
@@ -91,7 +92,7 @@ public class RenameService {
         }
     }
 
-    public boolean rename(MediaFile actFile) {
+/*    public static boolean rename(MediaFile actFile, int version) {
         final Image actFileImage = actFile.getImage();
         String desiredFileName = null;
         String oldFilename;
@@ -113,7 +114,7 @@ public class RenameService {
                     actFileImage.getActualDate() != null ? actFileImage.getActualDate() : actFile.getDateStored(),
                     actFile.getFilehash(),
                     actFileImage.getHash(),
-                    mediafileService.getVersionNumber(actFileImage)
+                    version
             );
         } catch (InvalidArgumentException e) {
             return false;
@@ -130,7 +131,6 @@ public class RenameService {
 
             final Path path = actFile.getFilePath();
             //Check if renaming would overwrite an existing file
-            if (Files.exists(Paths.get(path.getParent() + "\\" + desiredFileName))) return false;
 
             if (write(path, Paths.get(path.getParent() + "\\" + desiredFileName), TableViewMediaFile.WriteMethod.MOVE))  {
                 actFile.setFilename(desiredFileName);
@@ -138,6 +138,50 @@ public class RenameService {
             }
         }
         return false;
+    }*/
+
+    public static String getName(MediaFile actFile, String nameVersion, int version) {
+        final Image actFileImage = actFile.getImage();
+        String desiredFileName = null;
+        String oldFilename;
+        if (hasValue(actFileImage.getOriginalFilename())) {
+            oldFilename = actFileImage.getOriginalFilename();
+        } else {
+            final Meta v = getV(actFile.getFilename());
+            if (v != null && hasValue(v.originalFilename)) {
+                oldFilename = v.originalFilename;
+            } else {
+                oldFilename = actFile.getFilename();
+            }
+        }
+        try {
+            desiredFileName = FileNameFactory.getFileName(
+                    nameVersion,
+                    CommonProperties.getInstance().getPictureSet(),
+                    oldFilename,
+                    actFileImage.getActualDate() != null ? actFileImage.getActualDate() : actFile.getDateStored(),
+                    actFile.getFilehash(),
+                    actFileImage.getHash(),
+                    version
+            );
+        } catch (InvalidArgumentException e) {
+            return null;
+        }
+        if (!actFile.getFilename().equals(desiredFileName)) {
+            //Check if the created name has the minimum information
+            final Meta v = getV(desiredFileName);
+            if (
+                    v.dID == null ||
+                            EMPTYHASH.equals(v.dID) ||
+                            v.date == null ||
+                            !v.date.isEqual(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : actFile.getDateStored())
+            ) return null;
+
+            final Path path = actFile.getFilePath();
+
+            return desiredFileName;
+        }
+        return null;
     }
 
 

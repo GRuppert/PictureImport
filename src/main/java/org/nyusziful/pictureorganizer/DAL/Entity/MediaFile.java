@@ -94,10 +94,10 @@ public class MediaFile extends TrackingEntity {
         // this form used by Hibernate
     }
 
-    public MediaFile(Drive drive, Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
+    public MediaFile(Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
         this.filePath = path;
         this.filename = path.getFileName().toString();
-        this.drive = drive;
+        this.drive = folder.getDrive();
         this.folder = folder;
         this.size = size;
         this.dateMod = dateMod;

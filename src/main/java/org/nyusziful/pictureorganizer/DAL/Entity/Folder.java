@@ -49,4 +49,8 @@ public class Folder extends TrackingEntity {
         if (javaPath == null) loadPath();
         return javaPath;
     }
+
+    public Drive getDrive() {
+        return drive;
+    }
 }
