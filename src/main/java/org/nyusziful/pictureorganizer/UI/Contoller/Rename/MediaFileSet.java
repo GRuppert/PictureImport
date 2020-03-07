@@ -3,6 +3,7 @@ package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
@@ -42,10 +43,10 @@ public class MediaFileSet {
     }
 
     public void updatePaths(String replacePath) {
-        getDataModel().stream().forEach(file -> file.setTargetDirectory(replacePath));
+        getDataModel().stream().forEach(file -> ((RenameMediaFile)file).setTargetDirectory(replacePath));
     }
 
-    public Task<Collection<TableViewMediaFile>> applyChanges(TableViewMediaFile.WriteMethod copyOrMove) {
+    public Task<Collection<TableViewMediaFile>> applyChanges(TableViewMediaFile.WriteMethod copyOrMove, boolean overwrite) {
         Task<Collection<TableViewMediaFile>> task = new Task<Collection<TableViewMediaFile>>() {
             ArrayList<TableViewMediaFile> tableViewMediaFile = new ArrayList();
 
@@ -71,7 +72,7 @@ public class MediaFileSet {
                         return tableViewMediaFile;
                     }
                     TableViewMediaFile record = iter.next();
-                    if (record.write(copyOrMove)) {
+                    if (record.write(copyOrMove, overwrite)) {
                         tableViewMediaFile.add(record);
                     }
                     iterations++;

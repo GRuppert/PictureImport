@@ -11,7 +11,7 @@
             </cellValueFactory>
         </TableColumn>
         <TableColumn fx:id="oldNameCol" text="Current Filename">
-            <cellValueFactory><PropertyValueFactory property="firstName" />
+            <cellValueFactory><PropertyValueFactory property="currentName" />
             </cellValueFactory>
         </TableColumn>
         <TableColumn fx:id="newNameCol" text="After Rename">

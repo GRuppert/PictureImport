@@ -6,7 +6,6 @@ import org.nyusziful.pictureorganizer.DAL.Entity.*;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.DTO.ProgressDTO;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
@@ -16,11 +15,11 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
 import static org.nyusziful.pictureorganizer.Service.FolderService.dataToWinPath;
@@ -56,26 +55,39 @@ public class MediafileService {
         }
     */
     public MediaFile getMediafile(Drive drive, Path path) {
-        MediaFile getMediafile = mediafileDAO.getByFile(drive, path);
-        return getMediafile;
+        return mediafileDAO.getByFile(drive, path);
+    }
+
+    public MediaFile getMediaFile(Path path) {
+        Drive localDrive = driveService.getLocalDrive(path);
+        return getMediafile(localDrive, path);
+    }
+
+    public MediaFile getMediaFile(MediafileDTO mediafileDTO) {
+        Path path = Paths.get(mediafileDTO.abolutePath);
+        return getMediaFile(path);
     }
 
     public MediafileDTO getMediafileDTO(MediaFile mediafile) {
         MediafileDTO mediafileDTO = new MediafileDTO();
         if (mediafile != null) {
-            if (mediafile.getImage() != null) mediafileDTO.driveId = mediafile.getImage().getId();
-            if (mediafile.getFolder() != null)
-                mediafileDTO.path = FolderService.winToDataPath(mediafile.getFolder().getJavaPath());
+            if (mediafile.getImage() != null) mediafileDTO.fileHash = mediafile.getImage().getHash();
+            mediafileDTO.abolutePath = mediafile.getFilePath().toString();
             mediafileDTO.filename = mediafile.getFilename();
             mediafileDTO.dateMod = mediafile.getDateMod();
-            mediafileDTO.filehash = mediafile.getFilehash();
+            mediafileDTO.fileHash = mediafile.getFilehash();
             mediafileDTO.size = mediafile.getSize();
         }
         return mediafileDTO;
     }
 
-    public File getFile(MediafileDTO mediafile) {
-        return new File(mediafile.letter + ":" + dataToWinPath(mediafile.path) + "\\" + mediafile.filename);
+    public static MediafileDTO getMediafileDTO(File file) {
+        MediafileDTO mediafileDTO = new MediafileDTO();
+        if (file != null) {
+            mediafileDTO.abolutePath = file.getAbsolutePath();
+            mediafileDTO.filename = file.getName();
+        }
+        return mediafileDTO;
     }
 
     public void persistMediaFiles(MediaFile mediafile) {
@@ -112,11 +124,6 @@ public class MediafileService {
 /*        MediafileDTO mediafile = mediafileService.getMediafile("001ccb41c7eb77075051f3febdcafe71");
         System.out.println(mediafile);
         mediafileService.updateMediafile(mediafile);*/
-    }
-
-    public MediaFile getMediaFile(Path path) {
-        final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        return mediafileDAO.getByFile(localDrive, path);
     }
 
     public List<MediaFile> getMediaFilesFromPath(Path path) {
@@ -157,7 +164,7 @@ public class MediafileService {
         return false;
     }
 
-    public Set<MediaFile> readMediaFilesFromFolderRecursive(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
+/*    public Set<MediaFile> readMediaFilesFromFolderRecursive(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
         ProgressDTO progress = new ProgressDTO();
         progress.reset();
         Set<MediaFile> mediaFiles = new HashSet<>();
@@ -168,11 +175,13 @@ public class MediafileService {
         filesFailing.forEach(file -> System.out.println(file.getFilePath()));
         return mediaFiles;
     }
+ */
 
-    public Set<MediaFile> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing, ProgressDTO progress) {
+    public Set<MediafileDTO> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, String notes, Progress progress) {
         Set<MediaFile> mediaFiles = new HashSet<>();
+        Set<MediafileDTO> result = new HashSet<>();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        if (drive == null) return mediaFiles;
+        if (drive == null) return result;
         Folder folder = folderService.getFolder(path);
         List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path);
         HashMap<String, MediaFile> fileSet = new HashMap<>();
@@ -181,17 +190,18 @@ public class MediafileService {
         }
         final File[] files = path.toFile().listFiles();
         for (File file : files) {
-            MediaFile mediaFile = readMediaFile(file, fileSet, folder, original, force, zone, filesFailing);
+            MediaFile mediaFile = readMediaFile(file, fileSet, folder, original, force, zone, notes);
             mediaFiles.add(mediaFile);
             progress.increaseProgress();
         }
         filesInFolderFromDB.removeAll(mediaFiles);
         deleteMediaFiles(filesInFolderFromDB);
         mediaFiles.remove(null);
-        return mediaFiles;
+        mediaFiles.forEach(mf -> {result.add(getMediafileDTO(mf));});
+        return result;
     }
 
-    public MediaFile readMediaFile(File file, HashMap<String, MediaFile> filesInFolderMap, Folder folder, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
+    private MediaFile readMediaFile(File file, HashMap<String, MediaFile> filesInFolderMap, Folder folder, boolean original, boolean force, ZoneId zone, String notes) {
         if (filesInFolderMap == null) filesInFolderMap = new HashMap<>();
         Path filePath = file.toPath();
         BasicFileAttributes attrs = null;
@@ -256,7 +266,7 @@ public class MediafileService {
                     fileToSave = fileToSave || updated;
                     if (updated) imageToSave = true;
                 } catch (Exception e) {
-                    filesFailing.add(actFile);
+                    notes += actFile + "\n";
                 }
             }
             if (imageToSave) {
@@ -270,7 +280,9 @@ public class MediafileService {
         return actFile;
     }
 
-    public String getMediaFileName(MediaFile mediaFile, String nameVersion) {
+    public String getMediaFileName(MediafileDTO mediafileDTO, String nameVersion) {
+        MediaFile mediaFile = getMediaFile(mediafileDTO);
+        if (mediaFile == null) return mediafileDTO.filename;
         return RenameService.getName(mediaFile, nameVersion, getVersionNumber(mediaFile.getImage()));
     }
 

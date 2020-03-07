@@ -38,13 +38,13 @@ public class PresetUseCases {
 
 //        recover();
 //        updateFolder(Paths.get("E:\\Képek\\ExifBackupTest\\try1"), true,null, ZoneId.systemDefault());
-        Set<MediaFile> filesFailing = new HashSet<>();
+/*        Set<MediaFile> filesFailing = new HashSet<>();
         MediafileService mfs = new MediafileService();
         final Set<MediaFile> mediaFiles = mfs.readMediaFilesFromFolderRecursive(Paths.get("E:\\Work\\Testfiles\\New folder"), true, false, ZoneId.systemDefault(), filesFailing);
         HashMap<String, MediaFile> renaming = new HashMap<>();
         mediaFiles.forEach(mf -> renaming.put(mfs.getMediaFileName(mf, "6"), mf));
         renaming.forEach((newName,mf) -> mfs.renameMediaFile(mf, Paths.get(mf.getFilePath().getParent()+"\\"+newName), TableViewMediaFile.WriteMethod.MOVE, false));
-        System.out.println("done");
+        System.out.println("done");*/
 //        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
     }
 

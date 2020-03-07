@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.List;
 
 public class DriveService {
@@ -37,6 +38,10 @@ public class DriveService {
             e.printStackTrace();
         }
         return volumeSN;
+    }
+
+    public Drive getLocalDrive(Path path) {
+        return getLocalDrive(path.toString().substring(0, 1));
     }
 
     public Drive getLocalDrive(String letter) {

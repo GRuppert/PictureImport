@@ -53,7 +53,7 @@ public class TablePanelController {
     private void handleGoButtonAction() {
         btnGo.setDisable(true);
         tableProgressIndicator.setVisible(true);
-        Task<Collection<TableViewMediaFile>> collectionTask = mediaFileSet.applyChanges(CommonProperties.getInstance().getCopyOrMove());
+        Task<Collection<TableViewMediaFile>> collectionTask = mediaFileSet.applyChanges(CommonProperties.getInstance().getCopyOrMove(), CommonProperties.getInstance().isOverwrite());
         tableProgressIndicator.progressProperty().bind(collectionTask.progressProperty());
         new Thread(collectionTask).start();
         btnGo.setDisable(false);

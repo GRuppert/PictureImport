@@ -12,10 +12,6 @@ public interface TableViewMediaFile {
 //    public static int COPY = 0;
     // </editor-fold>
 
-    public String getNewName();
-    public void setNewName(String fName);
-    public SimpleStringProperty newNameProperty();
-
     public String getCurrentName();
     public void setCurrentName(String fName);
     public SimpleStringProperty currentNameProperty();
@@ -32,10 +28,5 @@ public interface TableViewMediaFile {
     public void setNote(String fName);
     public SimpleStringProperty noteProperty();
 
-    public String getTargetDirectory();
-    public void setTargetDirectory(String targetDirectory);
-
-    public boolean write(WriteMethod writeMethod);
-
-
+    public boolean write(WriteMethod writeMethod, boolean overwrite);
 }

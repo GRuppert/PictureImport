@@ -6,8 +6,11 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
+import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
+import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSet;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSetTableViewController;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController;
@@ -22,6 +25,8 @@ import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.Rename.*;
 
 import static java.lang.Integer.*;
+import static org.nyusziful.pictureorganizer.Service.MediafileService.getMediafileDTO;
+import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 import org.nyusziful.pictureorganizer.Service.Services;
 import org.nyusziful.pictureorganizer.Service.TimeShift.TimeLine;
@@ -121,7 +126,13 @@ public class MainController implements Initializable {
     @FXML
     private void handleImportButtonAction() {
         disableButtons(true);
-        showTablePane(importFiles(), "/fxml/mediaFileTableView.fxml");
+        showTablePane(itWasImport(defaultImportDirectories()), "/fxml/mediaFileTableView.fxml");
+    }
+
+    @FXML
+    private void handleImportFromButtonAction() {
+        disableButtons(true);
+        showTablePane(itWasImport(importDirectories(getDir(commonProperties.getFromDir()))), "/fxml/mediaFileTableView.fxml");
     }
 
     @FXML
@@ -344,36 +355,35 @@ public class MainController implements Initializable {
                     }
                 }
             }
-            files.add(new RenameMediaFile(file.toPath(), Paths.get(target + "\\" + file.getName())));
+            files.add(new RenameMediaFile(getMediafileDTO(file), file.getName(), "", target.toString()));
 //            System.out.println(file.toString() + " -> " + target);
         }
         return files;
     }
 
     //Input mediafiles Output standard
-    public Collection<TableViewMediaFile> itWasImport(Collection<String> directories) {
-        Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType(name));
-        ArrayList<TableViewMediaFile> files = new ArrayList<>();
+    public Collection<RenameMediaFile> itWasImport(Collection<String> directories) {
+        Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType(name));
+        ArrayList<RenameMediaFile> files = new ArrayList<>();
         Progress instance = Progress.getInstance();
         instance.reset();
         instance.setGoal(directoryElements.size());
-        final RenameService renameService = new RenameService(commonProperties.getZone(), commonProperties.getPictureSet());
-        directoryElements.stream().forEach((directoryElement) -> {files.add(renameService.fileToTableViewMediaFile(directoryElement.file, commonProperties.getZone(), commonProperties.getPictureSet(), commonProperties.getToDir().toString(), false)); instance.increaseProgress();});
-/*
-        ArrayList<File> fileList = new ArrayList<>();
-        directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
-        Collection<Meta> exifToMeta = readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
-        ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
-        for (Meta next : exifToMeta) {
-            files.add(new AnalyzingMediaFile(next));
+        MediafileService mediafileService = new MediafileService();
+        String notes = "";
+        for (String directory : directories) {
+            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, instance);
+            for (MediafileDTO mediafileDTO : mediaFiles) {
+                final String newName = mediafileService.getMediaFileName(mediafileDTO, "6");
+                final RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, newName, notes, commonProperties.getToDir().toString());
+                files.add(renameMediaFile);
+            }
         }
-        */
         return files;
     }
 
     //import and rename are basically the same
-    private Collection<TableViewMediaFile> importFiles() {
-        Collection<String> directories = org.nyusziful.pictureorganizer.UI.StaticTools.defaultImportDirectories(new File("G:\\Pictures\\Photos\\Új\\Peru\\6500"));
+/*    private Collection<TableViewMediaFile> importFiles() {
+        Collection<String> directories = defaultImportDirectories();
         Path backupdrive = null;
             if ((backupdrive = Services.backupMounted()) == null) {
             org.nyusziful.pictureorganizer.UI.StaticTools.errorOut("No backup DriveDTO", new Exception("Attach a backup drive!"));
@@ -382,7 +392,7 @@ public class MainController implements Initializable {
             }
         }
         return itWasImport(directories);
-    }
+    }*/
 
     //no mediafile, creates a list of Meta
     private Collection<Meta> fileMetaList(Collection<String> directories, Path target) {
@@ -401,7 +411,7 @@ public class MainController implements Initializable {
      */
     private void createList() {
         File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getFromDir());
-        File output = StaticTools.getFile(commonProperties.getFromDir());
+        File output = getFile(commonProperties.getFromDir());
         int start;
         do {
             String result= JOptionPane.showInputDialog("Last record value: ");

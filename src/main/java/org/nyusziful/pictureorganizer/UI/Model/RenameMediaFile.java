@@ -9,29 +9,26 @@ import org.nyusziful.pictureorganizer.UI.Model.AbstractTableViewMediaFile;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 
 public class RenameMediaFile extends AbstractTableViewMediaFile {
-    private Path path;
-    private Path newPath;
+    protected SimpleStringProperty newName;
     private String targetDirectory;
-    private MediafileDTO renamedMediaFileDTO;
 
-    public RenameMediaFile() {
+    public RenameMediaFile(MediafileDTO mediafileDTO, String newName, String note, String targetDirectory) {
+        super(mediafileDTO, note);
+        this.newName = new SimpleStringProperty(newName);
+        this.targetDirectory = targetDirectory;
     }
 
-    public RenameMediaFile(Path path, Path newPath) {
-        this.path = path;
-        this.newPath = newPath;
-        processing = new SimpleBooleanProperty(true);
-        currentName = new SimpleStringProperty(path.getFileName().toString());
-        newName = new SimpleStringProperty(newPath.getFileName().toString());
-        xmpMissing = new SimpleBooleanProperty(false);
-        note = new SimpleStringProperty("");
-    }
+    public final String getNewName() {return newName.get();}
+    public final void setNewName(String fName) {newName.set(fName);}
+    public SimpleStringProperty newNameProperty() {return newName;}
 
-    public boolean write(WriteMethod writeMethod) {
+    public boolean write(WriteMethod writeMethod, boolean overwrite) {
         if (processing.get()) {
-            return RenameService.write(path, newPath, writeMethod, false);
+//            Paths.get(targetDirectory + "\\" + file.getParentFile().getName() + "\\" + this.getNewName())
+            return RenameService.write(Paths.get(mediafileDTO.abolutePath), Paths.get(targetDirectory + "\\" + newName.get()), writeMethod, overwrite);
         }
         return false;
     }

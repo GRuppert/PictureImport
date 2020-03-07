@@ -5,10 +5,7 @@ import org.nyusziful.pictureorganizer.DAL.DAO.FolderDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DTO.FolderDTO;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
-import org.nyusziful.pictureorganizer.DTO.ProgressDTO;
 import org.nyusziful.pictureorganizer.UI.Progress;
-import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 import java.io.File;
 import java.io.IOException;
@@ -75,7 +72,7 @@ public class FolderService {
         }
     }
 
-    public static Set<Path> getMediaFoldersRec(Path path, ProgressDTO progress) {
+    public static Set<Path> getMediaFoldersRec(Path path, Progress progress) {
         Set<Path> mediafolders = new HashSet<>();
         int fileSizeCountTotal = 0;
         try {

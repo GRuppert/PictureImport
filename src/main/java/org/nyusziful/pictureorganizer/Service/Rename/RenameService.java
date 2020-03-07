@@ -14,7 +14,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.EMPTYHASH;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
@@ -140,18 +139,18 @@ public class RenameService {
         return false;
     }*/
 
-    public static String getName(MediaFile actFile, String nameVersion, int version) {
-        final Image actFileImage = actFile.getImage();
+    public static String getName(MediaFile mediaFile, String nameVersion, int version) {
+        final Image actFileImage = mediaFile.getImage();
         String desiredFileName = null;
         String oldFilename;
         if (hasValue(actFileImage.getOriginalFilename())) {
             oldFilename = actFileImage.getOriginalFilename();
         } else {
-            final Meta v = getV(actFile.getFilename());
+            final Meta v = getV(mediaFile.getFilename());
             if (v != null && hasValue(v.originalFilename)) {
                 oldFilename = v.originalFilename;
             } else {
-                oldFilename = actFile.getFilename();
+                oldFilename = mediaFile.getFilename();
             }
         }
         try {
@@ -159,32 +158,30 @@ public class RenameService {
                     nameVersion,
                     CommonProperties.getInstance().getPictureSet(),
                     oldFilename,
-                    actFileImage.getActualDate() != null ? actFileImage.getActualDate() : actFile.getDateStored(),
-                    actFile.getFilehash(),
+                    actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFile.getDateStored(),
+                    mediaFile.getFilehash(),
                     actFileImage.getHash(),
                     version
             );
         } catch (InvalidArgumentException e) {
             return null;
         }
-        if (!actFile.getFilename().equals(desiredFileName)) {
+        if (!mediaFile.getFilename().equals(desiredFileName)) {
             //Check if the created name has the minimum information
             final Meta v = getV(desiredFileName);
             if (
                     v.dID == null ||
                             EMPTYHASH.equals(v.dID) ||
                             v.date == null ||
-                            !v.date.isEqual(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : actFile.getDateStored())
+                            !v.date.isEqual(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFile.getDateStored())
             ) return null;
 
-            final Path path = actFile.getFilePath();
+            final Path path = mediaFile.getFilePath();
 
             return desiredFileName;
         }
         return null;
     }
-
-
 
     public TableViewMediaFile fileToTableViewMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
         throw new UnsupportedOperationException("Not implemented");

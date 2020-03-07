@@ -28,7 +28,7 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
  *
  * @author gabor
  */
-public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
+public class AnalyzingMediaFile {
     private static String Version = "6";
 
     private File file;
@@ -49,9 +49,6 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
 //    private HashMap<String, String> exifPar = new HashMap<>();
     private ArrayList<String> exifMissing = new ArrayList<>();
 
-    public AnalyzingMediaFile() {
-
-    }
 /*
     public AnalyzingMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
         this.file = fileIn;
@@ -436,15 +433,6 @@ public class AnalyzingMediaFile extends AbstractTableViewMediaFile {
         return Paths.get(targetDirectory + "\\" + file.getParentFile().getName() + "\\" + this.getNewName());
     }
 */
-    public String getTargetDirectory() {return targetDirectory;}
-
-    public void setTargetDirectory(String targetDirectory) {this.targetDirectory = targetDirectory;}
-
-    @Override
-    public boolean write(WriteMethod writeMethod) {
-        return false;
-    }
-    // </editor-fold>
 
 }
 

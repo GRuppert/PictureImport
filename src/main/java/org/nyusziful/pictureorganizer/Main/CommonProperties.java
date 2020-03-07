@@ -12,6 +12,7 @@ public class CommonProperties {
     private static CommonProperties instance;
 
     private WriteMethod copyOrMove = WriteMethod.COPY;
+    private boolean overwrite = false;
     private ZoneId zone = ZoneId.systemDefault();
     private String pictureSet = "K";
     private String version = "K";
@@ -77,5 +78,13 @@ public class CommonProperties {
 
     public void setFromDir(File fromDir) {
         this.fromDir = fromDir;
+    }
+
+    public boolean isOverwrite() {
+        return overwrite;
+    }
+
+    public void setOverwrite(boolean overwrite) {
+        this.overwrite = overwrite;
     }
 }
