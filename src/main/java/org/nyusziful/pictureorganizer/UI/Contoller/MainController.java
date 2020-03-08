@@ -6,7 +6,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
-import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
@@ -19,7 +18,6 @@ import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
 import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
-import org.nyusziful.pictureorganizer.UI.StaticTools;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.Rename.*;
@@ -28,7 +26,6 @@ import static java.lang.Integer.*;
 import static org.nyusziful.pictureorganizer.Service.MediafileService.getMediafileDTO;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
-import org.nyusziful.pictureorganizer.Service.Services;
 import org.nyusziful.pictureorganizer.Service.TimeShift.TimeLine;
 
 import java.time.ZonedDateTime;
@@ -365,19 +362,20 @@ public class MainController implements Initializable {
     public Collection<RenameMediaFile> itWasImport(Collection<String> directories) {
         Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType(name));
         ArrayList<RenameMediaFile> files = new ArrayList<>();
-        Progress instance = Progress.getInstance();
-        instance.reset();
-        instance.setGoal(directoryElements.size());
+        Progress progress = Progress.getInstance();
+        progress.reset();
+        progress.setGoal(directoryElements.size());
         MediafileService mediafileService = new MediafileService();
         String notes = "";
         for (String directory : directories) {
-            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, instance);
+            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, progress);
             for (MediafileDTO mediafileDTO : mediaFiles) {
                 final String newName = mediafileService.getMediaFileName(mediafileDTO, "6");
                 final RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, newName, notes, commonProperties.getToDir().toString());
                 files.add(renameMediaFile);
             }
         }
+        progress.reset();
         return files;
     }
 

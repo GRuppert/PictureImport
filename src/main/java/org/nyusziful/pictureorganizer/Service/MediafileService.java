@@ -286,10 +286,15 @@ public class MediafileService {
         return RenameService.getName(mediaFile, nameVersion, getVersionNumber(mediaFile.getImage()));
     }
 
-    public boolean renameMediaFile(MediaFile mediaFile, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
+    public boolean renameMediaFile(MediafileDTO mediafileDTO, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
+        MediaFile mediaFile = getMediaFile(mediafileDTO);
         final boolean rename = RenameService.write(mediaFile.getFilePath(), newPath, writeMethod, overwrite);
         if (rename) {
-            mediaFile.setFilename(newPath.getFileName().toString());
+            Folder folder = folderService.getFolder(newPath.getParent());
+            if (TableViewMediaFile.WriteMethod.COPY.equals(writeMethod)) {
+                mediaFile = mediaFile.clone();
+            }
+            mediaFile.moveFile(folder, newPath);
             persistMediaFiles(mediaFile);
         }
 

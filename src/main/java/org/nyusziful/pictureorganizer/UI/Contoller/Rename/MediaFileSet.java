@@ -71,9 +71,9 @@ public class MediaFileSet {
                     if (isCancelled()) {
                         return tableViewMediaFile;
                     }
-                    TableViewMediaFile record = iter.next();
-                    if (record.write(copyOrMove, overwrite)) {
-                        tableViewMediaFile.add(record);
+                    TableViewMediaFile actFile = iter.next();
+                    if (actFile.write(copyOrMove, overwrite)) {
+                        tableViewMediaFile.add(actFile);
                     }
                     iterations++;
                     updateProgress(iterations, size);
@@ -85,6 +85,7 @@ public class MediaFileSet {
         };
 
         task.setOnSucceeded(workerStateEvent -> getDataModel().removeAll(task.getValue()));
+        task.setOnFailed(workerStateEvent -> getDataModel().removeAll(task.getValue()));
         return task;
     }
 

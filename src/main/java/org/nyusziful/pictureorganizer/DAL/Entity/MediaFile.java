@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.pictureorganizer.Service.MediafileService;
 
 import javax.persistence.*;
 import java.nio.file.Path;
@@ -95,14 +96,29 @@ public class MediaFile extends TrackingEntity {
     }
 
     public MediaFile(Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
-        this.filePath = path;
-        this.filename = path.getFileName().toString();
-        this.drive = folder.getDrive();
-        this.folder = folder;
+        moveFile(folder, path);
         this.size = size;
         this.dateMod = dateMod;
         this.dateMod.setNanos(0);
         this.original = original;
+    }
+
+    public void moveFile(Folder folder, Path path) {
+        this.filePath = path;
+        this.filename = path.getFileName().toString();
+        this.drive = folder.getDrive();
+        this.folder = folder;
+    }
+
+    public MediaFile clone() {
+        final MediaFile mediaFile = new MediaFile(folder, filePath, size, dateMod, original);
+        mediaFile.setDateStored(dateStored);
+        mediaFile.setFilehash(filehash);
+        mediaFile.setAltitude(altitude);
+        mediaFile.setLatitude(latitude);
+        mediaFile.setLongitude(longitude);
+        mediaFile.setImage(image);
+        return mediaFile;
     }
 
     public String getFilename() {
@@ -149,15 +165,18 @@ public class MediaFile extends TrackingEntity {
         }
         if (anObject instanceof MediaFile) {
             MediaFile anotherFile = (MediaFile)anObject;
-            if (id > -1 && id == anotherFile.id) return true;
-            if (this.filename.equals(anotherFile.filename) &&
-                this.folder.equals(anotherFile.folder) &&
+            if (id > -1) {
+                if (id == anotherFile.id) return true;
+                else return false;
+            }
+            if ((this.filename != null && this.filename.equals(anotherFile.filename)) &&
+                (this.folder != null && this.folder.equals(anotherFile.folder)) &&
                 this.drive == anotherFile.drive &&
-                this.image.equals(anotherFile.image) &&
-                this.filehash.equals(anotherFile.filehash) &&
+                (this.image != null && this.image.equals(anotherFile.image)) &&
+                (this.filehash != null && this.filehash.equals(anotherFile.filehash)) &&
                 this.size == anotherFile.size &&
-                this.dateMod.toInstant().toEpochMilli() == anotherFile.dateMod.toInstant().toEpochMilli())
-                return true;
+                (this.dateMod != null && this.dateMod.toInstant().toEpochMilli() == anotherFile.dateMod.toInstant().toEpochMilli())
+            ) return true;
         }
         return false;
     }

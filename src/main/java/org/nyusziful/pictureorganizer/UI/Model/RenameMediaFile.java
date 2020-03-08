@@ -3,6 +3,7 @@ package org.nyusziful.pictureorganizer.UI.Model;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.AbstractTableViewMediaFile;
 
@@ -28,7 +29,9 @@ public class RenameMediaFile extends AbstractTableViewMediaFile {
     public boolean write(WriteMethod writeMethod, boolean overwrite) {
         if (processing.get()) {
 //            Paths.get(targetDirectory + "\\" + file.getParentFile().getName() + "\\" + this.getNewName())
-            return RenameService.write(Paths.get(mediafileDTO.abolutePath), Paths.get(targetDirectory + "\\" + newName.get()), writeMethod, overwrite);
+            final Path path = Paths.get(mediafileDTO.abolutePath);
+            MediafileService mediafileService = new MediafileService();
+            return mediafileService.renameMediaFile(mediafileDTO, Paths.get(targetDirectory + "\\" + path.getParent().getFileName() + "\\" + newName.get()), writeMethod, overwrite);
         }
         return false;
     }

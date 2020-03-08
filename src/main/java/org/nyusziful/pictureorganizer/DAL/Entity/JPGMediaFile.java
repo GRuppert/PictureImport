@@ -58,4 +58,15 @@ public class JPGMediaFile extends MediaFile {
         }
     }
 
+    public JPGMediaFile clone() {
+        final JPGMediaFile mediaFile = new JPGMediaFile(folder, filePath, size, dateMod, original);
+        mediaFile.setDateStored(dateStored);
+        mediaFile.setFilehash(filehash);
+        mediaFile.setAltitude(altitude);
+        mediaFile.setLatitude(latitude);
+        mediaFile.setLongitude(longitude);
+        mediaFile.setImage(image);
+        return mediaFile;
+    }
+
 }
