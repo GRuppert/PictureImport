@@ -21,6 +21,21 @@ public class RAWMediaFile extends MediaFile {
         this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
     }
 
+    public RAWMediaFile(RAWMediaFile rawMediaFile) {
+        super(rawMediaFile);
+        this.XMPattached = rawMediaFile.isXMPattached();
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        RAWMediaFile rawMediaFile = (RAWMediaFile)super.clone();
+/*
+        rawMediaFile.XMPattached = this.isXMPattached();
+*/
+        return rawMediaFile;
+    }
+
+
     public boolean isXMPattached() {
         return XMPattached;
     }

@@ -8,8 +8,8 @@ import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
+import org.nyusziful.pictureorganizer.UI.Contoller.MainController;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
-import org.nyusziful.pictureorganizer.UI.Progress;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,7 +22,6 @@ import java.time.ZoneId;
 import java.util.*;
 
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
-import static org.nyusziful.pictureorganizer.Service.FolderService.dataToWinPath;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
@@ -177,7 +176,7 @@ public class MediafileService {
     }
  */
 
-    public Set<MediafileDTO> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, String notes, Progress progress) {
+    public Set<MediafileDTO> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, String notes, MainController.ImportTask progress) {
         Set<MediaFile> mediaFiles = new HashSet<>();
         Set<MediafileDTO> result = new HashSet<>();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
@@ -189,10 +188,11 @@ public class MediafileService {
             fileSet.put(file.getFilePath().toString().toLowerCase(), file);
         }
         final File[] files = path.toFile().listFiles();
-        for (File file : files) {
+        for (int i = 0; i < files.length; i++) {
+            File file = files[i];
             MediaFile mediaFile = readMediaFile(file, fileSet, folder, original, force, zone, notes);
             mediaFiles.add(mediaFile);
-            progress.increaseProgress();
+            if (progress != null) progress.updateProgress(i, files.length-1);
         }
         filesInFolderFromDB.removeAll(mediaFiles);
         deleteMediaFiles(filesInFolderFromDB);
@@ -203,6 +203,7 @@ public class MediafileService {
 
     private MediaFile readMediaFile(File file, HashMap<String, MediaFile> filesInFolderMap, Folder folder, boolean original, boolean force, ZoneId zone, String notes) {
         if (filesInFolderMap == null) filesInFolderMap = new HashMap<>();
+        if (notes == null) notes = "";
         Path filePath = file.toPath();
         BasicFileAttributes attrs = null;
         try {
@@ -289,10 +290,15 @@ public class MediafileService {
     public boolean renameMediaFile(MediafileDTO mediafileDTO, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
         MediaFile mediaFile = getMediaFile(mediafileDTO);
         final boolean rename = RenameService.write(mediaFile.getFilePath(), newPath, writeMethod, overwrite);
-        if (rename) {
+        if (overwrite || rename) {
             Folder folder = folderService.getFolder(newPath.getParent());
             if (TableViewMediaFile.WriteMethod.COPY.equals(writeMethod)) {
-                mediaFile = mediaFile.clone();
+                try {
+                    mediaFile = (MediaFile) mediaFile.clone();
+                } catch (CloneNotSupportedException e) {
+                    e.printStackTrace();
+                }
+//                mediaFile = readMediaFile(newPath.toFile(), null, folder, mediaFile.isOriginal(), false, mediaFile.getDateStored().getZone(), null);
             }
             mediaFile.moveFile(folder, newPath);
             persistMediaFiles(mediaFile);

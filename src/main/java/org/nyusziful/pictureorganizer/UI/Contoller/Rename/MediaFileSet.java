@@ -16,6 +16,9 @@ public class MediaFileSet {
 //    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
     private final ObservableList<TableViewMediaFile> dataModel = FXCollections.observableArrayList();
 
+    public MediaFileSet() {
+    }
+
     public MediaFileSet(Collection<? extends TableViewMediaFile> files) {
         fillData(files);
     }
@@ -23,7 +26,15 @@ public class MediaFileSet {
     private void fillData(Collection<? extends TableViewMediaFile> files) {
 //        this.files = files;
         dataModel.removeAll(dataModel);
-        files.stream().forEach((obj) -> {dataModel.add(obj);});
+        dataModel.addAll(files);
+    }
+
+    public void addData(Collection<? extends TableViewMediaFile> files) {
+        dataModel.addAll(files);
+    }
+
+    public void addData(TableViewMediaFile file) {
+        dataModel.add(file);
     }
 
     public ObservableList<TableViewMediaFile> getDataModel() {
@@ -85,7 +96,7 @@ public class MediaFileSet {
         };
 
         task.setOnSucceeded(workerStateEvent -> getDataModel().removeAll(task.getValue()));
-        task.setOnFailed(workerStateEvent -> getDataModel().removeAll(task.getValue()));
+        task.setOnFailed(workerStateEvent -> System.out.println(task.getException()));
         return task;
     }
 

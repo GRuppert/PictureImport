@@ -1,7 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
-import org.nyusziful.pictureorganizer.Service.MediafileService;
 
 import javax.persistence.*;
 import java.nio.file.Path;
@@ -20,7 +19,7 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
 )
 @DiscriminatorColumn(name = "type")
 @DiscriminatorValue("DEF")
-public class MediaFile extends TrackingEntity {
+public class MediaFile extends TrackingEntity implements Cloneable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
@@ -103,22 +102,43 @@ public class MediaFile extends TrackingEntity {
         this.original = original;
     }
 
-    public void moveFile(Folder folder, Path path) {
-        this.filePath = path;
-        this.filename = path.getFileName().toString();
+    public MediaFile(MediaFile mediaFile) {
+        moveFile(mediaFile.getFolder(), mediaFile.getFilePath());
+        this.size = mediaFile.getSize();
+        this.dateMod = mediaFile.getDateMod();
+        this.dateMod.setNanos(0);
+        this.original = mediaFile.isOriginal();
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        MediaFile mediaFile = (MediaFile)super.clone();
+        mediaFile.id = -1;
+        return mediaFile;
+    }
+
+    public void moveFile(Folder folder, Path filePath) {
+        this.filePath = filePath;
+        this.filename = filePath.getFileName().toString();
         this.drive = folder.getDrive();
         this.folder = folder;
     }
 
-    public MediaFile clone() {
-        final MediaFile mediaFile = new MediaFile(folder, filePath, size, dateMod, original);
+    public void copyAttr(MediaFile mediaFile) {
+        mediaFile.filePath = filePath;
+        mediaFile.filename = filePath.getFileName().toString();
+        mediaFile.drive = folder.getDrive();
+        mediaFile.folder = folder;
+        mediaFile.size = size;
+        mediaFile.dateMod = dateMod;
+        mediaFile.dateMod.setNanos(0);
+        mediaFile.original = original;
         mediaFile.setDateStored(dateStored);
         mediaFile.setFilehash(filehash);
         mediaFile.setAltitude(altitude);
         mediaFile.setLatitude(latitude);
         mediaFile.setLongitude(longitude);
         mediaFile.setImage(image);
-        return mediaFile;
     }
 
     public String getFilename() {

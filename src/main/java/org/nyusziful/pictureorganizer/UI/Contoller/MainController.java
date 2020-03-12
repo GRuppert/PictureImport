@@ -79,6 +79,7 @@ public class MainController implements Initializable {
     private Task currentTask;
 
     private CommonProperties commonProperties;
+    private MediaFileSet mediaFileSet = new MediaFileSet();
 
     public MainController() {
         commonProperties = CommonProperties.getInstance();
@@ -123,13 +124,15 @@ public class MainController implements Initializable {
     @FXML
     private void handleImportButtonAction() {
         disableButtons(true);
-        showTablePane(itWasImport(defaultImportDirectories()), "/fxml/mediaFileTableView.fxml");
+        showTablePane("/fxml/mediaFileTableView.fxml");
+        itWasImport(defaultImportDirectories());
     }
 
     @FXML
     private void handleImportFromButtonAction() {
         disableButtons(true);
-        showTablePane(itWasImport(importDirectories(getDir(commonProperties.getFromDir()))), "/fxml/mediaFileTableView.fxml");
+        showTablePane("/fxml/mediaFileTableView.fxml");
+        itWasImport(importDirectories(getDir(commonProperties.getFromDir())));
     }
 
     @FXML
@@ -159,7 +162,8 @@ public class MainController implements Initializable {
             ArrayList<String> directories = new ArrayList<>();
             directories.add(file.toString());
             disableButtons(true);
-            showTablePane(itWasImport(directories), "/fxml/mediaFileTableView.fxml");
+            showTablePane("/fxml/mediaFileTableView.fxml");
+            itWasImport(directories);
         }
     }
 
@@ -169,7 +173,8 @@ public class MainController implements Initializable {
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
-            showTablePane(sortToDateDirectories(directories), "/fxml/mediaFileTableView.fxml");
+            showTablePane("/fxml/mediaFileTableView.fxml");
+            sortToDateDirectories(directories);
         }
     }
 
@@ -263,8 +268,7 @@ public class MainController implements Initializable {
 
 
     //Sets the center view to table format
-    private void showTablePane(Collection<? extends TableViewMediaFile> mediaFiles, String tableViewFXML) {
-        MediaFileSet mediaFileSet = new MediaFileSet(mediaFiles);
+    private void showTablePane(String tableViewFXML) {
         BorderPane tablePane = null;
         TableView table = null;
         try {
@@ -358,25 +362,42 @@ public class MainController implements Initializable {
         return files;
     }
 
-    //Input mediafiles Output standard
-    public Collection<RenameMediaFile> itWasImport(Collection<String> directories) {
-        Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType(name));
-        ArrayList<RenameMediaFile> files = new ArrayList<>();
-        Progress progress = Progress.getInstance();
-        progress.reset();
-        progress.setGoal(directoryElements.size());
-        MediafileService mediafileService = new MediafileService();
-        String notes = "";
-        for (String directory : directories) {
-            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, progress);
-            for (MediafileDTO mediafileDTO : mediaFiles) {
-                final String newName = mediafileService.getMediaFileName(mediafileDTO, "6");
-                final RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, newName, notes, commonProperties.getToDir().toString());
-                files.add(renameMediaFile);
-            }
+    public class ImportTask extends Task<Void> {
+        private final Collection<String> directories;
+
+        public ImportTask(Collection<String> directories) {
+            this.directories = directories;
         }
-        progress.reset();
-        return files;
+
+        @Override
+        public Void call() {
+            MediafileService mediafileService = new MediafileService();
+            String notes = "";
+            for (String directory : directories) {
+                final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, this);
+                int iter = 0;
+                for (MediafileDTO mediafileDTO : mediaFiles) {
+                    final String newName = mediafileService.getMediaFileName(mediafileDTO, "6");
+                    final RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, newName, notes, commonProperties.getToDir().toString());
+                    mediaFileSet.addData(renameMediaFile);
+                    updateProgress(iter, mediaFiles.size()-1);
+                    iter++;
+                }
+            }
+            return null;
+        }
+
+        public void updateProgress(int workDone, int max) {
+            updateProgress((double)workDone, (double)max);
+        }
+    }
+
+    //Input mediafiles Output standard
+    public void itWasImport(Collection<String> directories) {
+        Task<Void> task = new ImportTask(directories);
+        task.setOnFailed(a -> Progress.getInstance().reset());
+        progressIndicator.progressProperty().bind(task.progressProperty());
+        new Thread(task).start();
     }
 
     //import and rename are basically the same

@@ -6,6 +6,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Progress;
 
 import java.net.URL;
 import java.util.Collection;

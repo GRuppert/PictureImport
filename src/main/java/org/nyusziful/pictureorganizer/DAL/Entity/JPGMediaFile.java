@@ -25,6 +25,13 @@ public class JPGMediaFile extends MediaFile {
         }
     }
 
+    public JPGMediaFile(JPGMediaFile jpgMediaFile) {
+        super(jpgMediaFile);
+        this.exifbackup = jpgMediaFile.isExifbackup();
+        this.standalone = jpgMediaFile.isStandalone();
+
+    }
+
     public boolean addExifbackup() {
         exifbackup = JPGHash.addBackupExif(filePath.toFile());
         return exifbackup;
@@ -58,15 +65,14 @@ public class JPGMediaFile extends MediaFile {
         }
     }
 
-    public JPGMediaFile clone() {
-        final JPGMediaFile mediaFile = new JPGMediaFile(folder, filePath, size, dateMod, original);
-        mediaFile.setDateStored(dateStored);
-        mediaFile.setFilehash(filehash);
-        mediaFile.setAltitude(altitude);
-        mediaFile.setLatitude(latitude);
-        mediaFile.setLongitude(longitude);
-        mediaFile.setImage(image);
-        return mediaFile;
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        JPGMediaFile jpgMediaFile = (JPGMediaFile)super.clone();
+/*
+        jpgMediaFile.exifbackup = this.isExifbackup();
+        jpgMediaFile.standalone = this.isStandalone();
+*/
+        return jpgMediaFile;
     }
 
 }
