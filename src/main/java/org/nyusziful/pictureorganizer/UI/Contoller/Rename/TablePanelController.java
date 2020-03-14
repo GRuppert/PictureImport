@@ -1,13 +1,20 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
+import javafx.event.EventType;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TextField;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 
+import javax.swing.event.ChangeEvent;
+import javax.swing.plaf.basic.BasicMenuUI;
 import java.net.URL;
 import java.util.Collection;
 import java.util.ResourceBundle;
@@ -21,6 +28,12 @@ public class TablePanelController {
     @FXML
     private Button btnGo;
 
+    @FXML
+    private Label fileDateRange;
+
+    @FXML
+    private TextField eventNameField;
+
     // </editor-fold>
 
     private MediaFileSet mediaFileSet;
@@ -33,6 +46,13 @@ public class TablePanelController {
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;
+        mediaFileSet.getFolderName().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                fileDateRange.setText(newValue != null ? newValue : "");
+            }
+        });
+        eventNameField.setPromptText("Event name");
     }
 
     @FXML
@@ -61,10 +81,20 @@ public class TablePanelController {
     }
 
     @FXML
-    private void handleAbortButtonAction() { mediaFileSet.removeAll(); }
+    private void handleApplyEventNameButtonAction() {
+        mediaFileSet.setLabel(eventNameField.getText());
+        updateTargetDirectory();
+    }
 
     @FXML
-    private void handleRefreshButtonAction() { mediaFileSet.updatePaths(CommonProperties.getInstance().getToDir().toString()); }
+    private void handleAbortButtonAction() { mediaFileSet.reset(); }
+
+    @FXML
+    private void handleRefreshButtonAction() {updateTargetDirectory();}
+
+    private void updateTargetDirectory() {
+        mediaFileSet.updatePaths(CommonProperties.getInstance().getToDir().toString());
+    }
 
 
 }

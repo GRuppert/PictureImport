@@ -1,26 +1,38 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
+
 public class MediaFileSet {
 //    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
     private final ObservableList<TableViewMediaFile> dataModel = FXCollections.observableArrayList();
+    private ZonedDateTime firstDate = null;
+    private ZonedDateTime lastDate = null;
+    private SimpleStringProperty folderName;
+    private String label;
+    public static DateTimeFormatter FolderFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");//2018-06-14
+
+
 
     public MediaFileSet() {
-    }
-
-    public MediaFileSet(Collection<? extends TableViewMediaFile> files) {
-        fillData(files);
+        folderName = new SimpleStringProperty("");
     }
 
     private void fillData(Collection<? extends TableViewMediaFile> files) {
@@ -41,6 +53,14 @@ public class MediaFileSet {
         return dataModel;
     }
 
+    public void reset() {
+        dataModel.clear();
+        label = "";
+        firstDate = null;
+        lastDate = null;
+        folderName.setValue("");
+    }
+
     public void selectAll() {
         getDataModel().forEach(f -> f.setProcessing(Boolean.TRUE));
     }
@@ -54,7 +74,7 @@ public class MediaFileSet {
     }
 
     public void updatePaths(String replacePath) {
-        getDataModel().stream().forEach(file -> ((RenameMediaFile)file).setTargetDirectory(replacePath));
+        getDataModel().stream().forEach(file -> ((RenameMediaFile)file).setTargetDirectory(replacePath + "\\" + folderName.getValue()));
     }
 
     public Task<Collection<TableViewMediaFile>> applyChanges(TableViewMediaFile.WriteMethod copyOrMove, boolean overwrite) {
@@ -100,7 +120,41 @@ public class MediaFileSet {
         return task;
     }
 
-    public void removeAll() {
-        getDataModel().removeAll(getDataModel());
+    public ZonedDateTime getFirstDate() {
+        return firstDate;
+    }
+
+    public void setFirstDate(ZonedDateTime firstDate) {
+        this.firstDate = firstDate;
+        updateRange();
+    }
+
+    public ZonedDateTime getLastDate() {
+        return lastDate;
+    }
+
+    public void setLastDate(ZonedDateTime lastDate) {
+        this.lastDate = lastDate;
+        updateRange();
+    }
+
+    private void updateRange() {
+        if (getFirstDate() != null && getLastDate() != null)
+            folderName.setValue(getFirstDate().format(FolderFormat) + " - " + getLastDate().format(FolderFormat) + ((label != null && !"".equals(label)) ? " " + label : "")); //2018-06-14 - 2018-07-10 Peru
+        else
+            folderName.setValue("");
+    }
+
+    public SimpleStringProperty getFolderName() {
+        return folderName;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+        updateRange();
     }
 }

@@ -28,6 +28,7 @@ import org.nyusziful.pictureorganizer.Service.Rename.*;
 
 import static java.lang.Integer.*;
 import static org.nyusziful.pictureorganizer.Service.MediafileService.getMediafileDTO;
+import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 import org.nyusziful.pictureorganizer.Service.TimeShift.TimeLine;
@@ -130,14 +131,14 @@ public class MainController implements Initializable {
     @FXML
     private void handleImportButtonAction() {
         disableButtons(true);
-        showTablePane("/fxml/mediaFileTableView.fxml");
+        showTablePane();
         itWasImport(defaultImportDirectories());
     }
 
     @FXML
     private void handleImportFromButtonAction() {
         disableButtons(true);
-        showTablePane("/fxml/mediaFileTableView.fxml");
+        showTablePane();
         itWasImport(importDirectories(getDir(commonProperties.getFromDir())));
     }
 
@@ -168,7 +169,7 @@ public class MainController implements Initializable {
             ArrayList<String> directories = new ArrayList<>();
             directories.add(file.toString());
             disableButtons(true);
-            showTablePane("/fxml/mediaFileTableView.fxml");
+            showTablePane();
             itWasImport(directories);
         }
     }
@@ -179,7 +180,7 @@ public class MainController implements Initializable {
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
-            showTablePane("/fxml/mediaFileTableView.fxml");
+            showTablePane();
             sortToDateDirectories(directories);
         }
     }
@@ -274,11 +275,12 @@ public class MainController implements Initializable {
 
 
     //Sets the center view to table format
-    private void showTablePane(String tableViewFXML) {
+    private void showTablePane() {
         BorderPane tablePane = null;
         TableView table = null;
+        mediaFileSet.reset();
         try {
-            FXMLLoader loaderTable = new FXMLLoader(getClass().getResource(tableViewFXML));
+            FXMLLoader loaderTable = new FXMLLoader(getClass().getResource("/fxml/mediaFileTableView.fxml"));
             table = (TableView) loaderTable.load();
             MediaFileSetTableViewController ctrlTable = loaderTable.getController();
             ctrlTable.setMediaFileSet(mediaFileSet);
@@ -296,6 +298,7 @@ public class MainController implements Initializable {
                     }
                 }
             });
+
             mainPane.setCenter(tablePane);
         } catch (IOException e) {
             e.printStackTrace();
@@ -349,7 +352,7 @@ public class MainController implements Initializable {
         ZonedDateTime previousFileDate = ZonedDateTime.now();
 
         for (File file : fileList) {
-            ZonedDateTime fileDate = FileNameFactory.getV(file.getName()).date;
+            ZonedDateTime fileDate = getV(file.getName()).date;
             if (!fileDate.truncatedTo(ChronoUnit.DAYS).equals(previousFileDate.truncatedTo(ChronoUnit.DAYS))) {
                 previousFileDate = fileDate;
                 File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
@@ -372,6 +375,8 @@ public class MainController implements Initializable {
         private final Collection<String> directories;
         private int numberOfFiles;
         private int processedFiles;
+        private ZonedDateTime firstDate = null;
+        private ZonedDateTime lastDate = null;
 
         public ImportTask(Collection<String> directories) {
             this.directories = directories;
@@ -388,7 +393,6 @@ public class MainController implements Initializable {
             updateProgress(0, numberOfFiles);
             MediafileService mediafileService = new MediafileService();
             String notes = "";
-            mediaFileSet.removeAll();
             for (String directory : directories) {
                 final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, this);
                 Set<RenameMediaFile> renameMediaFiles = new HashSet<>();
@@ -404,6 +408,11 @@ public class MainController implements Initializable {
                 int iter = 0;
                 for (RenameMediaFile renameMediaFile : renameMediaFiles) {
                     final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
+                    final Meta v = getV(newName);
+                    if (v.date != null) {
+                        if (firstDate == null || firstDate.isAfter(v.date)) firstDate = v.date;
+                        if (lastDate == null || lastDate.isBefore(v.date)) lastDate = v.date;
+                    }
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
                             renameMediaFile.setNewName(newName);
@@ -411,6 +420,12 @@ public class MainController implements Initializable {
                     });
                 }
             }
+            Platform.runLater(new Runnable() {
+                @Override public void run() {
+                    mediaFileSet.setFirstDate(firstDate);
+                    mediaFileSet.setLastDate(lastDate);
+                }
+            });
             return processedFiles;
         }
 
@@ -424,7 +439,7 @@ public class MainController implements Initializable {
     public void itWasImport(Collection<String> directories) {
         Task<Integer> task = new ImportTask(directories);
         statusLabel.setText("");
-        task.setOnFailed(a -> {progressIndicator.progressProperty().unbind(); mediaFileSet.removeAll(); resetAction();});
+        task.setOnFailed(a -> {progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
         task.setOnSucceeded(
                 new EventHandler<WorkerStateEvent>() {
                     @Override
