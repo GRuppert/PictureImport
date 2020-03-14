@@ -1,11 +1,15 @@
 package org.nyusziful.pictureorganizer.UI.Contoller;
 
+import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.SortedList;
+import javafx.concurrent.WorkerStateEvent;
+import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import org.hibernate.exception.DataException;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
@@ -28,6 +32,8 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 import org.nyusziful.pictureorganizer.Service.TimeShift.TimeLine;
 
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -362,40 +368,73 @@ public class MainController implements Initializable {
         return files;
     }
 
-    public class ImportTask extends Task<Void> {
+    public class ImportTask extends Task<Integer> {
         private final Collection<String> directories;
+        private int numberOfFiles;
+        private int processedFiles;
 
         public ImportTask(Collection<String> directories) {
             this.directories = directories;
         }
 
         @Override
-        public Void call() {
+        public Integer call() {
+            Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return supportedFileType(name);
+                }});
+            processedFiles = 0;
+            numberOfFiles = directoryElements.size();
+            updateProgress(0, numberOfFiles);
             MediafileService mediafileService = new MediafileService();
             String notes = "";
+            mediaFileSet.removeAll();
             for (String directory : directories) {
                 final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, this);
-                int iter = 0;
+                Set<RenameMediaFile> renameMediaFiles = new HashSet<>();
                 for (MediafileDTO mediafileDTO : mediaFiles) {
-                    final String newName = mediafileService.getMediaFileName(mediafileDTO, "6");
-                    final RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, newName, notes, commonProperties.getToDir().toString());
-                    mediaFileSet.addData(renameMediaFile);
-                    updateProgress(iter, mediaFiles.size()-1);
-                    iter++;
+                    RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", notes, commonProperties.getToDir().toString());
+                    renameMediaFiles.add(renameMediaFile);
+                    Platform.runLater(new Runnable() {
+                        @Override public void run() {
+                            mediaFileSet.addData(renameMediaFile);
+                        }
+                    });
+                }
+                int iter = 0;
+                for (RenameMediaFile renameMediaFile : renameMediaFiles) {
+                    final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
+                    Platform.runLater(new Runnable() {
+                        @Override public void run() {
+                            renameMediaFile.setNewName(newName);
+                        }
+                    });
                 }
             }
-            return null;
+            return processedFiles;
         }
 
-        public void updateProgress(int workDone, int max) {
-            updateProgress((double)workDone, (double)max);
+        public void increaseProgress() {
+            processedFiles++;
+            updateProgress((double)processedFiles, (double)numberOfFiles);
         }
     }
 
     //Input mediafiles Output standard
     public void itWasImport(Collection<String> directories) {
-        Task<Void> task = new ImportTask(directories);
-        task.setOnFailed(a -> Progress.getInstance().reset());
+        Task<Integer> task = new ImportTask(directories);
+        statusLabel.setText("");
+        task.setOnFailed(a -> {progressIndicator.progressProperty().unbind(); mediaFileSet.removeAll(); resetAction();});
+        task.setOnSucceeded(
+                new EventHandler<WorkerStateEvent>() {
+                    @Override
+                    public void handle(WorkerStateEvent t) {
+                        if (task.getValue().intValue() == 0) {
+                            resetAction();
+                        }
+                        statusLabel.setText(task.getValue().intValue() + " file(s) processed.");
+                    }
+                });
         progressIndicator.progressProperty().bind(task.progressProperty());
         new Thread(task).start();
     }

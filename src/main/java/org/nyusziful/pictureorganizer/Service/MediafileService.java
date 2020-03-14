@@ -191,8 +191,10 @@ public class MediafileService {
         for (int i = 0; i < files.length; i++) {
             File file = files[i];
             MediaFile mediaFile = readMediaFile(file, fileSet, folder, original, force, zone, notes);
-            mediaFiles.add(mediaFile);
-            if (progress != null) progress.updateProgress(i, files.length-1);
+            if (mediaFile != null) {
+                mediaFiles.add(mediaFile);
+                progress.increaseProgress();
+            }
         }
         filesInFolderFromDB.removeAll(mediaFiles);
         deleteMediaFiles(filesInFolderFromDB);

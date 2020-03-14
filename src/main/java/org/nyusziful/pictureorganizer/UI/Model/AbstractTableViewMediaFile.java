@@ -10,7 +10,7 @@ public abstract class AbstractTableViewMediaFile implements TableViewMediaFile {
     protected SimpleStringProperty currentName;
     protected SimpleStringProperty note;
     protected SimpleBooleanProperty xmpMissing;
-    protected MediafileDTO mediafileDTO;
+    private MediafileDTO mediafileDTO;
 
 
     public AbstractTableViewMediaFile(MediafileDTO mediafileDTO, String note) {
@@ -37,5 +37,9 @@ public abstract class AbstractTableViewMediaFile implements TableViewMediaFile {
     public final String getNote() {return note.get();}
     public final void setNote(String fName) {note.set(fName);}
     public SimpleStringProperty noteProperty() {return note;}
+
+    public MediafileDTO getMediafileDTO() {
+        return mediafileDTO;
+    }
     // </editor-fold>
 }
