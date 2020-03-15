@@ -375,8 +375,6 @@ public class MainController implements Initializable {
         private final Collection<String> directories;
         private int numberOfFiles;
         private int processedFiles;
-        private ZonedDateTime firstDate = null;
-        private ZonedDateTime lastDate = null;
 
         public ImportTask(Collection<String> directories) {
             this.directories = directories;
@@ -408,11 +406,6 @@ public class MainController implements Initializable {
                 int iter = 0;
                 for (RenameMediaFile renameMediaFile : renameMediaFiles) {
                     final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
-                    final Meta v = getV(newName);
-                    if (v.date != null) {
-                        if (firstDate == null || firstDate.isAfter(v.date)) firstDate = v.date;
-                        if (lastDate == null || lastDate.isBefore(v.date)) lastDate = v.date;
-                    }
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
                             renameMediaFile.setNewName(newName);
@@ -422,8 +415,7 @@ public class MainController implements Initializable {
             }
             Platform.runLater(new Runnable() {
                 @Override public void run() {
-                    mediaFileSet.setFirstDate(firstDate);
-                    mediaFileSet.setLastDate(lastDate);
+                    mediaFileSet.resetDates();
                 }
             });
             return processedFiles;

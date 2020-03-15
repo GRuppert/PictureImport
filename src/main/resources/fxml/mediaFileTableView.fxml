@@ -14,6 +14,10 @@
             <cellValueFactory><PropertyValueFactory property="currentName" />
             </cellValueFactory>
         </TableColumn>
+        <TableColumn fx:id="targetDirectoryCol" text="Target Directory">
+            <cellValueFactory><PropertyValueFactory property="targetDirectory" />
+            </cellValueFactory>
+        </TableColumn>
         <TableColumn fx:id="newNameCol" text="After Rename">
             <cellValueFactory><PropertyValueFactory property="newName" />
             </cellValueFactory>

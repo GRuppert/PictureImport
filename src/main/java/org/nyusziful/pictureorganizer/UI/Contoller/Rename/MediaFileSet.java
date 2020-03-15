@@ -1,5 +1,7 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
+import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
@@ -12,6 +14,7 @@ import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 
+import java.time.LocalDate;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -23,8 +26,8 @@ import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV
 public class MediaFileSet {
 //    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
     private final ObservableList<TableViewMediaFile> dataModel = FXCollections.observableArrayList();
-    private ZonedDateTime firstDate = null;
-    private ZonedDateTime lastDate = null;
+    SimpleObjectProperty<LocalDate> firstDate;
+    SimpleObjectProperty<LocalDate> lastDate;
     private SimpleStringProperty folderName;
     private String label;
     public static DateTimeFormatter FolderFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");//2018-06-14
@@ -33,6 +36,8 @@ public class MediaFileSet {
 
     public MediaFileSet() {
         folderName = new SimpleStringProperty("");
+        firstDate = new SimpleObjectProperty(null);
+        lastDate = new SimpleObjectProperty(null);
     }
 
     private void fillData(Collection<? extends TableViewMediaFile> files) {
@@ -56,9 +61,9 @@ public class MediaFileSet {
     public void reset() {
         dataModel.clear();
         label = "";
-        firstDate = null;
-        lastDate = null;
-        folderName.setValue("");
+        firstDate.set(LocalDate.now());
+        lastDate.set(LocalDate.now());
+        folderName.set("");
     }
 
     public void selectAll() {
@@ -74,7 +79,7 @@ public class MediaFileSet {
     }
 
     public void updatePaths(String replacePath) {
-        getDataModel().stream().forEach(file -> ((RenameMediaFile)file).setTargetDirectory(replacePath + "\\" + folderName.getValue()));
+        getDataModel().stream().forEach(file -> {if (file.getProcessing()) ((RenameMediaFile)file).setTargetDirectory(replacePath + "\\" + folderName.getValue());});
     }
 
     public Task<Collection<TableViewMediaFile>> applyChanges(TableViewMediaFile.WriteMethod copyOrMove, boolean overwrite) {
@@ -120,32 +125,36 @@ public class MediaFileSet {
         return task;
     }
 
-    public ZonedDateTime getFirstDate() {
-        return firstDate;
+    public LocalDate getFirstDate() {
+        return firstDate.getValue();
     }
 
-    public void setFirstDate(ZonedDateTime firstDate) {
-        this.firstDate = firstDate;
+    public void setFirstDate(LocalDate firstDate) {
+        this.firstDate.set(firstDate);
         updateRange();
     }
 
-    public ZonedDateTime getLastDate() {
-        return lastDate;
+    public SimpleObjectProperty<LocalDate> firstDateProperty() {return firstDate;}
+
+    public LocalDate getLastDate() {
+        return lastDate.getValue();
     }
 
-    public void setLastDate(ZonedDateTime lastDate) {
-        this.lastDate = lastDate;
+    public void setLastDate(LocalDate lastDate) {
+        this.lastDate.set(lastDate);
         updateRange();
     }
+
+    public SimpleObjectProperty<LocalDate> lastDateProperty() {return lastDate;}
 
     private void updateRange() {
         if (getFirstDate() != null && getLastDate() != null)
-            folderName.setValue(getFirstDate().format(FolderFormat) + " - " + getLastDate().format(FolderFormat) + ((label != null && !"".equals(label)) ? " " + label : "")); //2018-06-14 - 2018-07-10 Peru
+            folderName.set(getFirstDate().format(FolderFormat) + " - " + getLastDate().format(FolderFormat) + ((label != null && !"".equals(label)) ? " " + label : "")); //2018-06-14 - 2018-07-10 Peru
         else
-            folderName.setValue("");
+            folderName.set("");
     }
 
-    public SimpleStringProperty getFolderName() {
+    public SimpleStringProperty folderNameProperty() {
         return folderName;
     }
 
@@ -156,5 +165,20 @@ public class MediaFileSet {
     public void setLabel(String label) {
         this.label = label;
         updateRange();
+    }
+
+    public void resetDates() {
+        for (TableViewMediaFile tableViewMediaFile : getDataModel()) {
+            if (tableViewMediaFile instanceof RenameMediaFile) {
+                final Meta v = getV(((RenameMediaFile) tableViewMediaFile).getNewName());
+                if (v.date != null) {
+                    final LocalDate localDateFromFile = v.date.toLocalDate();
+                    if (firstDate.getValue() == null || firstDate.getValue().isAfter(localDateFromFile)) setFirstDate(localDateFromFile);
+                    if (lastDate.getValue() == null || lastDate.getValue().isBefore(localDateFromFile)) setLastDate(localDateFromFile);
+                }
+            }
+        }
+
+
     }
 }

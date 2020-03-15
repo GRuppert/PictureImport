@@ -6,6 +6,7 @@ import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.TableCell;
@@ -21,7 +22,7 @@ import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class CompareTableViewController {
+public class CompareTableViewController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
@@ -36,7 +37,7 @@ public class CompareTableViewController {
     public CompareTableViewController() {
     }
 
-
+    @Override
     public void initialize(URL url, ResourceBundle rb) {
         processingCol.setCellValueFactory( f -> f.getValue().processingProperty());
         processingCol.setCellFactory(CheckBoxTableCell.forTableColumn(processingCol));

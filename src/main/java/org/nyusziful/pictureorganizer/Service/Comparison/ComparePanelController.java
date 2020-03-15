@@ -4,6 +4,7 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
@@ -19,7 +20,7 @@ import java.util.ResourceBundle;
 
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 
-public class ComparePanelController {
+public class ComparePanelController implements Initializable {
     private ObservableList<String> pairs = FXCollections.observableArrayList ();
     private ObservableList<ComparableMediaFile> singles = FXCollections.observableArrayList ();
     private ObservableList<Duplicate> duplicates = FXCollections.observableArrayList();
@@ -44,6 +45,7 @@ public class ComparePanelController {
         return files;
     }
 
+    @Override
     public void initialize(URL url, ResourceBundle rb) {
         CommonProperties commonProperties = CommonProperties.getInstance();
         Collection<ComparableMediaFile> fromFiles = readsDirectoryToComparableMediaFile(commonProperties.getFromDir().toPath());

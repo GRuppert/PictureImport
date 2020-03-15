@@ -9,12 +9,12 @@ import java.nio.file.Paths;
 
 public class RenameMediaFile extends AbstractTableViewMediaFile {
     protected SimpleStringProperty newName;
-    private String targetDirectory;
+    private SimpleStringProperty targetDirectory;
 
     public RenameMediaFile(MediafileDTO mediafileDTO, String newName, String note, String targetDirectory) {
         super(mediafileDTO, note);
         this.newName = new SimpleStringProperty(newName);
-        this.targetDirectory = targetDirectory;
+        this.targetDirectory = new SimpleStringProperty(targetDirectory);
     }
 
     public final String getNewName() {return newName.get();}
@@ -31,7 +31,8 @@ public class RenameMediaFile extends AbstractTableViewMediaFile {
         return false;
     }
 
-    public String getTargetDirectory() {return targetDirectory;}
+    public final String getTargetDirectory() {return targetDirectory.get();}
+    public final void setTargetDirectory(String targetDirectory) {this.targetDirectory.setValue(targetDirectory);}
+    public SimpleStringProperty targetDirectoryProperty() {return targetDirectory;}
 
-    public void setTargetDirectory(String targetDirectory) {this.targetDirectory = targetDirectory;}
 }

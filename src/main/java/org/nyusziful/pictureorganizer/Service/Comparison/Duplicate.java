@@ -82,7 +82,7 @@ public class Duplicate {
         } catch (IOException ex) {
             Logger.getLogger(Duplicate.class.getName()).log(Level.SEVERE, null, ex);
         }*/
-        meta.setValue(compareMeta());
+        meta.set(compareMeta());
     }
 
     private void addTag(String name, String value1, String value2) {
