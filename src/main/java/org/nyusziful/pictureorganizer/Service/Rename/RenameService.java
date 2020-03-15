@@ -63,17 +63,22 @@ public class RenameService {
         try {
             if (!path.toString().toLowerCase().endsWith(newPath.toString().toLowerCase().substring(newPath.toString().length()-4))) return false;
             boolean isXMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
+            boolean isBAKattached = Files.exists(Paths.get(path.toString()+".bak"));
             validPath(newPath);
             switch (writeMethod) {
                 case COPY:
                     Files.copy(path, newPath);
                     if (isXMPattached)
                         Files.copy(Paths.get(path + ".xmp"), Paths.get(newPath + ".xmp"));
+                    if (isBAKattached)
+                        Files.copy(Paths.get(path + ".bak"), Paths.get(newPath + ".bak"));
                     break;
                 case MOVE:
                     Files.move(path, newPath);
                     if (isXMPattached)
                         Files.move(Paths.get(path + ".xmp"), Paths.get(newPath + ".xmp"));
+                    if (isBAKattached)
+                        Files.move(Paths.get(path + ".bak"), Paths.get(newPath + ".bak"));
             }
             return true;
         } catch (IOException e) {

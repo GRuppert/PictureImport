@@ -89,19 +89,7 @@ public class MediaFileSet {
             @Override
             public Collection<TableViewMediaFile> call() {
                 int iterations = 0;
-                Progress progress = Progress.getInstance();
-                while (progress.timeToReady() != 0) {
-                    if (isCancelled()) {
-                        return tableViewMediaFile;
-                    }
-                    try {
-                        MediaFileSet.this.wait(progress.timeToReady());
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
                 int size = MediaFileSet.this.getDataModel().size();
-                progress.setGoal(size);
                 Iterator<TableViewMediaFile> iter = MediaFileSet.this.getDataModel().iterator();
                 while (iter.hasNext()) {
                     if (isCancelled()) {
@@ -113,7 +101,6 @@ public class MediaFileSet {
                     }
                     iterations++;
                     updateProgress(iterations, size);
-                    progress.increaseProgress();
                 }
                 StaticTools.beep();
                 return tableViewMediaFile;

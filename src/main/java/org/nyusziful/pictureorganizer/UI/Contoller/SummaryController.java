@@ -22,7 +22,7 @@ public class SummaryController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        ImageService imageService = new ImageService();
+/*        ImageService imageService = new ImageService();
         List<Image> images = imageService.getImages();
         image_num.setText(Integer.toString(images.size()));
         int hasBackup = 0;
@@ -31,6 +31,6 @@ public class SummaryController implements Initializable {
         }
         backup_num.setText(Integer.toString(hasBackup));
         nobackup_num.setText(Integer.toString(images.size()-hasBackup));
+ */
     }
-
 }
