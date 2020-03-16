@@ -70,6 +70,7 @@ public class TablePanelController implements Initializable {
                     }
                 };
         lastDatePicker.setDayCellFactory(dayCellFactory);
+        tableProgressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) org.nyusziful.pictureorganizer.UI.StaticTools.beep();});
     }
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
@@ -85,6 +86,13 @@ public class TablePanelController implements Initializable {
         mediaFileSet.lastDateProperty().bindBidirectional(lastDatePicker.valueProperty());
 
         eventNameField.setPromptText("Event name");
+    }
+
+
+
+    @FXML
+    private void handleSelectedButtonAction() {
+        mediaFileSet.selectAll();
     }
 
     @FXML

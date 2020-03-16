@@ -1,6 +1,8 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
 import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
@@ -9,11 +11,11 @@ import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import java.net.URL;
 import java.util.ResourceBundle;
 
-public class MediaFileTableViewController implements MediaFileSetTableViewController {
+public class MediaFileTableViewController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableView Table;
+    private TableView tableView;
 
     @FXML
     private TableColumn<TableViewMediaFile, Boolean > processingCol;
@@ -27,12 +29,14 @@ public class MediaFileTableViewController implements MediaFileSetTableViewContro
     public MediaFileTableViewController() {
     }
 
+    @Override
     public void initialize(URL url, ResourceBundle rb) {
+        tableView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
     }
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;
-        Table.setItems(mediaFileSet.getDataModel());
+        tableView.setItems(mediaFileSet.getDataModel());
         processingCol.setCellFactory( tc -> new CheckBoxTableCell<>());
         xmpCol.setCellFactory( tc -> new CheckBoxTableCell<>());
     }

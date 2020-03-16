@@ -102,7 +102,6 @@ public class MediaFileSet {
                     iterations++;
                     updateProgress(iterations, size);
                 }
-                StaticTools.beep();
                 return tableViewMediaFile;
             }
         };
@@ -158,7 +157,7 @@ public class MediaFileSet {
         for (TableViewMediaFile tableViewMediaFile : getDataModel()) {
             if (tableViewMediaFile instanceof RenameMediaFile) {
                 final Meta v = getV(((RenameMediaFile) tableViewMediaFile).getNewName());
-                if (v.date != null) {
+                if (v != null && v.date != null) {
                     final LocalDate localDateFromFile = v.date.toLocalDate();
                     if (firstDate.getValue() == null || firstDate.getValue().isAfter(localDateFromFile)) setFirstDate(localDateFromFile);
                     if (lastDate.getValue() == null || lastDate.getValue().isBefore(localDateFromFile)) setLastDate(localDateFromFile);

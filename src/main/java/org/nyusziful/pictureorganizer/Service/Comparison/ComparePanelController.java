@@ -106,8 +106,6 @@ public class ComparePanelController implements Initializable {
         singles.stream().forEach((file) -> single.add(file.file.getName() + "\n"));
         singles.stream().forEach((file) -> singleStr.append(file.file.getAbsolutePath()).append("\n"));
         listSingle.setItems(single);
-
-        StaticTools.beep();
     }
 
     private TableView createDuplicateTable(ObservableList<Duplicate> input) {

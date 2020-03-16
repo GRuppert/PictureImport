@@ -15,7 +15,7 @@ import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSet;
-import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSetTableViewController;
+import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileTableViewController;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController;
 import org.nyusziful.pictureorganizer.UI.DirectoryElement;
 import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
@@ -125,6 +125,7 @@ public class MainController implements Initializable {
         }
 
         mainPane.setCenter(summaryPane);
+        progressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) org.nyusziful.pictureorganizer.UI.StaticTools.beep();});
     }
 
     // <editor-fold defaultstate="collapsed" desc="View Action">
@@ -251,8 +252,6 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
         mainPane.setCenter(comparePane);
-        org.nyusziful.pictureorganizer.UI.StaticTools.beep();
-
     }
 
     private void createMetaTable(Collection<Meta> newData) {
@@ -270,7 +269,6 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
         mainPane.setCenter(tableView);
-        org.nyusziful.pictureorganizer.UI.StaticTools.beep();
     }
 
 
@@ -282,7 +280,7 @@ public class MainController implements Initializable {
         try {
             FXMLLoader loaderTable = new FXMLLoader(getClass().getResource("/fxml/mediaFileTableView.fxml"));
             table = (TableView) loaderTable.load();
-            MediaFileSetTableViewController ctrlTable = loaderTable.getController();
+            MediaFileTableViewController ctrlTable = loaderTable.getController();
             ctrlTable.setMediaFileSet(mediaFileSet);
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/tablePanel.fxml"));
@@ -303,7 +301,6 @@ public class MainController implements Initializable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        org.nyusziful.pictureorganizer.UI.StaticTools.beep();
     }
 
     //Sets the center view to pic stripes

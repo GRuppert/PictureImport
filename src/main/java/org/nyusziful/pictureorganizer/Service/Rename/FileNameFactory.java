@@ -49,7 +49,8 @@ public class FileNameFactory {
      */
     public static Meta getV(String filename) {
         Meta metaFile = null;
-        if (filename.startsWith("V") && filename.substring(2, 3).equals("_")) {
+        if (filename == null) return metaFile;
+        if (filename.startsWith("V") && "_".equals(filename.substring(2, 3))) {
             switch (filename.substring(1, 2)) {
                 case "5":
                     metaFile = getV5(filename);
