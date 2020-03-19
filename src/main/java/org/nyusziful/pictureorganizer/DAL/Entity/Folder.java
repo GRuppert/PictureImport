@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
+import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.nyusziful.pictureorganizer.Service.DriveService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
@@ -13,6 +14,8 @@ import java.util.Collection;
     name = "folder",
     uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "path"})}
 )
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Folder extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

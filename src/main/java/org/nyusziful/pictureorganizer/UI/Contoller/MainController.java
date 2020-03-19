@@ -428,7 +428,7 @@ public class MainController implements Initializable {
     public void itWasImport(Collection<String> directories) {
         Task<Integer> task = new ImportTask(directories);
         statusLabel.setText("");
-        task.setOnFailed(a -> {progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
+        task.setOnFailed(a -> {System.err.println(task.getException()); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
         task.setOnSucceeded(
                 new EventHandler<WorkerStateEvent>() {
                     @Override

@@ -175,6 +175,36 @@ public class MediafileService {
         return mediaFiles;
     }
  */
+    public void readOrganizeFilesInSubFolders(Path path, MainController.ImportTask progress) {
+        Set<MediaFile> mediaFiles = new HashSet<>();
+        Set<MediafileDTO> result = new HashSet<>();
+        Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
+        if (drive == null) return;
+        Folder folder = folderService.getFolder(path);
+        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path);
+        HashMap<String, MediaFile> fileSet = new HashMap<>();
+        HashMap<String, Integer> fileOccasion = new HashMap<>();
+        for (MediaFile file : filesInFolderFromDB) {
+            fileSet.put(file.getFilename().toLowerCase(), file);
+            fileOccasion.put(file.getFilename().toLowerCase(), fileOccasion.getOrDefault(file.getFilename().toLowerCase(), 0) + 1);
+        }
+        final File[] files = path.toFile().listFiles();
+        for (int i = 0; i < files.length; i++) {
+            File file = files[i];
+            switch (fileOccasion.getOrDefault(file.getName().toLowerCase(), 0)) {
+                case 0:
+                    continue;
+                case 1:
+                    fileSet.get(file.getName().toLowerCase());
+                default:
+            }
+        }
+        filesInFolderFromDB.removeAll(mediaFiles);
+        deleteMediaFiles(filesInFolderFromDB);
+        mediaFiles.remove(null);
+        mediaFiles.forEach(mf -> {result.add(getMediafileDTO(mf));});
+        return;
+    }
 
     public Set<MediafileDTO> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, String notes, MainController.ImportTask progress) {
         Set<MediaFile> mediaFiles = new HashSet<>();

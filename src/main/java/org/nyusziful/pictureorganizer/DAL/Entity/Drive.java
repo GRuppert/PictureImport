@@ -1,10 +1,14 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 
+import org.hibernate.annotations.CacheConcurrencyStrategy;
+
 import javax.persistence.*;
 
 @Entity
 @Table(name = "drive")
+@Cacheable
+@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
 public class Drive {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

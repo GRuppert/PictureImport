@@ -31,7 +31,6 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
     @Override
     public MediaFile getByFile(Drive drive, Path path) {
         if (path == null || drive == null) return null;
-        final EntityManager entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
         TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", MediaFile.class);
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path.getParent()));
@@ -45,7 +44,6 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     @Override
     public List<MediaFile> getByPath(Drive drive, Path path) {
-        final EntityManager entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
         TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path like :path", MediaFile.class);
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path) + "%");
