@@ -15,7 +15,7 @@ public class MediaFileTableViewController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableView tableView;
+    private TableView<TableViewMediaFile> tableView;
 
     @FXML
     private TableColumn<TableViewMediaFile, Boolean > processingCol;
@@ -42,4 +42,7 @@ public class MediaFileTableViewController implements Initializable {
     }
 
 
+    public TableView<TableViewMediaFile> getTableView() {
+        return tableView;
+    }
 }

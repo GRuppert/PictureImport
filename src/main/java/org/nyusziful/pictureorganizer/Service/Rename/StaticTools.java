@@ -6,6 +6,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 
 /*
  * To change this license header, choose License Headers in Project Properties.
@@ -65,5 +68,13 @@ public class StaticTools {
         return object != null && !"".equals(object);
     }
 
-    
+    public static BasicFileAttributes getFileAttributes(File file) {
+        BasicFileAttributes attrs = null;
+            try {
+            attrs = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+        } catch (IOException e) {
+        }
+        return attrs;
+    }
+
 }

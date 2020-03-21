@@ -90,7 +90,7 @@ public class MediaFileSet {
             public Collection<TableViewMediaFile> call() {
                 int iterations = 0;
                 int size = MediaFileSet.this.getDataModel().size();
-                Iterator<TableViewMediaFile> iter = MediaFileSet.this.getDataModel().iterator();
+                Iterator<? extends TableViewMediaFile> iter = MediaFileSet.this.getDataModel().iterator();
                 while (iter.hasNext()) {
                     if (isCancelled()) {
                         return tableViewMediaFile;

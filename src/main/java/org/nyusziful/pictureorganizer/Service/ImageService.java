@@ -15,10 +15,10 @@ public class ImageService {
         imageDAO = new ImageDAOImplHib();
     }
 
-    public List<Image> getImages() {
+/*    public List<Image> getImages() {
         List<Image> getImages = imageDAO.getAll();
         return getImages;
-    }
+    }*/
 
     public Image getImage(ImageDTO image) {
         return imageDAO.getImageByHash(image);

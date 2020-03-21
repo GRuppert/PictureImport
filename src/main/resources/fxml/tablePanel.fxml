@@ -6,6 +6,7 @@
 <BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController">
     <top>
         <HBox>
+            <Button fx:id="btnSelected" text="Selected" onAction="#handleSelectedButtonAction"/>
             <Button fx:id="btnAll" text="All" onAction="#handleAllButtonAction"/>
             <Button fx:id="btnNone" text="None" onAction="#handleNoneButtonAction"/>
             <Button fx:id="btnInvert" text="Invert" onAction="#handleInvertButtonAction"/>

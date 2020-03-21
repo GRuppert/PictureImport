@@ -56,4 +56,9 @@ public class Folder extends TrackingEntity {
     public Drive getDrive() {
         return drive;
     }
+
+    @Override
+    public String toString() {
+        return javaPath.toString();
+    }
 }

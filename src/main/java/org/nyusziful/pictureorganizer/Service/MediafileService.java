@@ -6,10 +6,12 @@ import org.nyusziful.pictureorganizer.DAL.Entity.*;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Contoller.MainController;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.ProgressLeakingTask;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,10 +42,10 @@ public class MediafileService {
         mediafileDAO = new MediafileDAOImplHib();
     }
 
-    public List<MediaFile> getMediafiles() {
+/*    public List<MediaFile> getMediafiles() {
         List<MediaFile> getMediafiles = mediafileDAO.getAll();
         return getMediafiles;
-    }
+    }*/
 
     /*
         public MediafileDTO getMediafile(String name) {
@@ -175,35 +177,64 @@ public class MediafileService {
         return mediaFiles;
     }
  */
-    public void readOrganizeFilesInSubFolders(Path path, MainController.ImportTask progress) {
-        Set<MediaFile> mediaFiles = new HashSet<>();
+    public Set<MediafileDTO> reOrganizeFilesInSubFolders(Path path, ProgressLeakingTask progress) {
         Set<MediafileDTO> result = new HashSet<>();
-        Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        if (drive == null) return;
-        Folder folder = folderService.getFolder(path);
+        if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
         List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path);
-        HashMap<String, MediaFile> fileSet = new HashMap<>();
-        HashMap<String, Integer> fileOccasion = new HashMap<>();
-        for (MediaFile file : filesInFolderFromDB) {
-            fileSet.put(file.getFilename().toLowerCase(), file);
-            fileOccasion.put(file.getFilename().toLowerCase(), fileOccasion.getOrDefault(file.getFilename().toLowerCase(), 0) + 1);
+        HashSet<Path> paths = new HashSet<>();
+        try {
+            Files.find(path, Integer.MAX_VALUE,
+                    (filePath, fileAttr) -> fileAttr.isRegularFile() && supportedFileType(filePath.toFile()))
+                    .forEach(paths::add);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        final File[] files = path.toFile().listFiles();
-        for (int i = 0; i < files.length; i++) {
-            File file = files[i];
-            switch (fileOccasion.getOrDefault(file.getName().toLowerCase(), 0)) {
-                case 0:
-                    continue;
-                case 1:
-                    fileSet.get(file.getName().toLowerCase());
-                default:
+        int progressing = 0;
+        progress.updateProgress(progressing, paths.size());
+        HashSet<File> unknownFiles = new HashSet<>();
+        //remove exact matches
+        for (Path path1 : paths) {
+            MediaFile found = null;
+            for (MediaFile mediaFile : filesInFolderFromDB) {
+                if (mediaFile.getFolder().getJavaPath().equals(path1.getParent())) {
+                    found = mediaFile;
+                    break;
+                }
+            }
+            if (found != null) {
+                filesInFolderFromDB.remove(found);
+            } else {
+                unknownFiles.add(path1.toFile());
+            }
+            progressing++;
+            progress.updateProgress(progressing, paths.size() + unknownFiles.size());
+        }
+        //pick the first matching
+        Set<MediaFile> toSave = new HashSet<>();
+        for (File unknownFile : unknownFiles) {
+            progressing++;
+            progress.updateProgress(progressing, paths.size() + unknownFiles.size());
+            MediaFile mediaFile = null;
+            String fileName = unknownFile.getName().toLowerCase();
+            BasicFileAttributes attrs = org.nyusziful.pictureorganizer.Service.Rename.StaticTools.getFileAttributes(unknownFile);
+            final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
+            for (MediaFile potentialMediaFileFromList : filesInFolderFromDB) {
+                if (fileName.equals(potentialMediaFileFromList.getFilename().toLowerCase()) && potentialMediaFileFromList.getSize() == attrs.size() && potentialMediaFileFromList.getDateMod().toInstant().toEpochMilli() == dateMod.toInstant().toEpochMilli()) {
+                    mediaFile = potentialMediaFileFromList;
+                    break;
+                }
+            }
+            if (mediaFile == null) {
+                result.add(getMediafileDTO(readMediaFile(unknownFile)));
+            } else {
+                mediaFile.updateFolder(folderService.getFolder(unknownFile.getParentFile().toPath()));
+                toSave.add(mediaFile);
+                filesInFolderFromDB.remove(mediaFile);
             }
         }
-        filesInFolderFromDB.removeAll(mediaFiles);
+        persistMediaFiles(toSave);
         deleteMediaFiles(filesInFolderFromDB);
-        mediaFiles.remove(null);
-        mediaFiles.forEach(mf -> {result.add(getMediafileDTO(mf));});
-        return;
+        return result;
     }
 
     public Set<MediafileDTO> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, String notes, MainController.ImportTask progress) {
@@ -233,16 +264,15 @@ public class MediafileService {
         return result;
     }
 
+    private MediaFile readMediaFile(File file) {
+        return readMediaFile(file, null, folderService.getFolder(file.getParentFile().toPath()), false, false, CommonProperties.getInstance().getZone(), "");
+    }
+
     private MediaFile readMediaFile(File file, HashMap<String, MediaFile> filesInFolderMap, Folder folder, boolean original, boolean force, ZoneId zone, String notes) {
         if (filesInFolderMap == null) filesInFolderMap = new HashMap<>();
         if (notes == null) notes = "";
         Path filePath = file.toPath();
-        BasicFileAttributes attrs = null;
-        try {
-            attrs = Files.readAttributes(filePath, BasicFileAttributes.class);
-        } catch (IOException e) {
-            return null;
-        }
+        BasicFileAttributes attrs = org.nyusziful.pictureorganizer.Service.Rename.StaticTools.getFileAttributes(file);
         MediaFile actFile = null;
         if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
             Boolean fileOriginal = original;

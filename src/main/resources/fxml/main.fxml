@@ -18,6 +18,7 @@
                 <Button text="Shift" onAction="#handleShiftButtonAction" fx:id="btnShift" />
                 <Button text="Meta" onAction="#handleMetaButtonAction" fx:id="btnMeta" />
                 <Separator orientation="VERTICAL"/>
+                <Button text="Reorganize Directories" onAction="#handleReorgButtonAction" fx:id="btnReorg" />
                 <Button text="Sort to Directories" onAction="#handleMoveButtonAction" fx:id="btnMove" />
                 <Button text="Check folder sturcture" onAction="#handleShowButtonAction" fx:id="btnShow" />
                 <Separator orientation="VERTICAL"/>

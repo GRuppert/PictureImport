@@ -41,6 +41,9 @@ public class TablePanelController implements Initializable {
 
     private MediaFileSet mediaFileSet;
 
+    private TableView<? extends TableViewMediaFile> tableView;
+    
+
     public TablePanelController() {
     }
 
@@ -92,7 +95,9 @@ public class TablePanelController implements Initializable {
 
     @FXML
     private void handleSelectedButtonAction() {
-        mediaFileSet.selectAll();
+        for (TableViewMediaFile f : tableView.getSelectionModel().getSelectedItems()) {
+            f.setProcessing(!f.getProcessing());
+        }
     }
 
     @FXML
@@ -151,4 +156,7 @@ public class TablePanelController implements Initializable {
     }
 
 
+    public void setTableView(TableView<? extends TableViewMediaFile> tableView) {
+        this.tableView = tableView;
+    }
 }

@@ -180,12 +180,8 @@ public class RenameService {
                             v.date == null ||
                             !v.date.isEqual(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFile.getDateStored())
             ) return null;
-
-            final Path path = mediaFile.getFilePath();
-
-            return desiredFileName;
         }
-        return null;
+        return desiredFileName;
     }
 
     public TableViewMediaFile fileToTableViewMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {

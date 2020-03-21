@@ -62,7 +62,7 @@ public class CompareTableViewController implements Initializable {
                                     Scene scene = new Scene(pane);
                                     Stage stage = new Stage();
                                     stage.setScene(scene);
-                                    TableView table = new TableView();
+                                    TableView<? extends TableViewMediaFile> table = new TableView();
                                     table.setEditable(false);
 
                                     TableColumn nameCol = new TableColumn("Field");
@@ -101,7 +101,7 @@ public class CompareTableViewController implements Initializable {
                                             }
                                         }
                                     });
-                                    table.getItems().addAll(input.get(index).getConflicts().toArray());
+//                                    table.getItems().addAll(input.get(index).getConflicts().toArray());
                                     table.getColumns().addAll(nameCol, firstCol, secondCol);
                                     pane.getChildren().add(table);
                                     stage.show();

@@ -90,6 +90,9 @@ public class StaticTools {
         "xlsx"
     };
 
+    public static Boolean supportedFileType(File file) {
+        return supportedFileType(file.getName());
+    }
     public static Boolean supportedFileType(String name) {
         if (supportedMetaFileType(name)) return true;
         if (supportedMediaFileType(name)) return true;

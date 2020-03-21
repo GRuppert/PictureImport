@@ -295,4 +295,13 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     public void remove() {
         setImage(null);
     }
+
+    public void updateFolder(Folder folder) {
+        this.folder = folder;
+    }
+
+    @Override
+    public String toString() {
+        return folder + "\\" + filename;
+    }
 }

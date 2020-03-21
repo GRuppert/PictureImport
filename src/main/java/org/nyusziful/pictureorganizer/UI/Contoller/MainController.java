@@ -9,7 +9,6 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
-import org.hibernate.exception.DataException;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
@@ -24,7 +23,6 @@ import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.Service.Rename.*;
 
 import static java.lang.Integer.*;
 import static org.nyusziful.pictureorganizer.Service.MediafileService.getMediafileDTO;
@@ -33,8 +31,6 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 import org.nyusziful.pictureorganizer.Service.TimeShift.TimeLine;
 
-import java.nio.file.Files;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -58,6 +54,7 @@ import javafx.scene.layout.BorderPane;
 import javax.swing.JOptionPane;
 
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
+import org.nyusziful.pictureorganizer.UI.ProgressLeakingTask;
 
 //Exiftool must be in PATH
 // <2GB file support
@@ -125,7 +122,7 @@ public class MainController implements Initializable {
         }
 
         mainPane.setCenter(summaryPane);
-        progressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) org.nyusziful.pictureorganizer.UI.StaticTools.beep();});
+        progressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) beep();});
     }
 
     // <editor-fold defaultstate="collapsed" desc="View Action">
@@ -146,7 +143,7 @@ public class MainController implements Initializable {
     @FXML
     private void handleShiftButtonAction() {
         disableButtons(true);
-        File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getFromDir());
+        File file = getDir(commonProperties.getFromDir());
         if(file != null) {
             stripesOnScreen(file);
         }
@@ -154,7 +151,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleMetaButtonAction() {
-        File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getFromDir());
+        File file = getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
@@ -165,7 +162,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleRenameButtonAction() {
-        File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getFromDir());
+        File file = getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<>();
             directories.add(file.toString());
@@ -177,7 +174,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleMoveButtonAction() {
-        File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getFromDir());
+        File file = getDir(commonProperties.getFromDir());
         if(file != null) {
             ArrayList<String> directories = new ArrayList<String>();
             directories.add(file.toString());
@@ -185,6 +182,18 @@ public class MainController implements Initializable {
             sortToDateDirectories(directories);
         }
     }
+
+    @FXML
+    private void handleReorgButtonAction() {
+        File file = getDir(commonProperties.getFromDir());
+        if(file != null) {
+            disableButtons(true);
+            showTablePane();
+            reorganizeFolder(file);
+        }
+    }
+
+        
 
     @FXML
     private void handleShowButtonAction() {
@@ -210,7 +219,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleToButtonAction() {
-        File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getToDir().toFile());
+        File file = getDir(commonProperties.getToDir().toFile());
         if (file != null) {
             commonProperties.setToDir(file.toPath());
             setToText(commonProperties.getToDir().toString());
@@ -219,7 +228,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleFromButtonAction() {
-        File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getFromDir());
+        File file = getDir(commonProperties.getFromDir());
         if (file != null) {
             commonProperties.setFromDir(file);
             setFromText(commonProperties.getFromDir().toString());
@@ -255,7 +264,7 @@ public class MainController implements Initializable {
     }
 
     private void createMetaTable(Collection<Meta> newData) {
-        TableView tableView = null;
+        TableView<? extends TableViewMediaFile> tableView = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
                     "/fxml/meta2TableView.fxml"));
@@ -275,7 +284,7 @@ public class MainController implements Initializable {
     //Sets the center view to table format
     private void showTablePane() {
         BorderPane tablePane = null;
-        TableView table = null;
+        TableView<? extends TableViewMediaFile> table = null;
         mediaFileSet.reset();
         try {
             FXMLLoader loaderTable = new FXMLLoader(getClass().getResource("/fxml/mediaFileTableView.fxml"));
@@ -288,6 +297,7 @@ public class MainController implements Initializable {
             tablePane.setCenter(table);
             TablePanelController ctrl = loader.getController();
             ctrl.setMediaFileSet(mediaFileSet);
+            ctrl.setTableView(ctrlTable.getTableView());
             mediaFileSet.getDataModel().addListener(new ListChangeListener<TableViewMediaFile>() {
                 @Override
                 public void onChanged(Change<? extends TableViewMediaFile> c) {
@@ -337,7 +347,7 @@ public class MainController implements Initializable {
     //TODO reads dir:
     //Input processed mediafiles Output dated directory+old filename
     private Collection<RenameMediaFile> sortToDateDirectories(Collection<String> directories) {
-        Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
+        Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
                         return name.endsWith(".mts") || name.endsWith(".arw") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4") || name.endsWith(".dng");
@@ -379,7 +389,7 @@ public class MainController implements Initializable {
 
         @Override
         public Integer call() {
-            Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
+            Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                 public boolean accept(File dir, String name) {
                     return supportedFileType(name);
                 }});
@@ -424,6 +434,61 @@ public class MainController implements Initializable {
         }
     }
 
+    public class ReorganizatorTask extends ProgressLeakingTask<Integer> {
+
+        public ReorganizatorTask(Collection<File> directories) {
+            super(directories);
+        }
+
+        @Override
+        protected Integer call() throws Exception {
+            MediafileService mediafileService = new MediafileService();
+            Set<MediafileDTO> mediaFiles = new HashSet<>();
+            for (File directory : directories) {
+                mediaFiles.addAll(mediafileService.reOrganizeFilesInSubFolders(directory.toPath(), this));
+            }
+            Set<RenameMediaFile> renameMediaFiles = new HashSet<>();
+            for (MediafileDTO mediafileDTO : mediaFiles) {
+                RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", commonProperties.getToDir().toString());
+                renameMediaFiles.add(renameMediaFile);
+                Platform.runLater(new Runnable() {
+                    @Override public void run() {
+                        mediaFileSet.addData(renameMediaFile);
+                    }
+                });
+            }
+            int iter = 0;
+            for (RenameMediaFile renameMediaFile : renameMediaFiles) {
+                final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
+                Platform.runLater(new Runnable() {
+                    @Override public void run() {
+                        renameMediaFile.setNewName(newName);
+                    }
+                });
+            }
+            return mediaFiles.size();
+        }
+    }
+
+    public void reorganizeFolder(File directory) {
+        ReorganizatorTask task = new ReorganizatorTask(Collections.singleton(directory));
+        statusLabel.setText("");
+        task.setOnFailed(a -> {System.err.println(task.getException()); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
+        task.setOnSucceeded(
+                new EventHandler<WorkerStateEvent>() {
+                    @Override
+                    public void handle(WorkerStateEvent t) {
+                        if (task.getValue().intValue() == 0) {
+                            resetAction();
+                        }
+                        statusLabel.setText(task.getValue().intValue() + " file(s) processed.");
+                    }
+                });
+        progressIndicator.progressProperty().bind(task.progressProperty());
+        new Thread(task).start();
+    }
+
+
     //Input mediafiles Output standard
     public void itWasImport(Collection<String> directories) {
         Task<Integer> task = new ImportTask(directories);
@@ -448,7 +513,7 @@ public class MainController implements Initializable {
         Collection<String> directories = defaultImportDirectories();
         Path backupdrive = null;
             if ((backupdrive = Services.backupMounted()) == null) {
-            org.nyusziful.pictureorganizer.UI.StaticTools.errorOut("No backup DriveDTO", new Exception("Attach a backup drive!"));
+            errorOut("No backup DriveDTO", new Exception("Attach a backup drive!"));
             if ((backupdrive = Services.backupMounted()) == null) {
     //                        return;
             }
@@ -458,7 +523,7 @@ public class MainController implements Initializable {
 
     //no mediafile, creates a list of Meta
     private Collection<Meta> fileMetaList(Collection<String> directories, Path target) {
-        Collection<DirectoryElement> directoryElements = org.nyusziful.pictureorganizer.UI.StaticTools.getDirectoryElementsNonRecursive(directories, (File dir, String name) -> org.nyusziful.pictureorganizer.UI.StaticTools.supportedFileType(name));
+        Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
         return ExifService.readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
@@ -472,7 +537,7 @@ public class MainController implements Initializable {
      * Creates a new background task which reads the From directory files' hashes into a list file
      */
     private void createList() {
-        File file = org.nyusziful.pictureorganizer.UI.StaticTools.getDir(commonProperties.getFromDir());
+        File file = getDir(commonProperties.getFromDir());
         File output = getFile(commonProperties.getFromDir());
         int start;
         do {
