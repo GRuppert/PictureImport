@@ -154,8 +154,8 @@ public class MainController implements Initializable {
     private void handleMetaButtonAction() {
         File file = getDir(commonProperties.getFromDir());
         if(file != null) {
-            ArrayList<String> directories = new ArrayList<String>();
-            directories.add(file.toString());
+            ArrayList<File> directories = new ArrayList();
+            directories.add(file);
             Path tempDir = Paths.get(commonProperties.getToDir().toString() + "\\" + file.getName());
             createMetaTable(fileMetaList(directories, tempDir));
         }
@@ -195,8 +195,8 @@ public class MainController implements Initializable {
     private void handleMoveButtonAction() {
         File file = getDir(commonProperties.getFromDir());
         if(file != null) {
-            ArrayList<String> directories = new ArrayList<String>();
-            directories.add(file.toString());
+            ArrayList<File> directories = new ArrayList();
+            directories.add(file);
             showTablePane();
             sortToDateDirectories(directories);
         }
@@ -365,7 +365,7 @@ public class MainController implements Initializable {
 
     //TODO reads dir:
     //Input processed mediafiles Output dated directory+old filename
-    private Collection<RenameMediaFile> sortToDateDirectories(Collection<String> directories) {
+    private Collection<RenameMediaFile> sortToDateDirectories(Collection<File> directories) {
         Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
@@ -409,8 +409,12 @@ public class MainController implements Initializable {
 
         @Override
         public Integer call() {
+            Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
+                public boolean accept(File dir, String name) {
+                    return supportedFileType(name);
+                }});
             processedFiles = 0;
-//            numberOfFiles = directoryElements.size();
+            numberOfFiles = directoryElements.size();
             updateProgress(0, numberOfFiles);
             MediafileService mediafileService = new MediafileService();
             String notes = "";
@@ -522,7 +526,7 @@ public class MainController implements Initializable {
     }*/
 
     //no mediafile, creates a list of Meta
-    private Collection<Meta> fileMetaList(Collection<String> directories, Path target) {
+    private Collection<Meta> fileMetaList(Collection<File> directories, Path target) {
         Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (File dir, String name) -> supportedFileType(name));
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});

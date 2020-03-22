@@ -83,7 +83,7 @@ public class FileNameFactory {
                         if (filename.substring(15 + 1).startsWith(camera)) {
                             return new Meta(filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null, null, -1, null);
                         }
-                errorOut("Not recognized camera", new Exception());
+                //errorOut("Not recognized camera", new Exception());
             } catch (Exception e) {
                 return null;
             }

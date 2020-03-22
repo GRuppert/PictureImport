@@ -296,12 +296,9 @@ public class StaticTools {
         return elements;
     }
 
-    public static Collection<DirectoryElement> getDirectoryElementsNonRecursive(Collection<String> directories, FilenameFilter filenameFilter) {
-        Iterator<String> iter = directories.iterator();
+    public static Collection<DirectoryElement> getDirectoryElementsNonRecursive(Collection<File> directories, FilenameFilter filenameFilter) {
         ArrayList<DirectoryElement> elements = new ArrayList<>();
-        while(iter.hasNext()) {
-            elements.addAll(getDirectoryElementsNonRecursive(new File(iter.next()), filenameFilter));
-        }
+        directories.forEach(f -> elements.addAll(getDirectoryElementsNonRecursive(f, filenameFilter)));
         return elements;
     }
 
