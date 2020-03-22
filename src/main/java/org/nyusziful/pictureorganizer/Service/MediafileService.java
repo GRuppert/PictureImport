@@ -130,9 +130,9 @@ public class MediafileService {
         mediafileService.updateMediafile(mediafile);*/
     }
 
-    public List<MediaFile> getMediaFilesFromPath(Path path) {
+    public List<MediaFile> getMediaFilesFromPath(Path path, boolean recursive) {
         final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        return mediafileDAO.getByPath(localDrive, path);
+        return recursive ?  mediafileDAO.getByPathRec(localDrive, path): mediafileDAO.getByPath(localDrive, path);
     }
 
     public int getVersionNumber(Image image) {
@@ -183,7 +183,7 @@ public class MediafileService {
     public Set<MediafileDTO> reOrganizeFilesInSubFolders(Path path, ProgressLeakingTask progress) {
         Set<MediafileDTO> result = new HashSet<>();
         if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
-        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path);
+        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path, true);
         HashMap<String, MediaFile> pathToMediaFile = new HashMap<>();
         filesInFolderFromDB.forEach(f -> pathToMediaFile.put(f.getFilePath().toString(), f));
         HashSet<Path> paths = new HashSet<>();
@@ -251,7 +251,7 @@ public class MediafileService {
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
         if (drive == null) return result;
         Folder folder = folderService.getFolder(path);
-        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path);
+        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path, false);
         HashMap<String, MediaFile> fileSet = new HashMap<>();
         for (MediaFile file : filesInFolderFromDB) {
             fileSet.put(file.getFilePath().toString().toLowerCase(), file);

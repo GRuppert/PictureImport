@@ -44,6 +44,14 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     @Override
     public List<MediaFile> getByPath(Drive drive, Path path) {
+        TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path=:path", MediaFile.class);
+        typedQuery.setParameter("driveId", drive.getId());
+        typedQuery.setParameter("path", FolderService.winToDataPath(path));
+        return typedQuery.getResultList();
+    }
+
+    @Override
+    public List<MediaFile> getByPathRec(Drive drive, Path path) {
         TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path like :path", MediaFile.class);
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path) + "%");
