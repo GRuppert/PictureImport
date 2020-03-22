@@ -181,6 +181,8 @@ public class MediafileService {
         Set<MediafileDTO> result = new HashSet<>();
         if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
         List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path);
+        HashMap<String, MediaFile> pathToMediaFile = new HashMap<>();
+        filesInFolderFromDB.forEach(f -> pathToMediaFile.put(f.getFilePath().toString(), f));
         HashSet<Path> paths = new HashSet<>();
         try {
             Files.find(path, Integer.MAX_VALUE,
@@ -194,15 +196,18 @@ public class MediafileService {
         HashSet<File> unknownFiles = new HashSet<>();
         //remove exact matches
         for (Path path1 : paths) {
-            MediaFile found = null;
-            for (MediaFile mediaFile : filesInFolderFromDB) {
-                if (mediaFile.getFolder().getJavaPath().equals(path1.getParent())) {
+             MediaFile found = null;
+/*            for (MediaFile mediaFile : filesInFolderFromDB) {
+                if (mediaFile.getFilePath().equals(path1)) {
                     found = mediaFile;
                     break;
                 }
             }
+*/
+            found = pathToMediaFile.get(path1.toString());
             if (found != null) {
                 filesInFolderFromDB.remove(found);
+                pathToMediaFile.remove(path1.toString());
             } else {
                 unknownFiles.add(path1.toFile());
             }

@@ -1,8 +1,10 @@
 package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
+import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
+import org.nyusziful.pictureorganizer.Service.FolderService;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
@@ -31,6 +33,9 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
+        FolderService folderService = new FolderService();
+        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
+        System.out.println(folder);
 //        updateFolder(Paths.get("G:\\Pictures\\Photos"), 1, 0);
 //        updateFolder(Paths.get("D:\\Képek"), drives.get(7), 0, false, "arw", ZoneId.systemDefault());
 

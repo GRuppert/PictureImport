@@ -57,17 +57,14 @@ public class TablePanelController implements Initializable {
                             @Override
                             public void updateItem(LocalDate item, boolean empty) {
                                 super.updateItem(item, empty);
-
-                                if (item.isBefore(
-                                        firstDatePicker.getValue().plusDays(1))
-                                ) {
-                                    setDisable(true);
-                                    setStyle("-fx-background-color: #ffc0cb;");
+                                if (firstDatePicker != null) {
+                                    if (item.isBefore(firstDatePicker.getValue())) {
+                                        setDisable(true);
+                                        setStyle("-fx-background-color: #ffc0cb;");
+                                    }
+                                    long p = ChronoUnit.DAYS.between(firstDatePicker.getValue(), item);
+                                    setTooltip(new Tooltip("Range of " + p + " days"));
                                 }
-                                long p = ChronoUnit.DAYS.between(
-                                        firstDatePicker.getValue(), item
-                                );
-                                setTooltip(new Tooltip("Range of " + p + " days"));
                             }
                         };
                     }
