@@ -14,6 +14,7 @@
                 <Button text="Import" onAction="#handleImportButtonAction" fx:id="btnImport" />
                 <Button text="Import From Directory" onAction="#handleImportFromButtonAction" fx:id="btnImportFrom" />
                 <Button text="Rename" onAction="#handleRenameButtonAction" fx:id="btnRename" />
+                <Button text="Rename Rec." onAction="#handleRenameRecursiveButtonAction" fx:id="btnRenameRec" />
                 <Separator orientation="VERTICAL"/>
                 <Button text="Shift" onAction="#handleShiftButtonAction" fx:id="btnShift" />
                 <Button text="Meta" onAction="#handleMetaButtonAction" fx:id="btnMeta" />

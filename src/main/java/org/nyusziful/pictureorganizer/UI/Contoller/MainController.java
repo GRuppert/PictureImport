@@ -19,6 +19,7 @@ import org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController;
 import org.nyusziful.pictureorganizer.UI.DirectoryElement;
 import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
 import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.RenamingTask;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
@@ -31,6 +32,7 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 import org.nyusziful.pictureorganizer.Service.TimeShift.TimeLine;
 
+import java.nio.file.Files;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -54,7 +56,6 @@ import javafx.scene.layout.BorderPane;
 import javax.swing.JOptionPane;
 
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
-import org.nyusziful.pictureorganizer.UI.ProgressLeakingTask;
 
 //Exiftool must be in PATH
 // <2GB file support
@@ -130,14 +131,14 @@ public class MainController implements Initializable {
     private void handleImportButtonAction() {
         disableButtons(true);
         showTablePane();
-        itWasImport(defaultImportDirectories());
+        ReadFolders(defaultImportDirectories(), true);
     }
 
     @FXML
     private void handleImportFromButtonAction() {
         disableButtons(true);
         showTablePane();
-        itWasImport(importDirectories(getDir(commonProperties.getFromDir())));
+        ReadFolders(importDirectories(getDir(commonProperties.getFromDir())), true);
     }
 
     @FXML
@@ -164,11 +165,29 @@ public class MainController implements Initializable {
     private void handleRenameButtonAction() {
         File file = getDir(commonProperties.getFromDir());
         if(file != null) {
-            ArrayList<String> directories = new ArrayList<>();
-            directories.add(file.toString());
+            ArrayList<File> directories = new ArrayList<>();
+            directories.add(file);
             disableButtons(true);
             showTablePane();
-            itWasImport(directories);
+            ReadFolders(directories, false);
+        }
+    }
+
+    @FXML
+    private void handleRenameRecursiveButtonAction() {
+        File file = getDir(commonProperties.getFromDir());
+        if(file != null) {
+            ArrayList<File> directories = new ArrayList<>();
+            try {
+                Files.walk(file.toPath())
+                        .filter(Files::isDirectory)
+                        .forEach(f -> directories.add(f.toFile()));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            disableButtons(true);
+            showTablePane();
+            ReadFolders(directories, false);
         }
     }
 
@@ -378,28 +397,25 @@ public class MainController implements Initializable {
         return files;
     }
 
-    public class ImportTask extends Task<Integer> {
-        private final Collection<String> directories;
+    public class ReadTask extends RenamingTask<Integer> {
         private int numberOfFiles;
         private int processedFiles;
+        private boolean original;
 
-        public ImportTask(Collection<String> directories) {
-            this.directories = directories;
+        public ReadTask(Collection<File> directories, boolean original) {
+            super(directories);
+            this.original = original;
         }
 
         @Override
         public Integer call() {
-            Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
-                public boolean accept(File dir, String name) {
-                    return supportedFileType(name);
-                }});
             processedFiles = 0;
-            numberOfFiles = directoryElements.size();
+//            numberOfFiles = directoryElements.size();
             updateProgress(0, numberOfFiles);
             MediafileService mediafileService = new MediafileService();
             String notes = "";
-            for (String directory : directories) {
-                final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(Paths.get(directory), true, false, commonProperties.getZone(), notes, this);
+            for (File directory : directories) {
+                final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), original, false, commonProperties.getZone(), notes, this);
                 Set<RenameMediaFile> renameMediaFiles = new HashSet<>();
                 for (MediafileDTO mediafileDTO : mediaFiles) {
                     RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", notes, commonProperties.getToDir().toString());
@@ -410,15 +426,7 @@ public class MainController implements Initializable {
                         }
                     });
                 }
-                int iter = 0;
-                for (RenameMediaFile renameMediaFile : renameMediaFiles) {
-                    final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
-                    Platform.runLater(new Runnable() {
-                        @Override public void run() {
-                            renameMediaFile.setNewName(newName);
-                        }
-                    });
-                }
+                createNewName(renameMediaFiles);
             }
             Platform.runLater(new Runnable() {
                 @Override public void run() {
@@ -434,7 +442,7 @@ public class MainController implements Initializable {
         }
     }
 
-    public class ReorganizatorTask extends ProgressLeakingTask<Integer> {
+    public class ReorganizatorTask extends RenamingTask<Integer> {
 
         public ReorganizatorTask(Collection<File> directories) {
             super(directories);
@@ -457,15 +465,7 @@ public class MainController implements Initializable {
                     }
                 });
             }
-            int iter = 0;
-            for (RenameMediaFile renameMediaFile : renameMediaFiles) {
-                final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
-                Platform.runLater(new Runnable() {
-                    @Override public void run() {
-                        renameMediaFile.setNewName(newName);
-                    }
-                });
-            }
+            createNewName(renameMediaFiles);
             return mediaFiles.size();
         }
     }
@@ -490,8 +490,8 @@ public class MainController implements Initializable {
 
 
     //Input mediafiles Output standard
-    public void itWasImport(Collection<String> directories) {
-        Task<Integer> task = new ImportTask(directories);
+    public void ReadFolders(Collection<File> directories, boolean original) {
+        Task<Integer> task = new ReadTask(directories, original);
         statusLabel.setText("");
         task.setOnFailed(a -> {System.err.println(task.getException()); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
         task.setOnSucceeded(
@@ -518,7 +518,7 @@ public class MainController implements Initializable {
     //                        return;
             }
         }
-        return itWasImport(directories);
+        return ReadFolders(directories);
     }*/
 
     //no mediafile, creates a list of Meta

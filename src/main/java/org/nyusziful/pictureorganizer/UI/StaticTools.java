@@ -35,7 +35,7 @@ public class StaticTools {
     public static DateTimeFormatter MP4DateFormatTZ = DateTimeFormatter.ofPattern("E MMM dd HH:mm:ss XXX yyyy");//Do Sep 06 20:36:46 +02:00 2018
 
     public static void main(String[] args) {
-        final Collection<String> strings = importDirectories(new File("E:\\work\\DATA\\FolderTest"));
+        final Collection<File> strings = importDirectories(new File("E:\\work\\DATA\\FolderTest"));
         DateTimeFormatter MP4DateFormatTZ = DateTimeFormatter.ofPattern("E MMM dd HH:mm:ss XXX yyyy");//Do Sep 06 20:36:46 +02:00 2018
         ZonedDateTime zdt = ZonedDateTime.of ( LocalDate.of ( 2018 , 9 , 6 ) , LocalTime.of ( 20 , 36, 46 ) , ZoneId.systemDefault() );
         String zdtString = MP4DateFormatTZ.format(zdt);
@@ -143,11 +143,11 @@ public class StaticTools {
      * Creates a List with the predefined standard directories on recognized volumes
      * @return a List of String which are the default on the recognized media
      */
-    public static Collection<String> defaultImportDirectories() {
+    public static Collection<File> defaultImportDirectories() {
         File[] paths;
         FileSystemView fsv = FileSystemView.getFileSystemView();
         paths = File.listRoots();
-        Set<String> results = new HashSet<>();
+        Set<File> results = new HashSet<>();
         for(File path:paths) {
             String desc = fsv.getSystemTypeDescription(path);
             if (desc.startsWith("USB") || desc.startsWith("SD")) results.addAll(importDirectories(path));
@@ -155,9 +155,9 @@ public class StaticTools {
         return results;
     }
 
-    public static Collection<String> importDirectories(File folder) {
+    public static Collection<File> importDirectories(File folder) {
         boolean valid = true;
-        Set<String> resultDirs = new HashSet<>();
+        Set<File> resultDirs = new HashSet<>();
         if (folder == null || !folder.isDirectory()) return resultDirs;
         String absolutePath = folder.getAbsolutePath();
         if (absolutePath.endsWith("\\")) absolutePath = absolutePath.substring(0, absolutePath.length()-1);
@@ -171,10 +171,10 @@ public class StaticTools {
         }
         if (valid) {
             for (File subdir:new File(absolutePath+Sony[0]).listFiles((File dir, String name) -> dir.isDirectory())) {
-                resultDirs.add(subdir.toString());
+                resultDirs.add(subdir);
             }
-            resultDirs.add(absolutePath+Sony[1]);
-            resultDirs.add(absolutePath+Sony[2]);
+            resultDirs.add(new File(absolutePath+Sony[1]));
+            resultDirs.add(new File(absolutePath+Sony[2]));
         }
         return resultDirs;
     }

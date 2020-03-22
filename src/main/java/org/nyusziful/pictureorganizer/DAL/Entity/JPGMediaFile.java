@@ -18,11 +18,14 @@ public class JPGMediaFile extends MediaFile {
 
     public JPGMediaFile(Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
         super(folder, path, size, dateMod, original);
+        exifbackup = checkBackupExif();
+/*
         if (original) {
             exifbackup = addExifbackup();
         } else {
             exifbackup = checkBackupExif();
         }
+*/
     }
 
     public JPGMediaFile(JPGMediaFile jpgMediaFile) {
@@ -68,10 +71,8 @@ public class JPGMediaFile extends MediaFile {
     @Override
     public Object clone() throws CloneNotSupportedException {
         JPGMediaFile jpgMediaFile = (JPGMediaFile)super.clone();
-/*
         jpgMediaFile.exifbackup = this.isExifbackup();
         jpgMediaFile.standalone = this.isStandalone();
-*/
         return jpgMediaFile;
     }
 

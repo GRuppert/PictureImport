@@ -29,9 +29,7 @@ public class RAWMediaFile extends MediaFile {
     @Override
     public Object clone() throws CloneNotSupportedException {
         RAWMediaFile rawMediaFile = (RAWMediaFile)super.clone();
-/*
         rawMediaFile.XMPattached = this.isXMPattached();
-*/
         return rawMediaFile;
     }
 

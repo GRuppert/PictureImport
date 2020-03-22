@@ -66,7 +66,9 @@ public class MediafileService {
 
     public MediaFile getMediaFile(MediafileDTO mediafileDTO) {
         Path path = Paths.get(mediafileDTO.abolutePath);
-        return getMediaFile(path);
+        final MediaFile mediaFile = getMediaFile(path);
+        mediaFile.setOriginal(mediafileDTO.isOriginal);
+        return mediaFile;
     }
 
     public MediafileDTO getMediafileDTO(MediaFile mediafile) {
@@ -78,6 +80,7 @@ public class MediafileService {
             mediafileDTO.dateMod = mediafile.getDateMod();
             mediafileDTO.fileHash = mediafile.getFilehash();
             mediafileDTO.size = mediafile.getSize();
+            mediafileDTO.isOriginal = Boolean.TRUE.equals(mediafile.isOriginal());
         }
         return mediafileDTO;
     }
@@ -158,7 +161,7 @@ public class MediafileService {
             mediaFile.setOriginal(true);
             return true;
         } else {
-            if (!origFileName.equals(image.getOriginalFilename()) || !mediaFile.getFilehash().equals(image.getOriginalFileHash()) || (!mediaFile.getDateStored().isEqual(image.getDateTaken()) && !mediaFile.getDateStored().isEqual(image.getDateCorrected()))) {
+            if (!origFileName.equals(image.getOriginalFilename()) || !mediaFile.getFilehash().equals(image.getOriginalFileHash()) || (!mediaFile.getDateStored().isEqual(image.getDateTaken()) && !mediaFile.getDateStored().isEqual(image.getActualDate()))) {
                 throw new Exception("Mismatch");
             }
         }
@@ -242,7 +245,7 @@ public class MediafileService {
         return result;
     }
 
-    public Set<MediafileDTO> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, String notes, MainController.ImportTask progress) {
+    public Set<MediafileDTO> readMediaFilesFromFolder(Path path, boolean original, boolean force, ZoneId zone, String notes, MainController.ReadTask progress) {
         Set<MediaFile> mediaFiles = new HashSet<>();
         Set<MediafileDTO> result = new HashSet<>();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
@@ -292,9 +295,6 @@ public class MediafileService {
                 final String name = filePath.getFileName().toString();
                 if (supportedRAWFileType(name)) {
                     actFile = new RAWMediaFile(folder, filePath, fileSize, dateMod, original);
-                    if (!((RAWMediaFile) actFile).isXMPattached()) {
-                        ((RAWMediaFile) actFile).setXMPattached(createXmp(filePath.toFile()) != null);
-                    }
                 } else if (supportedJPGFileType(name)) {
                     actFile = new JPGMediaFile(folder, filePath, fileSize, dateMod, original);
                 } else {
@@ -302,10 +302,9 @@ public class MediafileService {
                 }
             } else {
                 fileOriginal = !Boolean.FALSE.equals(fileOriginal) && !Boolean.FALSE.equals(actFile.isOriginal()) && !(fileOriginal == null && actFile.isOriginal() == null);
-                if (fileOriginal) {
-                    if (actFile instanceof JPGMediaFile && !((JPGMediaFile) actFile).isExifbackup()) {
-                        if (((JPGMediaFile) actFile).addExifbackup()) fileToSave = true;
-                    }
+                if (!fileOriginal.equals(actFile.isOriginal())) {
+                    actFile.setOriginal(fileOriginal);
+                    fileToSave = true;
                 }
             }
             if (force || actFile.getId() < 0 || actFile.getSize() != fileSize || actFile.getDateMod().compareTo(dateMod) != 0) {
@@ -368,6 +367,14 @@ public class MediafileService {
 //                mediaFile = readMediaFile(newPath.toFile(), null, folder, mediaFile.isOriginal(), false, mediaFile.getDateStored().getZone(), null);
             }
             mediaFile.moveFile(folder, newPath);
+
+            if (mediaFile instanceof JPGMediaFile && mediaFile.isOriginal() && !((JPGMediaFile) mediaFile).isExifbackup()) {
+                ((JPGMediaFile) mediaFile).addExifbackup();
+            }
+            if (mediaFile instanceof RAWMediaFile && !((RAWMediaFile) mediaFile).isXMPattached()) {
+                ((RAWMediaFile) mediaFile).setXMPattached(createXmp(mediaFile.getFilePath().toFile()) != null);
+            }
+
             persistMediaFiles(mediaFile);
         }
 

@@ -8,6 +8,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
+import org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile;
+import org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFile;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
@@ -21,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 
 public class MediaFileSet {
