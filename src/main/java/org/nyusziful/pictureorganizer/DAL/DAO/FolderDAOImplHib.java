@@ -13,6 +13,8 @@ import java.util.List;
 public class FolderDAOImplHib extends CRUDDAOImpHib<Folder> implements FolderDAO {
     @Override
     public Folder getFolderByPath(Drive drive, Path path) {
+        if (path == null || drive == null) return null;
+        EntityManager entityManager = factory.createEntityManager();
         TypedQuery<Folder> typedQuery = entityManager.createQuery("SELECT i from Folder i WHERE i.drive.id=:driveId and i.path =:path", Folder.class);
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path));

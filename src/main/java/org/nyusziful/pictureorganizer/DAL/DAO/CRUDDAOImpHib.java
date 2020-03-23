@@ -4,6 +4,7 @@ import org.hibernate.Session;
 import org.nyusziful.pictureorganizer.DAL.HibConnection;
 
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.criteria.CriteriaQuery;
 import java.lang.reflect.ParameterizedType;
@@ -12,14 +13,14 @@ import java.util.List;
 public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     private Class<T> entityBeanType;
     protected HibConnection hibConnection;
-    protected EntityManager entityManager;
+    protected static EntityManagerFactory factory;
+//           = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME)    protected HibConnection hibConnection;
 
     public CRUDDAOImpHib() {
         this.entityBeanType = ((Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
         hibConnection = HibConnection.getInstance();
-        entityManager = hibConnection.getCurrentSession().getEntityManagerFactory().createEntityManager();
+        factory = hibConnection.getCurrentSession().getEntityManagerFactory();
     }
-
 
     @Override
     public List<T> getAll() {
@@ -35,6 +36,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     }
 
     public void persist(final T item) {
+        EntityManager entityManager = factory.createEntityManager();
         EntityTransaction transaction = null;
         try{
             transaction = entityManager.getTransaction();
@@ -48,17 +50,16 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 //                log.error("Couldn’t roll back transaction", rbe);
             }
             throw e;
-/*
         }finally{
-            if(session!=null){
-                session.close();
+            if(entityManager!=null){
+                entityManager.close();
             }
-*/
         }
     }
 
     @Override
     public T merge(final T o)   {
+        EntityManager entityManager = factory.createEntityManager();
         EntityTransaction transaction = null;
         try{
             transaction = entityManager.getTransaction();
@@ -74,18 +75,16 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 //                log.error("Couldn’t roll back transaction", rbe);
             }
             throw e;
-/*
         }finally{
-            if(session!=null){
-                session.close();
+            if(entityManager!=null){
+                entityManager.close();
             }
-*/
         }
     }
 
     @Override
     public void delete(final T item){
-//        hibConnection.getCurrentSession().delete(item);
+        EntityManager entityManager = factory.createEntityManager();
         EntityTransaction transaction = null;
         try{
             transaction = entityManager.getTransaction();
@@ -99,14 +98,12 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 //                log.error("Couldn’t roll back transaction", rbe);
             }
             throw e;
-/*
-        }finally{
-            if(session!=null){
-                session.close();
-            }
-*/
-        }
 
+        }finally{
+            if(entityManager!=null){
+                entityManager.close();
+            }
+        }
     }
 
     @Override
