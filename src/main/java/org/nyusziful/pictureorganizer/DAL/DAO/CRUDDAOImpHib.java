@@ -26,10 +26,9 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     @Override
     public List<T> getAll() {
         Session session = hibConnection.getCurrentSession();
-        Transaction tx = null;
+        Transaction tx = session.getTransaction();
         List<T> result = null;
         try {
-            tx = session.beginTransaction();
             CriteriaQuery<T> criteriaQuery = session.getCriteriaBuilder().createQuery(entityBeanType);
             criteriaQuery.from(entityBeanType);
             result = session.createQuery(criteriaQuery).getResultList();
@@ -47,7 +46,21 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public T getById(final int id){
-        return (T) hibConnection.getCurrentSession().get(entityBeanType, id);
+        Session session = hibConnection.getCurrentSession();
+        Transaction tx = session.getTransaction();
+        T result = null;
+        try {
+            result = session.get(entityBeanType, id);
+            tx.commit();
+        }
+        catch (Exception e) {
+            if (tx!=null) tx.rollback();
+            throw e;
+        }
+        finally {
+            session.close();
+        }
+        return result;
     }
 
     public void persist(final T item) {

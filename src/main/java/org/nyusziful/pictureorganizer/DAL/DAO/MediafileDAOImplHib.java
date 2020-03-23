@@ -73,10 +73,9 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     public List<String> getByHash(String hash, int driveId) {
         Session session = hibConnection.getCurrentSession();
-        Transaction tx = null;
+        Transaction tx = session.getTransaction();
         List<String> list = null;
         try {
-            tx = session.beginTransaction();
             list = session.createSQLQuery("SELECT distinct(filename) FROM picture.media_file WHERE image_id_oldtodel = '" + hash + "' and drive_id = " + driveId).list();
             tx.commit();
         }
