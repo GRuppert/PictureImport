@@ -19,6 +19,7 @@ public class FolderDAOImplHib extends CRUDDAOImpHib<Folder> implements FolderDAO
         typedQuery.setParameter("driveId", drive.getId());
         typedQuery.setParameter("path", FolderService.winToDataPath(path));
         List<Folder> results = typedQuery.getResultList();
+        entityManager.close();
         if (!results.isEmpty())
             return results.get(0);
         else

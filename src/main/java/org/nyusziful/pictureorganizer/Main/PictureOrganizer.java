@@ -7,6 +7,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
+import org.nyusziful.pictureorganizer.DAL.HibConnection;
 
 import static javafx.application.Application.launch;
 
@@ -45,6 +46,7 @@ public class PictureOrganizer extends Application {
     @Override
     public void stop() throws Exception {
         CommonProperties.getInstance().save();
+        HibConnection.getInstance().shutdown();
     }
 
     /**

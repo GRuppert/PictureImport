@@ -16,6 +16,7 @@ public class ImageDAOImplHib extends CRUDDAOImpHib<Image> implements ImageDAO {
         typedQuery.setParameter("hash", image.hash);
         typedQuery.setParameter("type", image.type);
         List<Image> results = typedQuery.getResultList();
+        entityManager.close();
         if (!results.isEmpty())
             return results.get(0);
         else

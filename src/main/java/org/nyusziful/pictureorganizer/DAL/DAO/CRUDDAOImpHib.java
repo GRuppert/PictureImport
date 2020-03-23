@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.hibernate.Session;
+import org.hibernate.Transaction;
 import org.nyusziful.pictureorganizer.DAL.HibConnection;
 
 import javax.persistence.EntityManager;
@@ -25,9 +26,23 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     @Override
     public List<T> getAll() {
         Session session = hibConnection.getCurrentSession();
-        CriteriaQuery<T> criteriaQuery = session.getCriteriaBuilder().createQuery(entityBeanType);
-        criteriaQuery.from(entityBeanType);
-        return session.createQuery(criteriaQuery).getResultList();
+        Transaction tx = null;
+        List<T> result = null;
+        try {
+            tx = session.beginTransaction();
+            CriteriaQuery<T> criteriaQuery = session.getCriteriaBuilder().createQuery(entityBeanType);
+            criteriaQuery.from(entityBeanType);
+            result = session.createQuery(criteriaQuery).getResultList();
+            tx.commit();
+        }
+        catch (Exception e) {
+            if (tx!=null) tx.rollback();
+            throw e;
+        }
+        finally {
+            session.close();
+        }
+        return result;
     }
 
     @Override
