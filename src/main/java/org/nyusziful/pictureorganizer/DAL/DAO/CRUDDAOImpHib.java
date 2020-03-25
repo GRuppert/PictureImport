@@ -1,13 +1,12 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 import org.nyusziful.pictureorganizer.DAL.HibConnection;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.criteria.CriteriaQuery;
+import javax.persistence.criteria.Root;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
 
@@ -16,6 +15,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     protected HibConnection hibConnection;
     protected static EntityManagerFactory factory;
 //           = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME)    protected HibConnection hibConnection;
+    EntityManager entityManager;
 
     public CRUDDAOImpHib() {
         this.entityBeanType = ((Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
@@ -23,54 +23,32 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
         factory = hibConnection.getCurrentSession().getEntityManagerFactory();
     }
 
+    private EntityManager getEntityManager() {
+        if (entityManager == null || !entityManager.isOpen()) {
+            entityManager = factory.createEntityManager();
+        }
+        EntityTransaction transaction = entityManager.getTransaction();
+        if (transaction == null || !transaction.isActive())
+            transaction.begin();
+        return entityManager;
+    }
+
     @Override
     public List<T> getAll() {
-        Session session = hibConnection.getCurrentSession();
-        Transaction tx = session.getTransaction();
-        List<T> result = null;
-        try {
-            CriteriaQuery<T> criteriaQuery = session.getCriteriaBuilder().createQuery(entityBeanType);
-            criteriaQuery.from(entityBeanType);
-            result = session.createQuery(criteriaQuery).getResultList();
-            tx.commit();
-        }
-        catch (Exception e) {
-            if (tx!=null) tx.rollback();
-            throw e;
-        }
-        finally {
-            session.close();
-        }
-        return result;
+        return getAll(false);
     }
 
     @Override
-    public T getById(final int id){
-        Session session = hibConnection.getCurrentSession();
-        Transaction tx = session.getTransaction();
-        T result = null;
-        try {
-            result = session.get(entityBeanType, id);
-            tx.commit();
-        }
-        catch (Exception e) {
-            if (tx!=null) tx.rollback();
-            throw e;
-        }
-        finally {
-            session.close();
-        }
-        return result;
-    }
-
-    public void persist(final T item) {
-        EntityManager entityManager = factory.createEntityManager();
-        EntityTransaction transaction = null;
+    public List<T> getAll(boolean batch) {
+        EntityManager entityManager = getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        List<T> result = null;
         try{
-            transaction = entityManager.getTransaction();
-            transaction.begin();
-            entityManager.persist(item);
-            transaction.commit();
+            CriteriaQuery<T> criteria = entityManager.getCriteriaBuilder().createQuery( entityBeanType );
+            Root<T> cat = criteria.from( entityBeanType );
+            criteria.select( cat );
+            result = entityManager.createQuery( criteria ).getResultList();
+            if (!batch) transaction.commit();
         }catch(RuntimeException e){
             try{
                 transaction.rollback();
@@ -79,22 +57,78 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
             }
             throw e;
         }finally{
-            if(entityManager!=null){
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public T getById(final int id){
+        return getById(id, false);
+    }
+
+    @Override
+    public T getById(final int id, boolean batch){
+        EntityManager entityManager = getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        T result = null;
+        try{
+            result = entityManager.find(entityBeanType, id);
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+        return result;
+    }
+
+    public void persist(final T item) {
+        persist(item, false);
+    }
+
+    public void persist(final T item, boolean batch) {
+        EntityManager entityManager = getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        try{
+            entityManager.persist(item);
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
                 entityManager.close();
             }
         }
     }
 
     @Override
-    public T merge(final T o)   {
-        EntityManager entityManager = factory.createEntityManager();
-        EntityTransaction transaction = null;
+    public T merge(final T item)   {
+        return merge(item, false);
+    }
+
+    @Override
+    public T merge(final T item, boolean batch)   {
+        EntityManager entityManager = getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        T result = null;
         try{
-            transaction = entityManager.getTransaction();
-            transaction.begin();
-            Object res = entityManager.merge(o);
-            transaction.commit();
-            return (T) res;
+            result = entityManager.merge(item);
+            if (!batch) transaction.commit();
         }catch(RuntimeException e){
             try{
                 transaction.rollback();
@@ -104,21 +138,25 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
             }
             throw e;
         }finally{
-            if(entityManager!=null){
+            if(entityManager!=null && !batch){
                 entityManager.close();
             }
         }
+        return (T) result;
     }
 
     @Override
     public void delete(final T item){
-        EntityManager entityManager = factory.createEntityManager();
-        EntityTransaction transaction = null;
+        delete(item, false);
+    }
+
+    @Override
+    public void delete(final T item, boolean batch){
+        EntityManager entityManager = getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
         try{
-            transaction = entityManager.getTransaction();
-            transaction.begin();
             entityManager.remove(item);
-            transaction.commit();
+            if (!batch) transaction.commit();
         }catch(RuntimeException e){
             try{
                 transaction.rollback();
@@ -128,15 +166,20 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
             throw e;
 
         }finally{
-            if(entityManager!=null){
+            if(entityManager!=null && !batch){
                 entityManager.close();
             }
         }
     }
 
     @Override
+    public void close() {
+        HibConnection.getInstance().getCurrentSession().close();
+    }
+
+    @Override
     public void flush() {
-        HibConnection.getInstance().getCurrentSession().flush();
+        getEntityManager().flush();
     }
 
 }
