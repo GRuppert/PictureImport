@@ -8,4 +8,5 @@ import java.nio.file.Path;
 
 public interface FolderDAO extends CRUDDAO<Folder> {
     public Folder getFolderByPath(Drive drive, Path path);
+    public Folder getFolderByPath(Drive drive, Path path, boolean batch);
 }

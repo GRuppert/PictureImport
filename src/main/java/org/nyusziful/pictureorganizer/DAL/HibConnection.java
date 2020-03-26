@@ -6,10 +6,16 @@ import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.registry.StandardServiceRegistry;
 import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 
+import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
+import javax.persistence.EntityTransaction;
+
 public class HibConnection {
     private Session currentSession;
     private SessionFactory sessionFactory = null;
     private static HibConnection instance = null;
+    private EntityManager entityManager;
+    private static EntityManagerFactory factory;
 
     public SessionFactory getSessionFactory() {
         return sessionFactory;
@@ -21,6 +27,18 @@ public class HibConnection {
         }
         return instance;
     }
+
+    public EntityManager getEntityManager() {
+        if (entityManager == null || !entityManager.isOpen()) {
+            entityManager = factory.createEntityManager();
+        }
+        EntityTransaction transaction = entityManager.getTransaction();
+        if (transaction == null || !transaction.isActive())
+            transaction.begin();
+        return entityManager;
+    }
+
+
 
     private HibConnection() {
         if (getSessionFactory() == null) {
@@ -35,6 +53,8 @@ public class HibConnection {
                 System.out.println(e.getMessage());
                 StandardServiceRegistryBuilder.destroy( registry );
             }
+            factory = getCurrentSession().getEntityManagerFactory();
+
 /*
             Configuration configuration = new Configuration().configure();
             StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder()

@@ -13,24 +13,11 @@ import java.util.List;
 public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     private Class<T> entityBeanType;
     protected HibConnection hibConnection;
-    protected static EntityManagerFactory factory;
 //           = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME)    protected HibConnection hibConnection;
-    EntityManager entityManager;
 
     public CRUDDAOImpHib() {
         this.entityBeanType = ((Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
         hibConnection = HibConnection.getInstance();
-        factory = hibConnection.getCurrentSession().getEntityManagerFactory();
-    }
-
-    private EntityManager getEntityManager() {
-        if (entityManager == null || !entityManager.isOpen()) {
-            entityManager = factory.createEntityManager();
-        }
-        EntityTransaction transaction = entityManager.getTransaction();
-        if (transaction == null || !transaction.isActive())
-            transaction.begin();
-        return entityManager;
     }
 
     @Override
@@ -40,7 +27,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public List<T> getAll(boolean batch) {
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = hibConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<T> result = null;
         try{
@@ -71,7 +58,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public T getById(final int id, boolean batch){
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = hibConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         T result = null;
         try{
@@ -97,7 +84,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
     }
 
     public void persist(final T item, boolean batch) {
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = hibConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         try{
             entityManager.persist(item);
@@ -123,7 +110,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public T merge(final T item, boolean batch)   {
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = hibConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         T result = null;
         try{
@@ -152,7 +139,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public void delete(final T item, boolean batch){
-        EntityManager entityManager = getEntityManager();
+        EntityManager entityManager = hibConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         try{
             entityManager.remove(item);
@@ -179,7 +166,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public void flush() {
-        getEntityManager().flush();
+        hibConnection.getEntityManager().flush();
     }
 
 }

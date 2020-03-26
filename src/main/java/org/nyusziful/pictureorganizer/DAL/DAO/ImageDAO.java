@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface ImageDAO extends CRUDDAO<Image> {
     public Image getImageByHash(ImageDTO imageDTO);
+    public Image getImageByHash(ImageDTO imageDTO, boolean batch);
 }
