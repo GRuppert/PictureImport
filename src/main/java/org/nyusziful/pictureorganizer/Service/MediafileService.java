@@ -312,7 +312,7 @@ public class MediafileService {
                 actFile.setSize(fileSize);
                 ImageDTO imageDTO = getHash(filePath.toFile());
                 Image image;
-                image = imageService.getImage(imageDTO, true);
+                image = imageService.getImage(imageDTO);
                 if (image == null) {
                     image = new Image(imageDTO.hash, imageDTO.type);
                     imageToSave = true;
@@ -337,7 +337,7 @@ public class MediafileService {
                 }
             }
             if (imageToSave) {
-                imageService.persistImage(actFile.getImage(), true);
+                imageService.saveImage(actFile.getImage(), true);
             }
             if (fileToSave) {
                 persistMediaFiles(actFile, true);

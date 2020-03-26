@@ -6,6 +6,7 @@ import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 public class ImageService {
@@ -28,16 +29,24 @@ public class ImageService {
         throw new java.lang.UnsupportedOperationException("Not implemented");
     }
 
+    public void saveImage(Image image) {
+        saveImage(image, false);
+    }
+
+    public void saveImage(Image image, boolean batch) {
+        saveImage(Collections.singleton(image), batch);
+    }
+
     public void persistImage(Image image) {
         imageDAO.persist(image);
     }
 
-    public void persistImage(Collection<Image> images) {
+    public void saveImage(Collection<Image> images, boolean batch) {
         for (Image image: images) {
             if (image.getId() > -1)
-                imageDAO.merge(image);
+                imageDAO.merge(image, batch);
             else
-                imageDAO.persist(image);
+                imageDAO.persist(image, batch);
         }
     }
 

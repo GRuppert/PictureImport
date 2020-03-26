@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
+import org.hibernate.Hibernate;
 
 import javax.persistence.*;
 import java.nio.file.Path;
