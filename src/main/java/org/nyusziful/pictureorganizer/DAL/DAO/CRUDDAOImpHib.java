@@ -161,7 +161,8 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public void close() {
-        HibConnection.getInstance().getCurrentSession().close();
+        hibConnection.getEntityManager().getTransaction().commit();
+        hibConnection.getCurrentSession().close();
     }
 
     @Override

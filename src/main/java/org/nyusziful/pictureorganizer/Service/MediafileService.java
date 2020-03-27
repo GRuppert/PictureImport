@@ -94,16 +94,24 @@ public class MediafileService {
         return mediafileDTO;
     }
 
-    public void persistMediaFiles(MediaFile mediafile) {
-        persistMediaFiles(Collections.singleton(mediafile));
+    public void saveMediaFiles(MediaFile mediafile) {
+        saveMediaFiles(mediafile, false);
     }
 
-    public void persistMediaFiles(Collection<? extends MediaFile> mediaFiles) {
+    private void saveMediaFiles(MediaFile mediafile, boolean batch) {
+        saveMediaFiles(Collections.singleton(mediafile), batch);
+    }
+
+    public void saveMediaFiles(Collection<? extends MediaFile> mediaFiles) {
+        saveMediaFiles(mediaFiles, false);
+    }
+
+    public void saveMediaFiles(Collection<? extends MediaFile> mediaFiles, boolean batch) {
         for (MediaFile file : mediaFiles) {
             if (file.getId() > -1)
-                mediafileDAO.merge(file);
+                mediafileDAO.merge(file, batch);
             else
-                mediafileDAO.persist(file);
+                mediafileDAO.persist(file, batch);
         }
     }
 
@@ -240,7 +248,7 @@ public class MediafileService {
                 filesInFolderFromDB.remove(mediaFile);
             }
         }
-        persistMediaFiles(toSave);
+        saveMediaFiles(toSave);
         deleteMediaFiles(filesInFolderFromDB);
         return result;
     }
@@ -284,8 +292,7 @@ public class MediafileService {
         MediaFile actFile = null;
         if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
             Boolean fileOriginal = original;
-            boolean fileToSave = false;
-            boolean imageToSave = false;
+            Set<String> whatToSave = new HashSet<>();
             actFile = filesInFolderMap.get(filePath.toString().toLowerCase());
             assert folder != null;
             final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
@@ -304,7 +311,7 @@ public class MediafileService {
                 fileOriginal = !Boolean.FALSE.equals(fileOriginal) && !Boolean.FALSE.equals(actFile.isOriginal()) && !(fileOriginal == null && actFile.isOriginal() == null);
                 if (!fileOriginal.equals(actFile.isOriginal())) {
                     actFile.setOriginal(fileOriginal);
-                    fileToSave = true;
+                    whatToSave.add("file");
                 }
             }
             if (force || actFile.getId() < 0 || actFile.getSize() != fileSize || actFile.getDateMod().compareTo(dateMod) != 0) {
@@ -315,7 +322,7 @@ public class MediafileService {
                 image = imageService.getImage(imageDTO);
                 if (image == null) {
                     image = new Image(imageDTO.hash, imageDTO.type);
-                    imageToSave = true;
+                    whatToSave.add("image");
                 }
                 final String fullHash = getFullHash(filePath.toFile());
                 Meta meta = ExifService.readMeta(filePath.toFile(), zone);
@@ -325,27 +332,33 @@ public class MediafileService {
                 actFile.setDateStored(meta.date);
                 actFile.setImage(image);
                 actFile.setFilehash(fullHash);
-                fileToSave = true;
+                whatToSave.add("file");
             }
             if (Boolean.TRUE.equals(fileOriginal)) {
                 try {
                     final boolean updated = updateOriginalImage(actFile);
-                    fileToSave = fileToSave || updated;
-                    if (updated) imageToSave = true;
+                    if (updated) {
+                        whatToSave.add("file");
+                        whatToSave.add("image");
+                    }
                 } catch (Exception e) {
                     notes += actFile + "\n";
                 }
             }
-            if (imageToSave) {
-                imageService.saveImage(actFile.getImage(), true);
+            if (whatToSave.contains("image")) {
+                imageService.saveImage(actFile.getImage(), whatToSave.size() > 1);
             }
-            if (fileToSave) {
-                persistMediaFiles(actFile, true);
+            if (whatToSave.contains("file")) {
+                saveMediaFiles(actFile, whatToSave.size() > 1);
                 filesInFolderMap.put(actFile.getFilePath().toString().toLowerCase(), actFile);
+            }
+            if (whatToSave.size() > 1) {
+                mediafileDAO.close();
             }
         }
         return actFile;
     }
+
 
     public String getMediaFileName(MediafileDTO mediafileDTO, String nameVersion) {
         MediaFile mediaFile = getMediaFile(mediafileDTO);
@@ -375,7 +388,7 @@ public class MediafileService {
                 ((RAWMediaFile) mediaFile).setXMPattached(createXmp(mediaFile.getFilePath().toFile()) != null);
             }
 
-            persistMediaFiles(mediaFile);
+            saveMediaFiles(mediaFile);
         }
 
         return rename;
