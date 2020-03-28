@@ -1,15 +1,11 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
-import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
-import org.nyusziful.pictureorganizer.Service.FolderService;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
 import javax.persistence.TypedQuery;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,11 +17,11 @@ public class ImageDAOImplHib extends CRUDDAOImpHib<Image> implements ImageDAO {
 
     @Override
     public Image getImageByHash(ImageDTO image, boolean batch) {
-        EntityManager entityManager = hibConnection.getEntityManager();
+        EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<Image> results = new ArrayList<>();
-        try{
-            TypedQuery<Image> typedQuery = entityManager.createQuery("SELECT i from Image i JOIN FETCH i.mediaFiles WHERE i.hash=:hash and i.type =:type", Image.class);
+        try{//LEFT JOIN FETCH i.mediaFiles
+            TypedQuery<Image> typedQuery = entityManager.createQuery("SELECT i from Image i LEFT JOIN FETCH i.mediaFiles WHERE i.hash=:hash AND i.type=:type", Image.class);
             typedQuery.setParameter("hash", image.hash);
             typedQuery.setParameter("type", image.type);
             results = typedQuery.getResultList();

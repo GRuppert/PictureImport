@@ -24,7 +24,7 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     @Override
     public List<MediaFile> getByDriveId(int id, boolean batch) {
-        EntityManager entityManager = hibConnection.getEntityManager();
+        EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
@@ -61,7 +61,7 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
     @Override
     public MediaFile getByFile(Drive drive, Path path, boolean batch) {
         if (path == null || drive == null) return null;
-        EntityManager entityManager = hibConnection.getEntityManager();
+        EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
@@ -97,7 +97,7 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     @Override
     public List<MediaFile> getByPath(Drive drive, Path path, boolean batch) {
-        EntityManager entityManager = hibConnection.getEntityManager();
+        EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
@@ -128,7 +128,7 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     @Override
     public List<MediaFile> getByPathRec(Drive drive, Path path, boolean batch) {
-        EntityManager entityManager = hibConnection.getEntityManager();
+        EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
@@ -152,22 +152,19 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
         }
         return results;
     }
-
+/*
     public List<String> getByHash(String hash, int driveId) {
-        Session session = hibConnection.getCurrentSession();
+        Session session = jpaConnection.getEntityManager();
         Transaction tx = session.getTransaction();
         List<String> list = null;
         try {
             list = session.createSQLQuery("SELECT distinct(filename) FROM picture.media_file WHERE image_id_oldtodel = '" + hash + "' and drive_id = " + driveId).list();
             tx.commit();
         }
-        catch (Exception e) {
-            if (tx!=null) tx.rollback();
-            throw e;
-        }
-        finally {
-            session.close();
-        }
-        return list;
+
+        return results;
+
     }
+
+ */
 }

@@ -477,7 +477,7 @@ public class MainController implements Initializable {
     public void reorganizeFolder(File directory) {
         ReorganizatorTask task = new ReorganizatorTask(Collections.singleton(directory));
         statusLabel.setText("");
-        task.setOnFailed(a -> {System.err.println(task.getException()); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
+        task.setOnFailed(a -> {task.getException().printStackTrace(); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
         task.setOnSucceeded(
                 new EventHandler<WorkerStateEvent>() {
                     @Override
@@ -497,7 +497,7 @@ public class MainController implements Initializable {
     public void ReadFolders(Collection<File> directories, boolean original) {
         Task<Integer> task = new ReadTask(directories, original);
         statusLabel.setText("");
-        task.setOnFailed(a -> {System.err.println(task.getException()); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
+        task.setOnFailed(a -> {task.getException().printStackTrace(); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
         task.setOnSucceeded(
                 new EventHandler<WorkerStateEvent>() {
                     @Override

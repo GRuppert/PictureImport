@@ -110,7 +110,7 @@ public class MediaFileSet {
         };
 
         task.setOnSucceeded(workerStateEvent -> getDataModel().removeAll(task.getValue()));
-        task.setOnFailed(workerStateEvent -> System.out.println(task.getException()));
+        task.setOnFailed(workerStateEvent -> task.getException().printStackTrace());
         return task;
     }
 

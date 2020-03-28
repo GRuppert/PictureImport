@@ -2,9 +2,6 @@ package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
-import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DTO.FolderDTO;
-import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
 import javax.persistence.EntityManager;
@@ -22,7 +19,7 @@ public class FolderDAOImplHib extends CRUDDAOImpHib<Folder> implements FolderDAO
 
     @Override
     public Folder getFolderByPath(Drive drive, Path path, boolean batch) {
-        EntityManager entityManager = hibConnection.getEntityManager();
+        EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<Folder> results = new ArrayList<>();
         try{

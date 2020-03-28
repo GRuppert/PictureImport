@@ -340,7 +340,7 @@ public class PresetUseCases {
                 visitFile(Path filePath, BasicFileAttributes attrs) {
                     if (!attrs.isDirectory() && attrs.isRegularFile() && filePath.getFileName().toString().endsWith("-null") ) {
                         String hash = filePath.getFileName().toString().substring(39, 71);
-                        List<String> mediaFile = dao.getByHash(hash, 7);
+                        List<String> mediaFile = null;//dao.getByHash(hash, 7);
                         if (mediaFile.size()==1) {
                             String oldFilename = mediaFile.get(0);
                             if (oldFilename.matches("D.C[0-9]{5}\\.ARW"))

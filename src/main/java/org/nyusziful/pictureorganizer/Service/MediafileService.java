@@ -319,7 +319,7 @@ public class MediafileService {
                 actFile.setSize(fileSize);
                 ImageDTO imageDTO = getHash(filePath.toFile());
                 Image image;
-                image = imageService.getImage(imageDTO);
+                image = imageService.getImage(imageDTO, true);
                 if (image == null) {
                     image = new Image(imageDTO.hash, imageDTO.type);
                     whatToSave.add("image");
@@ -346,15 +346,13 @@ public class MediafileService {
                 }
             }
             if (whatToSave.contains("image")) {
-                imageService.saveImage(actFile.getImage(), whatToSave.size() > 1);
+                imageService.saveImage(actFile.getImage(), true);
             }
             if (whatToSave.contains("file")) {
-                saveMediaFiles(actFile, whatToSave.size() > 1);
+                saveMediaFiles(actFile, true);
                 filesInFolderMap.put(actFile.getFilePath().toString().toLowerCase(), actFile);
             }
-            if (whatToSave.size() > 1) {
-                mediafileDAO.close();
-            }
+            mediafileDAO.close();
         }
         return actFile;
     }

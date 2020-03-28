@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.nyusziful.pictureorganizer.DAL.HibConnection;
+import org.nyusziful.pictureorganizer.DAL.JPAConnection;
 
 import static javafx.application.Application.launch;
 
@@ -46,7 +47,7 @@ public class PictureOrganizer extends Application {
     @Override
     public void stop() throws Exception {
         CommonProperties.getInstance().save();
-        HibConnection.getInstance().shutdown();
+        JPAConnection.getInstance().shutdown();
     }
 
     /**

@@ -23,7 +23,7 @@ public class ImageServiceTest {
         image = new Image(testHash, testType);
         imageService.persistImage(image);
         Image imageRetrieved = imageService.getImage(imageSearch);
-        assertTrue(image.getId() > -1);
+        assertTrue(imageRetrieved.getId() > -1);
         imageRetrieved.setOriginalFilename("test2");
         imageService.updateImage(imageRetrieved);
 /*

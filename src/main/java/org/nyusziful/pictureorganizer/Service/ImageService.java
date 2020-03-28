@@ -22,6 +22,10 @@ public class ImageService {
     }*/
 
     public Image getImage(ImageDTO image) {
+        return getImage(image, false);
+    }
+
+    public Image getImage(ImageDTO image, boolean batch) {
         return imageDAO.getImageByHash(image);
     }
 
