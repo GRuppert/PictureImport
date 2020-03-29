@@ -9,6 +9,7 @@ import javafx.stage.Screen;
 import javafx.stage.Stage;
 import org.nyusziful.pictureorganizer.DAL.HibConnection;
 import org.nyusziful.pictureorganizer.DAL.JPAConnection;
+import org.nyusziful.pictureorganizer.Service.TimeShift.Picture;
 
 import static javafx.application.Application.launch;
 
@@ -30,7 +31,7 @@ public class PictureOrganizer extends Application {
 
         Parent fmxlLook = FXMLLoader.load(getClass().getResource("/fxml/main.fxml"));
         Scene mainScene = new Scene(fmxlLook);
-        mainScene.getStylesheets().add("/styles/Chart.css");
+        mainScene.getStylesheets().add(getClass().getResource("/styles/Charts.css").toExternalForm());
         primaryStage.setScene(mainScene);
 
         //set Stage boundaries to visible bounds of the main screen
@@ -47,7 +48,8 @@ public class PictureOrganizer extends Application {
     @Override
     public void stop() throws Exception {
         CommonProperties.getInstance().save();
-        JPAConnection.getInstance().shutdown();
+        //TODO check running task - stop - wait for commit
+        JPAConnection.shutdown();
     }
 
     /**

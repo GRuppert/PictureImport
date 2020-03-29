@@ -13,7 +13,6 @@
         <property name="hibernate.connection.username">picture</property>
         <property name="hibernate.connection.password">picture</property>
         <property name="hibernate.hbm2ddl.auto">validate</property>
-        <property name="show_sql">true</property>
         <property name="hibernate.current_session_context_class">thread</property>
         <property name="hibernate.cache.use_second_level_cache">true</property>
         <property name="hibernate.cache.use_query_cache">true</property>

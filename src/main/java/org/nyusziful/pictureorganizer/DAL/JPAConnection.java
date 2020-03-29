@@ -39,10 +39,12 @@ public class JPAConnection {
             entityManager.close();
     }
 
-    public void shutdown() {
-        if (factory != null ) {
-            closeEntityManager();
-            factory.close();
+    public static void shutdown() {
+        if (instance != null) {
+            if (instance.factory != null ) {
+                instance.closeEntityManager();
+                instance.factory.close();
+            }
         }
     }
 

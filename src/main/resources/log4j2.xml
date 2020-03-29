@@ -4,16 +4,35 @@
         <Property name="basePath">../pictureOrganizer/logs</Property>
     </Properties>
     <Appenders>
-        <!-- File Appender -->
-        <File name="FILE" fileName="${basePath}/logfile.log" append="true">
-            <PatternLayout pattern="%-5p | %d{yyyy-MM-dd HH:mm:ss} | [%t] %C{2} (%F:%L) - %m%n" />
-        </File>
         <!-- Console Appender -->
         <Console name="STDOUT" target="SYSTEM_OUT">
             <PatternLayout pattern="%-5p | %d{yyyy-MM-dd HH:mm:ss} | [%t] %C{2} (%F:%L) - %m%n" />
         </Console>
+        <!-- File Appender -->
+        <RollingFile name="FILE" fileName="${basePath}/logAllfile.log" filePattern="${basePath}/logAllfile-%d{yyyy-MM-dd}-%i.log">
+            <!--LevelRangeFilter minLevel="INFO" onMatch="ACCEPT" onMismatch="DENY"/-->
+            <PatternLayout pattern="%-5p | %d{yyyy-MM-dd HH:mm:ss} | [%t] %C{2} (%F:%L) - %m%n" />
+            <Policies>
+                <SizeBasedTriggeringPolicy size="19500KB" />
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile >
     </Appenders>
     <Loggers>
+        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
+            <AppenderRef ref="STDOUT" />
+        </Logger>
+        <Logger name="org.hibernate.descriptor.sql" level="trace" additivity="false">
+            <AppenderRef ref="STDOUT" />
+        </Logger>
+        <Logger name="org.hibernate.cache" level="INFO">
+            <AppenderRef ref="STDOUT" />
+        </Logger>
+        <Logger name="com.mchange" level="DEBUG">
+            <AppenderRef ref="STDOUT" />
+            <AppenderRef ref="FILE" />
+        </Logger>
+
         <Logger name="com.jcg" level="debug" />
         <Root level="info">
             <AppenderRef ref="STDOUT" />

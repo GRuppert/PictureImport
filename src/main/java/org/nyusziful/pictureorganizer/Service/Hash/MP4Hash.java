@@ -10,8 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.readBytes;
 import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.readEndianValue;
 import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.skipBytes;
@@ -22,7 +22,7 @@ import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.skipBy
  * @author gabor
  */
 public class MP4Hash implements Hasher {
-    private static final Logger LOG = LogManager.getLogger(MP4Hash.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MP4Hash.class);
 
     public static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
         byte[] buffer = new byte[4096];

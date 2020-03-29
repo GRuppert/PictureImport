@@ -23,6 +23,7 @@
             <property name="hibernate.cache.provider_class" value="org.ehcache.jsr107.EhcacheCachingProvider"/>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
             <property name="hibernate.cache.use_query_cache" value="true"/>
+
         </properties>
     </persistence-unit>
 </persistence>

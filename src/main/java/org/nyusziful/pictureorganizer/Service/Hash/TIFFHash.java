@@ -11,9 +11,8 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.readEndianValue;
 
 
@@ -22,7 +21,7 @@ import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.readEn
  * @author gabor
  */
 public class TIFFHash implements Hasher {
-    private static final Logger LOG = LogManager.getLogger(TIFFHash.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TIFFHash.class);
     
     private static byte[] getPointers(ArrayList<IfdTag> imageLocationFields, File file, boolean endian) throws IOException {
 /*      RawImageDigest

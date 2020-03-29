@@ -15,8 +15,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
@@ -57,7 +57,7 @@ public class MediaFileHash {
         }
     };
 
-    private static final Logger LOG = LogManager.getLogger(MediaFileHash.class);
+    private static final Logger LOG = LoggerFactory.getLogger(MediaFileHash.class);
 
     /**
      * 
@@ -170,15 +170,15 @@ public class MediaFileHash {
             while (in.read(buffer) != -1) {}
             digest = md5Digest.digest();
         } catch (IOException ex) {
-            LOG.warn(() -> "Returning EMPTYHASH: " + ex.getMessage());
+            LOG.warn("Returning EMPTYHASH: " + ex.getMessage());
             return EMPTYHASH;
         }
         if (digest == null) {
-            LOG.warn(() -> "Returning EMPTYHASH: no bytes read");
+            LOG.warn("Returning EMPTYHASH: no bytes read");
             return EMPTYHASH;
         }
         if (Arrays.equals(digest, digestDef)) {
-            LOG.warn(() -> "Returning EMPTYHASH: no bytes read");
+            LOG.warn("Returning EMPTYHASH: no bytes read");
             return EMPTYHASH;
         }
         StringBuilder sb = new StringBuilder();

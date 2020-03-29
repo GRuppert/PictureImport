@@ -14,9 +14,8 @@ import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -24,7 +23,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class JPGHash implements Hasher {
     private static final int markerLength = 2;
-    private static final Logger LOG = LogManager.getLogger(JPGHash.class);
+    private static final Logger LOG = LoggerFactory.getLogger(JPGHash.class);
     private static final String BACKUPID = "Backup";
     
     private static long startOfImageJPG(BufferedInputStream in) throws IOException {
