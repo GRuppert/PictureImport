@@ -161,8 +161,9 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
 
     @Override
     public void close() {
-        jpaConnection.getEntityManager().getTransaction().commit();
-        jpaConnection.getEntityManager().close();
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        entityManager.getTransaction().commit();
+        entityManager.close();
     }
 
     @Override

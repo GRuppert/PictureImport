@@ -430,7 +430,7 @@ public class MainController implements Initializable {
                         }
                     });
                 }
-                createNewName(renameMediaFiles);
+//                createNewName(renameMediaFiles);
             }
             Platform.runLater(new Runnable() {
                 @Override public void run() {

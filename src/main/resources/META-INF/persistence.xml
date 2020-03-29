@@ -9,7 +9,7 @@
         <class>org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.Image</class>
         <properties>
-            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://127.0.0.1:3306/pictureorganizer" />
+            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://127.0.0.1:3306/pictureorganizer?useUnicode=yes&amp;characterEncoding=UTF-8" />
             <property name="javax.persistence.jdbc.user" value="picture" />
             <property name="javax.persistence.jdbc.password" value="picture" />
             <property name="javax.persistence.schema-generation.scripts.action" value="drop-and-create"/>
