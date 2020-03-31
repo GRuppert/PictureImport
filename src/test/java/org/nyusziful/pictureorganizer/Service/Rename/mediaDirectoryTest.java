@@ -5,12 +5,14 @@
  */
 package org.nyusziful.pictureorganizer.Service.Rename;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 
+import java.io.File;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -70,7 +72,12 @@ public class mediaDirectoryTest {
      */
     @Test
     public void testMediaDirectory() {
-        MediaDirectory result = new MediaDirectory(filename);
+        MediaDirectory result = null;
+        try {
+            result = new MediaDirectory(new File(filename));
+        } catch (InvalidArgumentException e) {
+            e.printStackTrace();
+        }
         assertEquals("Start date of folder(" + filename + ") result: " + result.from + " awaited: " + expFrom, expFrom, result.from);
         assertEquals("End date of folder(" + filename + ") result: " + result.to + " awaited: " + expTo, expTo, result.to);
     }

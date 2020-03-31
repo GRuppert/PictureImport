@@ -54,6 +54,8 @@
     </left>
     <center>
     </center>
+    <right>
+    </right>
     <bottom>
         <HBox alignment="CENTER" spacing="10">
             <ProgressIndicator fx:id="progressIndicator" progress="0"/>

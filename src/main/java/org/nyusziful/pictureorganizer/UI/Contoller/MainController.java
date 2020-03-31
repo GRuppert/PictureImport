@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.UI.Contoller;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
 import javafx.application.Platform;
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.SortedList;
@@ -9,6 +10,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
@@ -114,15 +116,21 @@ public class MainController implements Initializable {
         to.setText(commonProperties.getToDir().toString());
 
         BorderPane summaryPane = null;
+        VBox folderList = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
                     "/fxml/summary.fxml"));
             summaryPane = (BorderPane) loader.load();
+
+            FXMLLoader loader2 = new FXMLLoader(getClass().getResource(
+                    "/fxml/folderList.fxml"));
+            folderList = (VBox) loader2.load();
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         mainPane.setCenter(summaryPane);
+        mainPane.setRight(folderList);
         progressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) beep();});
     }
 
@@ -383,8 +391,12 @@ public class MainController implements Initializable {
                 previousFileDate = fileDate;
                 File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
                 for (int j = 0; j < dirs.length; j++) {
-                    MediaDirectory mediaDirectory = new MediaDirectory(dirs[j].getName());
-                    if (mediaDirectory.from == null) continue;
+                    MediaDirectory mediaDirectory = null;
+                    try {
+                        mediaDirectory = new MediaDirectory(dirs[j]);
+                    } catch (InvalidArgumentException e) {
+                        continue;
+                    }
                     if ((fileDate.isAfter(mediaDirectory.from)) && (fileDate.isAfter(mediaDirectory.to))) {
                         target = dirs[j].toPath();
                         j = dirs.length;
