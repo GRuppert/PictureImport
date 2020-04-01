@@ -46,4 +46,27 @@ public class DirectoryViewController implements Initializable {
     private void handleRefreshButtonAction() {
         mediaDirectorySet.readDirectory();
     }
+
+    @FXML
+    private void firstDatePickerAction() {
+//        mediaFileSet.setFirstDate(firstDatePicker.getValue());
+    }
+
+    @FXML
+    private void lastDatePickerAction() {
+//        mediaFileSet.setLastDate(lastDatePicker.getValue());
+    }
+
+    @FXML
+    private void handleApplyEventNameButtonAction() {
+//        mediaFileSet.setLabel(eventNameField.getText());
+//        updateTargetDirectory();
+    }
+
+    @FXML
+    private void handleResetDatesButtonAction() {
+//        mediaFileSet.resetDates();
+//        updateTargetDirectory();
+    }
+
 }

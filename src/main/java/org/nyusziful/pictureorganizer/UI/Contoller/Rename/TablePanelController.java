@@ -122,17 +122,6 @@ public class TablePanelController implements Initializable {
         btnGo.setDisable(false);
     }
 
-    @FXML
-    private void handleApplyEventNameButtonAction() {
-        mediaFileSet.setLabel(eventNameField.getText());
-        updateTargetDirectory();
-    }
-
-    @FXML
-    private void handleResetDatesButtonAction() {
-        mediaFileSet.resetDates();
-        updateTargetDirectory();
-    }
 
 
 
@@ -141,12 +130,6 @@ public class TablePanelController implements Initializable {
 
     @FXML
     private void handleRefreshButtonAction() {updateTargetDirectory();}
-
-    @FXML
-    private void firstDatePickerAction() {mediaFileSet.setFirstDate(firstDatePicker.getValue());}
-
-    @FXML
-    private void lastDatePickerAction() {mediaFileSet.setLastDate(lastDatePicker.getValue());}
 
     private void updateTargetDirectory() {
         mediaFileSet.updatePaths(CommonProperties.getInstance().getToDir().toString());

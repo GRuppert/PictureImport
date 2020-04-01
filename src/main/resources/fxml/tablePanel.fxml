@@ -17,12 +17,6 @@
             <Button fx:id="btnGo" text="Go" onAction="#handleGoButtonAction"/>
             <Button fx:id="btnAbort" text="Abort" onAction="#handleAbortButtonAction"/>
             <Button fx:id="btnRefresh" text="Refresh" onAction="#handleRefreshButtonAction"/>
-            <DatePicker fx:id="firstDatePicker" onAction="#firstDatePickerAction"/>
-            <DatePicker fx:id="lastDatePicker" onAction="#lastDatePickerAction"/>
-            <Button fx:id="reset" text="Reset Dates" onAction="#handleResetDatesButtonAction"/>
-            <TextField fx:id="eventNameField"/>
-            <Button fx:id="applyEventName" text="Apply" onAction="#handleApplyEventNameButtonAction"/>
-            <Label fx:id="targetFolderName"/>
             <ProgressIndicator fx:id="tableProgressIndicator" progress="0" visible="false"/>
         </HBox>
     </bottom>
