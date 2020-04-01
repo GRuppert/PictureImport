@@ -397,7 +397,7 @@ public class MainController implements Initializable {
                     } catch (InvalidArgumentException e) {
                         continue;
                     }
-                    if ((fileDate.isAfter(mediaDirectory.from)) && (fileDate.isAfter(mediaDirectory.to))) {
+                    if ((fileDate.isAfter(mediaDirectory.getFrom())) && (fileDate.isAfter(mediaDirectory.getTo()))) {
                         target = dirs[j].toPath();
                         j = dirs.length;
                     }
@@ -442,7 +442,7 @@ public class MainController implements Initializable {
                         }
                     });
                 }
-//                createNewName(renameMediaFiles);
+                createNewName(renameMediaFiles);
             }
             Platform.runLater(new Runnable() {
                 @Override public void run() {

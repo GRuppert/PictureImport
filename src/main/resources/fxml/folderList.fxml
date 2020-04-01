@@ -7,5 +7,7 @@
 <?import javafx.scene.layout.*?>
 
 <VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="200" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.DirectoryViewController">
-    <ListView  fx:id="directoryList"/>
+    <ListView fx:id="directoryList"/>
+    <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefreshDir" />
+
 </VBox>

@@ -16,6 +16,7 @@ public class MediaDirectorySet {
     }
 
     public void readDirectory() {
+        reset();
         final File[] files = CommonProperties.getInstance().getToDir().toFile().listFiles(File::isDirectory);
         for (File file : files) {
             try {

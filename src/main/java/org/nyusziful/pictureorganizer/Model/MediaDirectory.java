@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.Model;
 
 import com.sun.javaws.exceptions.InvalidArgumentException;
+import javafx.beans.property.SimpleStringProperty;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 
@@ -11,13 +12,16 @@ import java.time.ZonedDateTime;
 import static java.lang.Integer.parseInt;
 
 public class MediaDirectory {
-    public ZonedDateTime from = null;
-    public ZonedDateTime to = null;
+    private ZonedDateTime from = null;
+    private ZonedDateTime to = null;
     private File directory;
+    private boolean conflicting;
+
 
     public MediaDirectory(File directory) throws InvalidArgumentException {
-        String directoryName = directory.getName();
+        this.directory = directory;
         try {
+            String directoryName = directory.getName();
             from = ZonedDateTime.of(
                     parseInt(directoryName.substring(0, 4)),
                     parseInt(directoryName.substring(5, 7)) - 1,
@@ -33,4 +37,24 @@ public class MediaDirectory {
         }
     }
 
+    @Override
+    public String toString() {
+        return directory.getName();
+    }
+
+    public ZonedDateTime getFrom() {
+        return from;
+    }
+
+    public ZonedDateTime getTo() {
+        return to;
+    }
+
+    public boolean isConflicting() {
+        return conflicting;
+    }
+
+    public void setConflicting(boolean conflicting) {
+        this.conflicting = conflicting;
+    }
 }

@@ -57,7 +57,7 @@ public class TablePanelController implements Initializable {
                             @Override
                             public void updateItem(LocalDate item, boolean empty) {
                                 super.updateItem(item, empty);
-                                if (firstDatePicker != null) {
+                                if (firstDatePicker != null && item != null) {
                                     if (item.isBefore(firstDatePicker.getValue())) {
                                         setDisable(true);
                                         setStyle("-fx-background-color: #ffc0cb;");
