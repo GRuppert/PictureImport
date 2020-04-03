@@ -8,15 +8,13 @@
 
 <VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="1600" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.DirectoryViewController">
     <ListView fx:id="directoryList"/>
-    <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefreshDir" />
     <HBox>
-        <DatePicker fx:id="firstDatePicker" onAction="#firstDatePickerAction"/>
-        <DatePicker fx:id="lastDatePicker" onAction="#lastDatePickerAction"/>
-        <Button fx:id="reset" text="Reset Dates" onAction="#handleResetDatesButtonAction"/>
+        <DatePicker fx:id="firstDatePicker"/>
+        <DatePicker fx:id="lastDatePicker"/>
         <TextField fx:id="eventNameField"/>
         <Button fx:id="applyEventName" text="Apply" onAction="#handleApplyEventNameButtonAction"/>
-        <Label fx:id="targetFolderName"/>
     </HBox>
+    <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefreshDir" />
 
 
 </VBox>

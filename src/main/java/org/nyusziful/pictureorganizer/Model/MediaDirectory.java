@@ -1,19 +1,17 @@
 package org.nyusziful.pictureorganizer.Model;
 
 import com.sun.javaws.exceptions.InvalidArgumentException;
-import javafx.beans.property.SimpleStringProperty;
-import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
-import org.nyusziful.pictureorganizer.Main.CommonProperties;
 
 import java.io.File;
-import java.lang.reflect.Field;
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
 import static java.lang.Integer.parseInt;
 
 public class MediaDirectory {
-    private ZonedDateTime from = null;
-    private ZonedDateTime to = null;
+    private LocalDate firstDate = null;
+    private LocalDate lastDate = null;
+    private String label;
+
     private File directory;
     private boolean conflicting;
 
@@ -22,16 +20,18 @@ public class MediaDirectory {
         this.directory = directory;
         try {
             String directoryName = directory.getName();
-            from = ZonedDateTime.of(
+            firstDate = LocalDate.of(
                     parseInt(directoryName.substring(0, 4)),
                     parseInt(directoryName.substring(5, 7)) - 1,
-                    parseInt(directoryName.substring(8, 10)),
-                    0, 0, 0, 0, CommonProperties.getInstance().getZone());
-            to = ZonedDateTime.of(
+                    parseInt(directoryName.substring(8, 10)));
+            lastDate = LocalDate.of(
                     parseInt(directoryName.substring(13, 17)),
                     parseInt(directoryName.substring(18, 20)) - 1,
-                    parseInt(directoryName.substring(21, 23)),
-                    23, 59, 59, 999999999, CommonProperties.getInstance().getZone());
+                    parseInt(directoryName.substring(21, 23)));
+            if (directoryName.length() > 24)
+                label = directoryName.substring(24);
+            else
+                label = "";
         } catch (Exception e) {
             throw new InvalidArgumentException(new String[]{"Not valid"});
         }
@@ -42,12 +42,12 @@ public class MediaDirectory {
         return directory.getName();
     }
 
-    public ZonedDateTime getFrom() {
-        return from;
+    public LocalDate getFirstDate() {
+        return firstDate;
     }
 
-    public ZonedDateTime getTo() {
-        return to;
+    public LocalDate getLastDate() {
+        return lastDate;
     }
 
     public boolean isConflicting() {
@@ -56,5 +56,29 @@ public class MediaDirectory {
 
     public void setConflicting(boolean conflicting) {
         this.conflicting = conflicting;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public void setFirstDate(LocalDate firstDate) {
+        this.firstDate = firstDate;
+    }
+
+    public void setLastDate(LocalDate lastDate) {
+        this.lastDate = lastDate;
+    }
+
+    public File getDirectory() {
+        return directory;
+    }
+
+    public void setDirectory(File directory) {
+        this.directory = directory;
     }
 }

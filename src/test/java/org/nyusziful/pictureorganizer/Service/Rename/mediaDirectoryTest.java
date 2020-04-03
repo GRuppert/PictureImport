@@ -78,7 +78,7 @@ public class mediaDirectoryTest {
         } catch (InvalidArgumentException e) {
             e.printStackTrace();
         }
-        assertEquals("Start date of folder(" + filename + ") result: " + result.getFrom() + " awaited: " + expFrom, expFrom, result.getFrom());
-        assertEquals("End date of folder(" + filename + ") result: " + result.getTo() + " awaited: " + expTo, expTo, result.getTo());
+        assertEquals("Start date of folder(" + filename + ") result: " + result.getFirstDate() + " awaited: " + expFrom, expFrom, result.getFirstDate());
+        assertEquals("End date of folder(" + filename + ") result: " + result.getLastDate() + " awaited: " + expTo, expTo, result.getLastDate());
     }
 }

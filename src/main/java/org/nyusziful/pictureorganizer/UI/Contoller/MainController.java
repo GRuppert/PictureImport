@@ -15,6 +15,7 @@ import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
+import org.nyusziful.pictureorganizer.UI.Contoller.Rename.DirectoryViewController;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSet;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileTableViewController;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController;
@@ -125,6 +126,9 @@ public class MainController implements Initializable {
             FXMLLoader loader2 = new FXMLLoader(getClass().getResource(
                     "/fxml/folderList.fxml"));
             folderList = (VBox) loader2.load();
+//            DirectoryViewController dvContoller = loader2.getController();
+//            mediaFileSet.folderNameProperty().bind(dvContoller.getFolderName());
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -397,7 +401,7 @@ public class MainController implements Initializable {
                     } catch (InvalidArgumentException e) {
                         continue;
                     }
-                    if ((fileDate.isAfter(mediaDirectory.getFrom())) && (fileDate.isAfter(mediaDirectory.getTo()))) {
+                    if ((fileDate.toLocalDate().isAfter(mediaDirectory.getFirstDate())) && (fileDate.toLocalDate().isAfter(mediaDirectory.getLastDate()))) {
                         target = dirs[j].toPath();
                         j = dirs.length;
                     }

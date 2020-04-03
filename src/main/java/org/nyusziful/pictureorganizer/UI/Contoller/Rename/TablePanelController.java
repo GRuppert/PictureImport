@@ -25,17 +25,6 @@ public class TablePanelController implements Initializable {
     @FXML
     private Button btnGo;
 
-    @FXML
-    private Label targetFolderName;
-
-    @FXML
-    private TextField eventNameField;
-
-    @FXML
-    private DatePicker firstDatePicker;
-
-    @FXML
-    private DatePicker lastDatePicker;
 
     // </editor-fold>
 
@@ -49,43 +38,12 @@ public class TablePanelController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        final Callback<DatePicker, DateCell> dayCellFactory =
-                new Callback<DatePicker, DateCell>() {
-                    @Override
-                    public DateCell call(final DatePicker datePicker) {
-                        return new DateCell() {
-                            @Override
-                            public void updateItem(LocalDate item, boolean empty) {
-                                super.updateItem(item, empty);
-                                if (firstDatePicker != null && item != null) {
-                                    if (item.isBefore(firstDatePicker.getValue())) {
-                                        setDisable(true);
-                                        setStyle("-fx-background-color: #ffc0cb;");
-                                    }
-                                    long p = ChronoUnit.DAYS.between(firstDatePicker.getValue(), item);
-                                    setTooltip(new Tooltip("Range of " + p + " days"));
-                                }
-                            }
-                        };
-                    }
-                };
-        lastDatePicker.setDayCellFactory(dayCellFactory);
         tableProgressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) org.nyusziful.pictureorganizer.UI.StaticTools.beep();});
     }
 
     public void setMediaFileSet(MediaFileSet mediaFileSet) {
         this.mediaFileSet = mediaFileSet;
-        mediaFileSet.folderNameProperty().addListener(new ChangeListener<String>() {
-            @Override
-            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
-                targetFolderName.setText(newValue != null ? newValue : "");
-            }
-        });
 //        mediaFileSet.firstDateProperty().addListener((observable, oldValue, newValue) -> firstDatePicker.setValue(newValue));
-        mediaFileSet.firstDateProperty().bindBidirectional(firstDatePicker.valueProperty());
-        mediaFileSet.lastDateProperty().bindBidirectional(lastDatePicker.valueProperty());
-
-        eventNameField.setPromptText("Event name");
     }
 
 

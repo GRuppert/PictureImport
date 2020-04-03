@@ -31,7 +31,7 @@ public class MediaFileSet {
     private final ObservableList<TableViewMediaFile> dataModel = FXCollections.observableArrayList();
     SimpleObjectProperty<LocalDate> firstDate;
     SimpleObjectProperty<LocalDate> lastDate;
-    private SimpleStringProperty folderName;
+    SimpleStringProperty folderName;
     private String label;
     public static DateTimeFormatter FolderFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");//2018-06-14
 
