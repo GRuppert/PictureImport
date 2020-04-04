@@ -33,7 +33,6 @@ public class MediaFileSet {
     SimpleObjectProperty<LocalDate> lastDate;
     SimpleStringProperty folderName;
     private String label;
-    public static DateTimeFormatter FolderFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");//2018-06-14
 
 
 

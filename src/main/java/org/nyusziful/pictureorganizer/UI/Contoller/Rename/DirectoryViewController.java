@@ -9,13 +9,20 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.scene.control.TextField;
 import javafx.util.Callback;
+import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
+import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
+import org.nyusziful.pictureorganizer.Service.FolderService;
 
+import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ResourceBundle;
+
+import static org.nyusziful.pictureorganizer.Model.MediaDirectory.FolderFormat;
 
 public class DirectoryViewController implements Initializable {
     @FXML
@@ -39,9 +46,12 @@ public class DirectoryViewController implements Initializable {
 
     private MediaDirectorySet mediaDirectorySet;
 
+    private FolderService folderService;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         mediaDirectorySet = new MediaDirectorySet();
+        folderService = new FolderService();
         folderName = new SimpleStringProperty("");
         firstDate = new SimpleObjectProperty(null);
         lastDate = new SimpleObjectProperty(null);
@@ -54,7 +64,8 @@ public class DirectoryViewController implements Initializable {
                 if (empty || item == null || item.toString() == null) {
                     setText(null);
                 } else {
-//                    if (item.isConflicting()) setTextFill(isSelected() ? Color.ORANGE : Color.PINK);
+                    if (item.isConflicting())
+                        setStyle("-fx-background-color: #ffc0cb;");
                     setText(item.toString());
                 }
             }
@@ -114,13 +125,40 @@ public class DirectoryViewController implements Initializable {
 
     @FXML
     private void handleApplyEventNameButtonAction() {
-//        Files.move()
-//    FolderService.update
-//        mediaFileSet.setLabel(eventNameField.getText());
-//        updateTargetDirectory();
+        String newFolderName = getFirstDate().format(FolderFormat) + " - " + getLastDate().format(FolderFormat) + ((!"".equals(getEventName())) ? " " + getEventName() : "");
+        File newFolder = new File(CommonProperties.getInstance().getToDir() + "\\" + newFolderName);
+        if (newFolder.exists()) return;
+        final MediaDirectory selectedItem = directoryList.getSelectionModel().getSelectedItem();
+        if (selectedItem == null) {
+            if (newFolder.mkdir()) {
+                folderService.getFolder(newFolder.toPath());
+            }
+        } else {
+            final Folder folder = folderService.getFolder(selectedItem.getDirectory().toPath());
+            try {
+                Files.move(folder.getJavaPath(), newFolder.toPath());
+                folder.updatePath(newFolder.toPath());
+                folderService.persistFolder(folder);
+            } catch (Exception ex) {
+                return;
+            }
+        }
+        mediaDirectorySet.readDirectory();
     }
 
     public SimpleStringProperty getFolderName() {
         return folderName;
+    }
+
+    private String getEventName() {
+        return eventNameField.getText();
+    }
+
+    private LocalDate getFirstDate() {
+        return firstDate.get();
+    }
+
+    private LocalDate getLastDate() {
+        return lastDate.get();
     }
 }

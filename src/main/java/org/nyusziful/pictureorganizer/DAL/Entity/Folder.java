@@ -61,4 +61,11 @@ public class Folder extends TrackingEntity {
     public String toString() {
         return javaPath.toString();
     }
+
+    public void updatePath(Path path) {
+        javaPath = path;
+        this.path = FolderService.winToDataPath(path);
+        this.name = path.getFileName() == null ? "" : path.getFileName().toString();
+
+    }
 }

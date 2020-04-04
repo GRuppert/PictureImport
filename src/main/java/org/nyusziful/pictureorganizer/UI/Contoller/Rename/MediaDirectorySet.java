@@ -7,6 +7,7 @@ import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 
 import java.io.File;
+import java.util.Comparator;
 
 public class MediaDirectorySet {
     private final ObservableList<MediaDirectory> dataModel = FXCollections.observableArrayList();
@@ -25,6 +26,21 @@ public class MediaDirectorySet {
 
             }
         }
+        dataModel.sort(new Comparator<MediaDirectory>() {
+            @Override
+            public int compare(MediaDirectory o1, MediaDirectory o2) {
+                if (o1.getLastDate().isBefore(o2.getFirstDate())) {
+                    return -1;
+                } else {
+                    if (o2.getLastDate().isBefore(o1.getFirstDate())) return 1;
+                    else {
+                        o1.setConflicting(true);
+                        o2.setConflicting(true);
+                        return o1.getFirstDate().compareTo(o2.getFirstDate());
+                    }
+                }
+            }
+        });
     }
 
     public void reset() {
