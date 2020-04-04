@@ -26,17 +26,19 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Column(name = "id", updatable = false, nullable = false)
     protected int id = -1;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="drive_id", referencedColumnName="id", nullable=false)
     private Drive drive;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="folder_id", referencedColumnName="id", nullable=false)
     private Folder folder;
 
     private String filename;
 
-    @ManyToOne(cascade = {CascadeType.REFRESH})
+    @ManyToOne(
+            fetch = FetchType.LAZY,
+            cascade = {CascadeType.REFRESH})
     @JoinColumn(name="image_id", referencedColumnName="id")
     private Image image;
 
@@ -70,12 +72,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
             dateStoredString = XmpDateFormatTZ.format(dateStored);
     }
 
-    @PostLoad
-    private void fillTransients() {
-        stringToDate();
-        loadPath();
-    }
-
     private void stringToDate() {
         if (dateStoredString != null)
             dateStored = ZonedDateTime.parse(dateStoredString, XmpDateFormatTZ);
@@ -86,6 +82,9 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         if (folder != null && folder.getJavaPath() != null && filename != null) {
             filePath = Paths.get(folder.getJavaPath().toString() + "\\" + filename);
         }
+    }
+
+    private void loadOriginal() {
         if (image != null && image.getOriginalFileHash() != null) {
             original = filehash.equals(image.getOriginalFileHash());
         }
@@ -123,23 +122,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         this.filename = filePath.getFileName().toString();
         this.drive = folder.getDrive();
         this.folder = folder;
-    }
-
-    public void copyAttr(MediaFile mediaFile) {
-        mediaFile.filePath = filePath;
-        mediaFile.filename = filePath.getFileName().toString();
-        mediaFile.drive = folder.getDrive();
-        mediaFile.folder = folder;
-        mediaFile.size = size;
-        mediaFile.dateMod = dateMod;
-        mediaFile.dateMod.setNanos(0);
-        mediaFile.original = original;
-        mediaFile.setDateStored(dateStored);
-        mediaFile.setFilehash(filehash);
-        mediaFile.setAltitude(altitude);
-        mediaFile.setLatitude(latitude);
-        mediaFile.setLongitude(longitude);
-        mediaFile.setImage(image);
     }
 
     public String getFilename() {
@@ -250,10 +232,12 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     }
 
     public Path getFilePath() {
+        if (filePath == null) loadPath();
         return filePath;
     }
 
     public Boolean isOriginal() {
+        if (original == null) loadOriginal();
         return original;
     }
 
@@ -262,6 +246,7 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     }
 
     public ZonedDateTime getDateStored() {
+        if (dateStored == null) stringToDate();
         return dateStored;
     }
 

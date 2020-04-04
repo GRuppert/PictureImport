@@ -21,7 +21,7 @@ public class ImageDAOImplHib extends CRUDDAOImpHib<Image> implements ImageDAO {
         EntityTransaction transaction = entityManager.getTransaction();
         List<Image> results = new ArrayList<>();
         try{//LEFT JOIN FETCH i.mediaFiles
-            TypedQuery<Image> typedQuery = entityManager.createQuery("SELECT i from Image i LEFT JOIN FETCH i.mediaFiles WHERE i.hash=:hash AND i.type=:type", Image.class);
+            TypedQuery<Image> typedQuery = entityManager.createQuery("SELECT DISTINCT i from Image i LEFT JOIN FETCH i.mediaFiles WHERE i.hash=:hash AND i.type=:type", Image.class);
             typedQuery.setParameter("hash", image.hash);
             typedQuery.setParameter("type", image.type);
             results = typedQuery.getResultList();

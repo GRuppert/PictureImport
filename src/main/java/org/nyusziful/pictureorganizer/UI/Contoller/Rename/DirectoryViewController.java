@@ -62,16 +62,19 @@ public class DirectoryViewController implements Initializable {
                 super.updateItem(item, empty);
 
                 if (empty || item == null || item.toString() == null) {
+                    setGraphic(null);
                     setText(null);
+                    return;
                 } else {
                     if (item.isConflicting())
-                        setStyle("-fx-background-color: #ffc0cb;");
+                        setStyle("-fx-control-inner-background: #ffc0cb;");
+                    else
+                        setStyle(null);
                     setText(item.toString());
                 }
             }
         });
-        directoryList.getSelectionModel().selectedItemProperty()
-                .addListener(new ChangeListener<MediaDirectory>() {
+        directoryList.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<MediaDirectory>() {
                     public void changed(ObservableValue<? extends MediaDirectory> observable,
                                         MediaDirectory oldValue, MediaDirectory newValue) {
                         if (newValue == null) {

@@ -193,7 +193,7 @@ public class MediafileService {
         if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
         List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path, true);
         HashMap<String, MediaFile> pathToMediaFile = new HashMap<>();
-        filesInFolderFromDB.forEach(f -> pathToMediaFile.put(f.getFilePath().toString(), f));
+        filesInFolderFromDB.forEach(f -> pathToMediaFile.put(f.getFilePath().toString().toLowerCase(), f));
         HashSet<Path> paths = new HashSet<>();
         try {
             Files.find(path, Integer.MAX_VALUE,
@@ -215,10 +215,10 @@ public class MediafileService {
                 }
             }
 */
-            found = pathToMediaFile.get(path1.toString());
+            found = pathToMediaFile.get(path1.toString().toLowerCase());
             if (found != null) {
                 filesInFolderFromDB.remove(found);
-                pathToMediaFile.remove(path1.toString());
+                pathToMediaFile.remove(path1.toString().toLowerCase());
             } else {
                 unknownFiles.add(path1.toFile());
             }
@@ -281,7 +281,8 @@ public class MediafileService {
     }
 
     private MediaFile readMediaFile(File file) {
-        return readMediaFile(file, null, folderService.getFolder(file.getParentFile().toPath()), false, false, CommonProperties.getInstance().getZone(), "");
+        MediaFile result = mediafileDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath());
+        return result != null ? result : readMediaFile(file, null, folderService.getFolder(file.getParentFile().toPath()), false, false, CommonProperties.getInstance().getZone(), "");
     }
 
     private MediaFile readMediaFile(File file, HashMap<String, MediaFile> filesInFolderMap, Folder folder, boolean original, boolean force, ZoneId zone, String notes) {

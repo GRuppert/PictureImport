@@ -123,7 +123,7 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     @Override
     public List<MediaFile> getByPathRec(Drive drive, Path path) {
-        return getByPath(drive, path, false);
+        return getByPathRec(drive, path, false);
     }
 
     @Override

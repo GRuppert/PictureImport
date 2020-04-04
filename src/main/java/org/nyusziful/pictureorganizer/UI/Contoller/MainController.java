@@ -215,7 +215,7 @@ public class MainController implements Initializable {
 
     @FXML
     private void handleReorgButtonAction() {
-        File file = getDir(commonProperties.getFromDir());
+        File file = getDir(commonProperties.getToDir().toFile());
         if(file != null) {
             disableButtons(true);
             showTablePane();
@@ -223,16 +223,6 @@ public class MainController implements Initializable {
         }
     }
 
-        
-
-    @FXML
-    private void handleShowButtonAction() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(listDirectorySize(commonProperties.getToDir().toFile()));
-        sb.append(checkDirectoryDates(commonProperties.getFromDir()));
-        mainPane.setCenter(new Label(sb.toString()));
-
-    }
 
     /**
      * Compare Files according to their filenames
@@ -589,45 +579,4 @@ public class MainController implements Initializable {
         */
     }
 
-    private String listDirectorySize(File directory) {
-        File[] dirs = directory.listFiles((dir, name) -> dir.isDirectory());
-        StringBuilder sb = new StringBuilder();
-        if (dirs != null) {
-            for (File dir : dirs) {
-                File[] content = dir.listFiles();
-        /*                              File[] content = dirs[j].listFiles(new FilenameFilter() {
-                        public boolean accept(File dir, String name) {
-                            name = name.toLowerCase();
-                        return name.endsWith(".mts") || name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".mp4");
-                    }});
-        */
-                if (content != null) {
-                    sb.append(dir.getName()).append(" : ").append(content.length).append("\n");
-                }
-            }
-        }
-        return sb.toString();
-    }
-
-    /**
-     * Prints out a list of folders which are overlapping
-     * Folder name format:"YYYY-MM-DD - YYYY-MM-DD Description"
-     */
-    private String checkDirectoryDates(File directory) {
-        File[] dirc = directory.listFiles((dir, name) -> dir.isDirectory());
-        StringBuilder sb = new StringBuilder();
-        String oldDir = "";
-        if (dirc != null) {
-            for(int j = 0; j < dirc.length - 1; j++) {
-                String actDir = dirc[j].getName();
-                int eY = parseInt(actDir.substring(13, 17)), eM = parseInt(actDir.substring(18, 20))-1, eD = parseInt(actDir.substring(21, 23));
-                String nextDir = dirc[j].getName();
-                int sY = parseInt(nextDir.substring(0, 4)), sM = parseInt(nextDir.substring(5, 7))-1, sD = parseInt(nextDir.substring(8, 10));
-                if (sY*10000 + sM*100 + sD <= eY*10000 + eM*100 +  eD) {
-                    sb.append(oldDir).append(" -><- ").append(actDir).append("\n");
-                }
-            }
-        }
-        return sb.toString();
-    }
 }

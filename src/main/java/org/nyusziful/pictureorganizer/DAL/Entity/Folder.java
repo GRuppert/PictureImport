@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.hibernate.annotations.Fetch;
 import org.nyusziful.pictureorganizer.Service.DriveService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
@@ -27,13 +28,12 @@ public class Folder extends TrackingEntity {
     private Folder parent;
     @OneToMany(mappedBy = "parent")
     private Collection<Folder> children;
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "drive_id", referencedColumnName = "id")
     private Drive drive;
     @Transient
     private Path javaPath;
 
-    @PostLoad
     private void loadPath() {
         javaPath = Paths.get(DriveService.getLocalLetter(drive) + ":" + FolderService.dataToWinPath(path));
     }

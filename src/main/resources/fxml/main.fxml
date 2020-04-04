@@ -21,7 +21,6 @@
                 <Separator orientation="VERTICAL"/>
                 <Button text="Reorganize Directories" onAction="#handleReorgButtonAction" fx:id="btnReorg" />
                 <Button text="Sort to Directories" onAction="#handleMoveButtonAction" fx:id="btnMove" />
-                <Button text="Check folder sturcture" onAction="#handleShowButtonAction" fx:id="btnShow" />
                 <Separator orientation="VERTICAL"/>
                 <Button text="Compare" onAction="#handleCompareButtonAction" fx:id="btnCompare" />
                 <Button text="List" onAction="#handleListButtonAction" fx:id="btnList" />
