@@ -2,6 +2,7 @@ package org.nyusziful.pictureorganizer.UI.Contoller;
 
 import com.sun.javaws.exceptions.InvalidArgumentException;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.SortedList;
 import javafx.concurrent.WorkerStateEvent;
@@ -88,7 +89,6 @@ public class MainController implements Initializable {
 
     private CommonProperties commonProperties;
     private MediaFileSet mediaFileSet = new MediaFileSet();
-
     public MainController() {
         commonProperties = CommonProperties.getInstance();
     }
@@ -126,9 +126,8 @@ public class MainController implements Initializable {
             FXMLLoader loader2 = new FXMLLoader(getClass().getResource(
                     "/fxml/folderList.fxml"));
             folderList = (VBox) loader2.load();
-//            DirectoryViewController dvContoller = loader2.getController();
-//            mediaFileSet.folderNameProperty().bind(dvContoller.getFolderName());
-
+            DirectoryViewController dvContoller = loader2.getController();
+            mediaFileSet.folderNameProperty().bind(dvContoller.getFolderName());
         } catch (IOException e) {
             e.printStackTrace();
         }

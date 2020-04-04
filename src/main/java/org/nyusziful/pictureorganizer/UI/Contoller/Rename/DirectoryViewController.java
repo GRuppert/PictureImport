@@ -12,6 +12,7 @@ import javafx.util.Callback;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 
 import java.net.URL;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ResourceBundle;
@@ -113,6 +114,8 @@ public class DirectoryViewController implements Initializable {
 
     @FXML
     private void handleApplyEventNameButtonAction() {
+//        Files.move()
+//    FolderService.update
 //        mediaFileSet.setLabel(eventNameField.getText());
 //        updateTargetDirectory();
     }

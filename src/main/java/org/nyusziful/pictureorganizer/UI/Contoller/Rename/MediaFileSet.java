@@ -66,7 +66,6 @@ public class MediaFileSet {
         label = "";
         firstDate.set(LocalDate.now());
         lastDate.set(LocalDate.now());
-        folderName.set("");
     }
 
     public void selectAll() {
@@ -137,10 +136,10 @@ public class MediaFileSet {
     public SimpleObjectProperty<LocalDate> lastDateProperty() {return lastDate;}
 
     private void updateRange() {
-        if (getFirstDate() != null && getLastDate() != null)
+/*        if (getFirstDate() != null && getLastDate() != null)
             folderName.set(getFirstDate().format(FolderFormat) + " - " + getLastDate().format(FolderFormat) + ((label != null && !"".equals(label)) ? " " + label : "")); //2018-06-14 - 2018-07-10 Peru
         else
-            folderName.set("");
+            folderName.set("");*/
     }
 
     public SimpleStringProperty folderNameProperty() {

@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
+import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
@@ -31,7 +32,6 @@ public class TablePanelController implements Initializable {
     private MediaFileSet mediaFileSet;
 
     private TableView<? extends TableViewMediaFile> tableView;
-    
 
     public TablePanelController() {
     }
@@ -97,4 +97,5 @@ public class TablePanelController implements Initializable {
     public void setTableView(TableView<? extends TableViewMediaFile> tableView) {
         this.tableView = tableView;
     }
+
 }
