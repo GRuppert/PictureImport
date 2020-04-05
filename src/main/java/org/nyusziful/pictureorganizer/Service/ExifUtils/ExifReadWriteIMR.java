@@ -61,7 +61,7 @@ public class ExifReadWriteIMR {
         String captureDate = null;
         ZonedDateTime wTZ = null;
         Boolean dateFormat = false;
-        int orig = -1;
+        String orig = null;
         String quality = null;
         try {
             tags = readMeta(file);

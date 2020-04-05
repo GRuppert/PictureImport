@@ -361,7 +361,7 @@ public class MediafileService {
     public String getMediaFileName(MediafileDTO mediafileDTO, String nameVersion) {
         MediaFile mediaFile = getMediaFile(mediafileDTO);
         if (mediaFile == null) return mediafileDTO.filename;
-        return RenameService.getName(mediaFile, nameVersion, getVersionNumber(mediaFile.getImage()));
+        return RenameService.getName(mediaFile, nameVersion, Integer.toString(getVersionNumber(mediaFile.getImage())));
     }
 
     public boolean renameMediaFile(MediafileDTO mediafileDTO, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {

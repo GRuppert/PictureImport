@@ -142,7 +142,7 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
         EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         try{
-            entityManager.remove(item);
+            entityManager.remove(entityManager.contains(item) ? item : entityManager.merge(item));
             if (!batch) transaction.commit();
         }catch(RuntimeException e){
             try{

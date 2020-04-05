@@ -12,6 +12,8 @@ public interface MediaFileStruct<T extends MediaFileSegment> {
 
     public void addWarningMessage(String warningMessage);
 
+    public  T getLastSegmentIgnorePadding();
+
     public  T getLastSegment();
 
     public T getSegment(int i);

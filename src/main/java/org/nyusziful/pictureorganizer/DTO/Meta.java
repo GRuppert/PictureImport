@@ -21,7 +21,7 @@ public class Meta {
     public String dID;
     public String iID;
     public String note = "";
-    public int orig;
+    public String orig;
     public Boolean dateFormat;
     public String quality;
 
@@ -38,7 +38,7 @@ public class Meta {
      * @param orig
      * @param quality
      */
-    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, int orig, String quality) {
+    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality) {
         this.originalFilename = originalFilename;
         this.date = date;
         this.dateFormat = dateFormat;

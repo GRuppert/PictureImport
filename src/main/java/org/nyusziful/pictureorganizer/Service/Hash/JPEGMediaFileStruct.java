@@ -58,6 +58,15 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
     }
 
     @Override
+    public JPEGSegment getLastSegmentIgnorePadding() {
+        for (int i = 0; i < segments.size(); i++) {
+            JPEGSegment segment = segments.get(segments.size()-1-i);
+            if (segment.getMarker() != 0) return segment;
+        }
+        return null;
+    }
+
+    @Override
     public JPEGSegment getLastSegment() {
         return segments.get(segments.size()-1);
     }

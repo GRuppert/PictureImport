@@ -144,7 +144,7 @@ public class RenameService {
         return false;
     }*/
 
-    public static String getName(MediaFile mediaFile, String nameVersion, int version) {
+    public static String getName(MediaFile mediaFile, String nameVersion, String version) {
         final Image actFileImage = mediaFile.getImage();
         String desiredFileName = null;
         String oldFilename;
