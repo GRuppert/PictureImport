@@ -17,7 +17,6 @@ import org.nyusziful.pictureorganizer.Service.FolderService;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ResourceBundle;
@@ -141,7 +140,7 @@ public class DirectoryViewController implements Initializable {
             try {
                 Files.move(folder.getJavaPath(), newFolder.toPath());
                 folder.updatePath(newFolder.toPath());
-                folderService.persistFolder(folder);
+                folderService.mergeFolder(folder);
             } catch (Exception ex) {
                 return;
             }

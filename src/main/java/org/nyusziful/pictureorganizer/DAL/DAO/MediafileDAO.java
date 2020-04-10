@@ -13,6 +13,6 @@ public interface MediafileDAO extends CRUDDAO<MediaFile>{
     public List<MediaFile> getByPath(Drive drive, Path path, boolean batch);
     public List<MediaFile> getByPathRec(Drive drive, Path path);
     public List<MediaFile> getByPathRec(Drive drive, Path path, boolean batch);
-    public MediaFile getByFile(Drive drive, Path path);
-    public MediaFile getByFile(Drive drive, Path path, boolean batch);
+    public MediaFile getByFile(Drive drive, Path path, boolean withImega);
+    public MediaFile getByFile(Drive drive, Path path, boolean withImega, boolean batch);
 }

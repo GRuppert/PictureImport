@@ -16,7 +16,7 @@
         <HBox>
             <Button fx:id="btnGo" text="Go" onAction="#handleGoButtonAction"/>
             <Button fx:id="btnAbort" text="Abort" onAction="#handleAbortButtonAction"/>
-            <Button fx:id="btnRefresh" text="Refresh" onAction="#handleRefreshButtonAction"/>
+            <Button fx:id="btnRefresh" text="Apply folder" onAction="#handleRefreshButtonAction"/>
             <ProgressIndicator fx:id="tableProgressIndicator" progress="0" visible="false"/>
         </HBox>
     </bottom>

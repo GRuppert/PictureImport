@@ -62,6 +62,10 @@ public class FolderService {
         return folderDTO;
     }
 
+    public void mergeFolder(Folder folder) {
+        folderDAO.merge(folder);
+    }
+
     public void persistFolder(Folder folder) {
         persistFolder(Collections.singleton(folder));
     }

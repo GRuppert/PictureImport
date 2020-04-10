@@ -55,18 +55,18 @@ public class MediafileService {
             return getMediafile;
         }
     */
-    public MediaFile getMediafile(Drive drive, Path path) {
-        return mediafileDAO.getByFile(drive, path);
+    public MediaFile getMediafile(Drive drive, Path path, boolean withImega) {
+        return mediafileDAO.getByFile(drive, path, withImega);
     }
 
-    public MediaFile getMediaFile(Path path) {
+    public MediaFile getMediaFile(Path path, boolean withImega) {
         Drive localDrive = driveService.getLocalDrive(path);
-        return getMediafile(localDrive, path);
+        return getMediafile(localDrive, path, withImega);
     }
 
-    public MediaFile getMediaFile(MediafileDTO mediafileDTO) {
+    public MediaFile getMediaFile(MediafileDTO mediafileDTO, boolean withImega) {
         Path path = Paths.get(mediafileDTO.abolutePath);
-        final MediaFile mediaFile = getMediaFile(path);
+        final MediaFile mediaFile = getMediaFile(path, withImega);
         mediaFile.setOriginal(mediafileDTO.isOriginal);
         return mediaFile;
     }
@@ -144,9 +144,12 @@ public class MediafileService {
     }
 
     public int getVersionNumber(Image image) {
+        return 0; //TODO implement properly
+/*
         if (image == null) return -1;
         if (image.getParent() == null) return 0;
         return getVersionNumber(image.getParent()) + 1;
+ */
     }
 
     public void flush() {
@@ -270,7 +273,7 @@ public class MediafileService {
             MediaFile mediaFile = readMediaFile(file, fileSet, folder, original, force, zone, notes);
             if (mediaFile != null) {
                 mediaFiles.add(mediaFile);
-                progress.increaseProgress();
+                if (progress != null) progress.increaseProgress();
             }
         }
         filesInFolderFromDB.removeAll(mediaFiles);
@@ -281,7 +284,7 @@ public class MediafileService {
     }
 
     private MediaFile readMediaFile(File file) {
-        MediaFile result = mediafileDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath());
+        MediaFile result = mediafileDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath(), false);
         return result != null ? result : readMediaFile(file, null, folderService.getFolder(file.getParentFile().toPath()), false, false, CommonProperties.getInstance().getZone(), "");
     }
 
@@ -360,13 +363,13 @@ public class MediafileService {
 
 
     public String getMediaFileName(MediafileDTO mediafileDTO, String nameVersion) {
-        MediaFile mediaFile = getMediaFile(mediafileDTO);
+        MediaFile mediaFile = getMediaFile(mediafileDTO, true);
         if (mediaFile == null) return mediafileDTO.filename;
-        return RenameService.getName(mediaFile, nameVersion, getVersionNumber(mediaFile.getImage()));
+        return RenameService.getName(mediaFile, nameVersion, Integer.toString(getVersionNumber(mediaFile.getImage())));
     }
 
     public boolean renameMediaFile(MediafileDTO mediafileDTO, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
-        MediaFile mediaFile = getMediaFile(mediafileDTO);
+        MediaFile mediaFile = getMediaFile(mediafileDTO, true);
         final boolean rename = RenameService.write(mediaFile.getFilePath(), newPath, writeMethod, overwrite);
         if (overwrite || rename) {
             Folder folder = folderService.getFolder(newPath.getParent());

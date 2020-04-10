@@ -1,12 +1,15 @@
 package org.nyusziful.pictureorganizer.Main;
 
+import javafx.application.Platform;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
+import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
+import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import javax.swing.*;
@@ -17,10 +20,8 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.*;
 import java.util.List;
-import java.util.Set;
 
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
@@ -33,9 +34,10 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-        FolderService folderService = new FolderService();
-        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
-        System.out.println(folder);
+        read();
+//        FolderService folderService = new FolderService();
+//        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
+//        System.out.println(folder);
 //        updateFolder(Paths.get("G:\\Pictures\\Photos"), 1, 0);
 //        updateFolder(Paths.get("D:\\Képek"), drives.get(7), 0, false, "arw", ZoneId.systemDefault());
 
@@ -51,6 +53,49 @@ public class PresetUseCases {
         renaming.forEach((newName,mf) -> mfs.renameMediaFile(mf, Paths.get(mf.getFilePath().getParent()+"\\"+newName), TableViewMediaFile.WriteMethod.MOVE, false));
         System.out.println("done");*/
 //        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
+    }
+
+    private static void migrationV4() {
+        File dir = new File("G:\\Pictures\\Photos\\V4\\Gabus");
+        String toDir = "g:\\Pictures\\Photos\\DBSaved\\";
+        File[] directories = dir.listFiles(new FilenameFilter() {
+            public boolean accept(File dir, String name) {
+                return (new File(dir + "\\" + name).isDirectory());
+            }});
+        MediafileService mediafileService = new MediafileService();
+        for (File directory : directories) {
+            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), false, false, CommonProperties.getInstance().getZone(), "", null);
+/*            for (MediafileDTO mediafileDTO : mediaFiles) {
+                RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", toDir+directory.getName());
+                final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
+                renameMediaFile.write(TableViewMediaFile.WriteMethod.MOVE, false);
+            }*/
+        }
+
+
+    }
+
+    private static void read() {
+        File dir = new File("H:\\Képek\\ExtPhotos\\Babi");
+        ArrayList<File> directories = new ArrayList<>();
+        try {
+            Files.walk(dir.toPath())
+                    .filter(Files::isDirectory)
+                    .forEach(f -> directories.add(f.toFile()));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        MediafileService mediafileService = new MediafileService();
+        for (File directory : directories) {
+            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), false, false, CommonProperties.getInstance().getZone(), "", null);
+/*            for (MediafileDTO mediafileDTO : mediaFiles) {
+                RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", toDir+directory.getName());
+                final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
+                renameMediaFile.write(TableViewMediaFile.WriteMethod.MOVE, false);
+            }*/
+        }
+
+
     }
 
     private void osNev() {

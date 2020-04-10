@@ -142,14 +142,14 @@ public class MainController implements Initializable {
     private void handleImportButtonAction() {
         disableButtons(true);
         showTablePane();
-        ReadFolders(defaultImportDirectories(), true);
+        ReadFolders(defaultImportDirectories(), true, true);
     }
 
     @FXML
     private void handleImportFromButtonAction() {
         disableButtons(true);
         showTablePane();
-        ReadFolders(importDirectories(getDir(commonProperties.getFromDir())), true);
+        ReadFolders(importDirectories(getDir(commonProperties.getFromDir())), true, true);
     }
 
     @FXML
@@ -180,7 +180,7 @@ public class MainController implements Initializable {
             directories.add(file);
             disableButtons(true);
             showTablePane();
-            ReadFolders(directories, false);
+            ReadFolders(directories, false, true);
         }
     }
 
@@ -198,7 +198,7 @@ public class MainController implements Initializable {
             }
             disableButtons(true);
             showTablePane();
-            ReadFolders(directories, false);
+            ReadFolders(directories, false, false);
         }
     }
 
@@ -406,10 +406,12 @@ public class MainController implements Initializable {
         private int numberOfFiles;
         private int processedFiles;
         private boolean original;
+        private boolean rename;
 
-        public ReadTask(Collection<File> directories, boolean original) {
+        public ReadTask(Collection<File> directories, boolean original, boolean rename) {
             super(directories);
             this.original = original;
+            this.rename = rename;
         }
 
         @Override
@@ -435,7 +437,7 @@ public class MainController implements Initializable {
                         }
                     });
                 }
-                createNewName(renameMediaFiles);
+                if (rename) createNewName(renameMediaFiles);
             }
             Platform.runLater(new Runnable() {
                 @Override public void run() {
@@ -474,7 +476,7 @@ public class MainController implements Initializable {
                     }
                 });
             }
-            createNewName(renameMediaFiles);
+//            createNewName(renameMediaFiles);
             return mediaFiles.size();
         }
     }
@@ -499,8 +501,8 @@ public class MainController implements Initializable {
 
 
     //Input mediafiles Output standard
-    public void ReadFolders(Collection<File> directories, boolean original) {
-        Task<Integer> task = new ReadTask(directories, original);
+    public void ReadFolders(Collection<File> directories, boolean original, boolean rename) {
+        Task<Integer> task = new ReadTask(directories, original, rename);
         statusLabel.setText("");
         task.setOnFailed(a -> {task.getException().printStackTrace(); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});
         task.setOnSucceeded(

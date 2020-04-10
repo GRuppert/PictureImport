@@ -25,11 +25,11 @@ public class MediaDirectory {
             String directoryName = directory.getName();
             firstDate = LocalDate.of(
                     parseInt(directoryName.substring(0, 4)),
-                    parseInt(directoryName.substring(5, 7)) - 1,
+                    parseInt(directoryName.substring(5, 7)),
                     parseInt(directoryName.substring(8, 10)));
             lastDate = LocalDate.of(
                     parseInt(directoryName.substring(13, 17)),
-                    parseInt(directoryName.substring(18, 20)) - 1,
+                    parseInt(directoryName.substring(18, 20)),
                     parseInt(directoryName.substring(21, 23)));
             if (directoryName.length() > 24)
                 label = directoryName.substring(24);

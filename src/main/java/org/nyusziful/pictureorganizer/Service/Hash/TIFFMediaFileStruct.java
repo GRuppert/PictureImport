@@ -68,6 +68,11 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
     }
 
     @Override
+    public ImageFileDirectory getLastSegmentIgnorePadding() {
+        return null;
+    }
+
+    @Override
     public void addSegment(ImageFileDirectory segment) {
         segments.add(segment);
     }

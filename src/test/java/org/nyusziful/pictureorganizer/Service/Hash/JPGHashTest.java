@@ -29,16 +29,16 @@ public class JPGHashTest {
                     new JPEGSegment(2, 104, 225, "Exif\0\0")),
             new TestData("DSC08806.jpg",
                     "Reached the end of the file",
-                    new JPEGSegment(3427848, 2, 217, "")),
+                    new JPEGSegment(3427848, 2, 217, "0xFFD9 End Of Image")),
             new TestData("V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg",
                     "Reached the end of the file",
-                    new JPEGSegment(325664, 2, 217, "")),
+                    new JPEGSegment(325664, 2, 217, "0xFFD9 End Of Image")),
             new TestData("K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg",
                     "Not found marker after segment",
-                    new JPEGSegment(181507, 2, 217, "")),
+                    new JPEGSegment(181507, 2, 217, "0xFFD9 End Of Image")),
             new TestData("20181007_120044331_iOS.jpg",
                     "Reached the end of the file",
-                    new JPEGSegment(2455749, 2, 217, ""))
+                    new JPEGSegment(2455749, 2, 217, "0xFFD9 End Of Image"))
     };
     String filename;
     String terminationMessage;
@@ -61,7 +61,7 @@ public class JPGHashTest {
         File file = new File(this.getClass().getClassLoader().getResource(filename).getFile());
         final JPEGMediaFileStruct fileStruct = JPGHash.scan(file);
         assertEquals(filename + " read termination message: " + fileStruct.getTerminationMessage() + " awaited: " + terminationMessage, fileStruct.getTerminationMessage(), terminationMessage);
-        assertEquals("Structure of " + filename + " analyzed: " + fileStruct.getLastSegment().toString() + " awaited: " + lastSegment.toString(), fileStruct.getLastSegment(), lastSegment);
+        assertEquals("Structure of " + filename + " analyzed: " + fileStruct.getLastSegmentIgnorePadding().toString() + " awaited: " + lastSegment.toString(), fileStruct.getLastSegmentIgnorePadding(), lastSegment);
 //        fileStruct.drawMap();
     }
 

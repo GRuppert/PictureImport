@@ -122,8 +122,7 @@ public class JPEGSegment implements MediaFileSegment {
 
     @Override
     public boolean equals(Object obj) {
-        //TODO check
-        if (obj != null && this.getClass().equals(obj.getClass())) {
+         if (obj != null && this.getClass().equals(obj.getClass())) {
             JPEGSegment otherSegment = (JPEGSegment) obj;
             if (this.marker == otherSegment.marker)
                 if (this.getLength() == otherSegment.getLength())

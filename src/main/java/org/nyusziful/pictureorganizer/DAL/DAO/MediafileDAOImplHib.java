@@ -54,18 +54,18 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
     }
 
     @Override
-    public MediaFile getByFile(Drive drive, Path path) {
-        return getByFile(drive, path, false);
+    public MediaFile getByFile(Drive drive, Path path, boolean withImega) {
+        return getByFile(drive, path, withImega, false);
     }
 
     @Override
-    public MediaFile getByFile(Drive drive, Path path, boolean batch) {
+    public MediaFile getByFile(Drive drive, Path path, boolean withImega, boolean batch) {
         if (path == null || drive == null) return null;
         EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
-            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", MediaFile.class);
+            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i " + (withImega ? "LEFT JOIN FETCH i.image" : "") + " WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", MediaFile.class);
             typedQuery.setParameter("driveId", drive.getId());
             typedQuery.setParameter("path", FolderService.winToDataPath(path.getParent()));
             typedQuery.setParameter("filename", path.getFileName().toString());
@@ -101,7 +101,7 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
-            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path=:path", MediaFile.class);
+            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i LEFT JOIN FETCH i.image WHERE i.drive.id=:driveId and i.folder.path=:path", MediaFile.class);
             typedQuery.setParameter("driveId", drive.getId());
             typedQuery.setParameter("path", FolderService.winToDataPath(path));
             results = typedQuery.getResultList();
