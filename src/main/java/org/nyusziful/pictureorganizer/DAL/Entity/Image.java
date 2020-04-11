@@ -43,8 +43,6 @@ public class Image extends TrackingEntity implements Serializable {
     private Image parent;
     @OneToMany(mappedBy = "parent")
     private Set<Image> children = new HashSet<>();
-    @OneToMany(mappedBy = "image")
-    private Set<MediaFile> mediaFiles = new HashSet<>();
 
 
     @PostLoad
@@ -113,43 +111,6 @@ public class Image extends TrackingEntity implements Serializable {
                 ", oringinalFilename='" + originalFilename + '\'' +
                 ", type='" + type + '\'' +
                 '}';
-    }
-
-    public Collection<MediaFile> getMediaFiles() {
-        return mediaFiles;
-    }
-
-    public void addMediaFile(MediaFile mediaFile) {
-        addMediaFile(mediaFile, false);
-    }
-
-    public void addMediaFile(MediaFile mediaFile, boolean cross) {
-        //prevent endless loop
-        if (mediaFiles.contains(mediaFile))
-            return ;
-        //add new account
-        mediaFiles.add(mediaFile);
-        //update child if request is not from it
-        if (!cross) mediaFile.setImage(this, true);
-    }
-
-    /**
-     * Removes the account from the person. The method keeps
-     * relationships consistency:
-     * * the account will no longer reference this person as its owner
-     */
-    public void removeMediaFile(MediaFile mediaFile) {
-        removeMediaFile(mediaFile, false);
-    }
-
-    public void removeMediaFile(MediaFile mediaFile, boolean cross) {
-        //prevent endless loop
-        if (!mediaFiles.contains(mediaFile))
-            return ;
-        //remove the account
-        mediaFiles.remove(mediaFile);
-        //remove myself from the twitter account
-        if (!cross) mediaFile.setImage(null, true);
     }
 
     public Image getParent() {

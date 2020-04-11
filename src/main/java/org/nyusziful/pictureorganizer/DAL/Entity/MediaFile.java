@@ -210,17 +210,7 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     }
 
     public void setImage(Image image, boolean cross) {
-        //prevent endless loop
-        if (sameAsFormer(image))
-            return;
-        //set new owner
-        if (this.image!=null && !(cross && image == null))
-            this.image.removeMediaFile(this, true);
         this.image = image;
-        //remove from the old owner
-        //set myself to new owner
-        if (image!=null && !cross)
-            image.addMediaFile(this, true);
     }
 
     private boolean sameAsFormer(Image newImage) {
