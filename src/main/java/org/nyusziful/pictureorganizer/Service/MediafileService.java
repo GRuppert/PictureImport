@@ -94,11 +94,11 @@ public class MediafileService {
         return mediafileDTO;
     }
 
-    public void saveMediaFiles(MediaFile mediafile) {
-        saveMediaFiles(mediafile, false);
+    public void saveMediaFile(MediaFile mediafile) {
+        saveMediaFile(mediafile, false);
     }
 
-    private void saveMediaFiles(MediaFile mediafile, boolean batch) {
+    private void saveMediaFile(MediaFile mediafile, boolean batch) {
         saveMediaFiles(Collections.singleton(mediafile), batch);
     }
 
@@ -334,7 +334,14 @@ public class MediafileService {
                     ((JPGMediaFile) actFile).setWithQuality(meta.quality);
                 }
                 actFile.setDateStored(meta.date);
+                final Image image1 = actFile.getImage();
+                if (image1 != null && image1 != image) {
+                    whatToSave.add("image1");
+                }
                 actFile.setImage(image);
+                if (whatToSave.contains("image1")) {
+                    imageService.saveImage(image1, true);
+                }
                 actFile.setFilehash(fullHash);
                 whatToSave.add("file");
             }
@@ -353,7 +360,7 @@ public class MediafileService {
                 imageService.saveImage(actFile.getImage(), true);
             }
             if (whatToSave.contains("file")) {
-                saveMediaFiles(actFile, true);
+                saveMediaFile(actFile, true);
                 filesInFolderMap.put(actFile.getFilePath().toString().toLowerCase(), actFile);
             }
             mediafileDAO.close();
@@ -390,7 +397,7 @@ public class MediafileService {
                 ((RAWMediaFile) mediaFile).setXMPattached(createXmp(mediaFile.getFilePath().toFile()) != null);
             }
 
-            saveMediaFiles(mediaFile);
+            saveMediaFile(mediaFile);
         }
 
         return rename;
