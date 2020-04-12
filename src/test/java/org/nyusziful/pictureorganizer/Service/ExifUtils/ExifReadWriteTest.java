@@ -11,35 +11,67 @@ import java.net.URL;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Service.Hash.HashTest;
 
 /**
  *
  * @author gabor
  */
+@RunWith(Parameterized.class)
 public class ExifReadWriteTest {
-    
+    static class TestData {
+        String filename;
+        Meta expMeta;
+
+        public TestData(String filename, Meta expMeta) {
+            this.filename = filename;
+            this.expMeta = expMeta;
+        }
+    }
+
+    private static final TestData[] TESTS = new TestData[] {
+            new TestData("V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-4f0f7fe2fabb83c399af967ccf860d88-47e0be579ef91106cdd6c818b2976ce2-DSC09459.ARW",
+                    new Meta("", ZonedDateTime.of(2015, 07, 25, 14, 32, 29, 00, ZoneId.systemDefault()), true, "ILCE-5100", null, "47e0be579ef91106cdd6c818b2976ce2", "47e0be579ef91106cdd6c818b2976ce2", "", null, "RAW + JPEG")),
+            new TestData("WP_20140703_16_51_45_Raw__highres.dng",
+                    new Meta("", ZonedDateTime.of(2014, 07, 03, 16, 51, 43, 00, ZoneId.systemDefault()), false, "Lumia 1020", null, null, null, null, null, null))
+    };
+    String filename;
+    Meta expMeta;
+
+    @Parameterized.Parameters
+    public static List<TestData> data() {
+        return Arrays.asList(TESTS);
+    }
+
+    public ExifReadWriteTest(TestData data) {
+        super();
+        this.filename = data.filename;
+        this.expMeta = data.expMeta;
+    }
+
+
     /**
      * Test of readFileMeta method, of class ExifReadWrite.
      */
     @Test
     public void testExifToMeta() {
         System.out.println("readFileMeta");
-        String fileName = "V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-4f0f7fe2fabb83c399af967ccf860d88-47e0be579ef91106cdd6c818b2976ce2-DSC09459.ARW";
-        File fileMeta = new File(this.getClass().getClassLoader().getResource(fileName).getFile());
-        Meta expResult = new Meta("", ZonedDateTime.of(2015, 07, 25, 14, 32, 29, 00, ZoneId.systemDefault()), true, "ILCE-5100", null, "47e0be579ef91106cdd6c818b2976ce2", "47e0be579ef91106cdd6c818b2976ce2", "", null, "RAW + JPEG");
+        File fileMeta = new File(this.getClass().getClassLoader().getResource(filename).getFile());
         Meta result = ExifService.readFileMeta(new File[] {fileMeta}, ZoneId.systemDefault()).iterator().next();
-        assert result.originalFilename.endsWith(fileName);
+        assert result.originalFilename.endsWith(filename);
         result.originalFilename = "";
-        assertEquals("Meta of file(" + fileName + ") counted: \n" + result + "\n awaited: \n" + expResult, expResult.toString(), result.toString());
+        assertEquals("Meta of file(" + filename + ") counted: \n" + result + "\n awaited: \n" + expMeta, expMeta.toString(), result.toString());
     }
-
 
     /**
      * Test of createXmp method, of class ExifReadWrite.

@@ -200,6 +200,7 @@ public class ExifReadWriteIMR {
             case "tiff":
             case "tif":
             case "arw":
+            case "dng":
             case "nef":
                 return TiffMetadataReader.readMetadata(file);
             case "png":
