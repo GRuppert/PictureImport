@@ -1,11 +1,14 @@
 package org.nyusziful.pictureorganizer.Main;
 
 import javafx.application.Platform;
+import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
@@ -93,6 +96,29 @@ public class PresetUseCases {
                 final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
                 renameMediaFile.write(TableViewMediaFile.WriteMethod.MOVE, false);
             }*/
+        }
+
+
+    }
+
+    private static void readDNG() {
+        Path path = Paths.get();
+        HashSet<Path> paths = new HashSet<>();
+        try {
+            Files.find(path, Integer.MAX_VALUE,
+                    (filePath, fileAttr) -> fileAttr.isRegularFile() && FilenameUtils.getExtension(filePath.getFileName().toString().toLowerCase()).equals("dng"))
+                    .forEach(paths::add);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        MediafileService mediafileService = new MediafileService();
+        for (Path file : paths) {
+            final MediaFile mediaFile = mediafileService.getMediaFile(file, false);
+            if (mediaFile.getDateStored() == null) {
+                Meta result = ExifService.readFileMeta(new File[] {file.toFile()}, ZoneId.systemDefault()).iterator().next();
+                mediaFile.setDateStored(result.date);
+                mediafileService.saveMediaFile(mediaFile);
+            }
         }
 
 

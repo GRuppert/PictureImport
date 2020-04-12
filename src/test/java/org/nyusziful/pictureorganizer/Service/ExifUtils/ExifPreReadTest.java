@@ -22,7 +22,6 @@ import static org.junit.Assert.fail;
  * @author gabor
  */
 public class ExifPreReadTest {
-
     /**
      * Test of readMeta method, of class ExifReadWrite.
      */
@@ -59,8 +58,6 @@ public class ExifPreReadTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
     }
 
     @Test
@@ -99,7 +96,5 @@ public class ExifPreReadTest {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        // TODO review the generated test code and remove the default call to fail.
-        fail("The test case is a prototype.");
     }
 }
