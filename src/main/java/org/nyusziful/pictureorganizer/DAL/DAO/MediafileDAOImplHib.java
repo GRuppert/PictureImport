@@ -1,7 +1,5 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
-import org.hibernate.Session;
-import org.hibernate.Transaction;
 import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.Service.FolderService;
@@ -59,13 +57,13 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
     }
 
     @Override
-    public MediaFile getByFile(Drive drive, Path path, boolean withImega, boolean batch) {
+    public MediaFile getByFile(Drive drive, Path path, boolean withImage, boolean batch) {
         if (path == null || drive == null) return null;
         EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
-            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i " + (withImega ? "LEFT JOIN FETCH i.image" : "") + " WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", MediaFile.class);
+            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i " + (withImage ? "LEFT JOIN FETCH i.image" : "") + " WHERE i.drive.id=:driveId and i.folder.path =:path and i.filename =:filename", MediaFile.class);
             typedQuery.setParameter("driveId", drive.getId());
             typedQuery.setParameter("path", FolderService.winToDataPath(path.getParent()));
             typedQuery.setParameter("filename", path.getFileName().toString());
