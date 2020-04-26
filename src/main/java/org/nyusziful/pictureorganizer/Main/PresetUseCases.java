@@ -37,7 +37,7 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-        read();
+        readDNG();
 //        FolderService folderService = new FolderService();
 //        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
 //        System.out.println(folder);
@@ -102,7 +102,7 @@ public class PresetUseCases {
     }
 
     private static void readDNG() {
-        Path path = Paths.get();
+        Path path = Paths.get("G:\\Pictures\\Photos");
         HashSet<Path> paths = new HashSet<>();
         try {
             Files.find(path, Integer.MAX_VALUE,

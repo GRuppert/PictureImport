@@ -49,7 +49,7 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Column(name = "date_mod")
     private Timestamp dateMod;
 
-    @Column(name = "date_stored", updatable = false)
+    @Column(name = "date_stored")
     private String dateStoredString;
 
     @Transient
@@ -65,12 +65,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
 
     @Transient
     private Boolean original;
-
-    @PrePersist
-    private void dateToString() {
-        if (dateStored != null)
-            dateStoredString = XmpDateFormatTZ.format(dateStored);
-    }
 
     private void stringToDate() {
         if (dateStoredString != null)
@@ -242,6 +236,10 @@ public class MediaFile extends TrackingEntity implements Cloneable {
 
     public void setDateStored(ZonedDateTime dateCorrected) {
         this.dateStored = dateCorrected;
+        if (dateStored != null)
+            dateStoredString = XmpDateFormatTZ.format(dateStored);
+        else
+            dateStoredString = null;
     }
 
     public String getLatitude() {
