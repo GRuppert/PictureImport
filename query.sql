@@ -27,6 +27,11 @@ SELECT CONCAT(SUBSTRING(date_mod, 1, 10), 'T', SUBSTRING(date_mod, 12, 8)), SUBS
 SELECT count(*) FROM media_file m where image_id = 3103 AND CONCAT(SUBSTRING(date_stored, 1, 10), ' ', SUBSTRING(date_stored, 12, 8)) = date_mod group by filehash;
 
 
+SELECT * FROM pictureorganizer.image as i WHERE i.type <> 'mp4' AND 0 = (SELECT count(*) FROM media_file AS m2 WHERE m2.image_id = i.id AND (i.duration + 2) > ABS(TIMEDIFF(m2.date_mod, m2.date_stored_local)));
+SELECT (0 + 1) < ABS(TIMEDIFF(m2.date_mod, m2.date_stored_local)), ABS(TIMEDIFF(m2.date_stored_local, m2.date_mod)), m2.* FROM media_file AS m2 WHERE m2.image_id = 21;
+SELECT duration FROM image WHERE id = 21;
+
+
 SELECT i.id FROM digikam.images as i LEFT JOIN digikam.albums as a ON i.album = a.id LEFT JOIN digikam.albumroots as ar ON a.albumRoot = ar.id WHERE CONCAT(UPPER(SUBSTRING(ar.identifier, 16)), CONCAT(ar.specificPath, a.relativePath), i.name) = (SELECT CONCAT(SUBSTRING(d.volumeSN, 1, 4), SUBSTRING(d.volumeSN, 6), f.path, '/', m.filename) from pictureorganizer.media_file as m LEFT JOIN pictureorganizer.folder as f ON m.folder_id = f.id LEFT JOIN pictureorganizer.drive as d ON m.drive_id = d.id WHERE m.id = 1042780);
 
 ALTER DATABASE pictureorganizer CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_as_cs;
