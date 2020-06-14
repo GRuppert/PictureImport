@@ -38,6 +38,8 @@ public class Image extends TrackingEntity implements Serializable {
     private String latitude;
     private String longitude;
     private String altitude;
+    @Column(name = "duration")
+    private long duration;
     @ManyToOne
     @JoinColumn(name="parent_id", referencedColumnName="id")
     private Image parent;
@@ -175,5 +177,13 @@ public class Image extends TrackingEntity implements Serializable {
 
     public void setOriginalFileHash(String originalFileHash) {
         this.originalFileHash = originalFileHash;
+    }
+
+    public void setDuration(long duration) {
+        this.duration = duration;
+    }
+
+    public long getDuration() {
+        return duration;
     }
 }

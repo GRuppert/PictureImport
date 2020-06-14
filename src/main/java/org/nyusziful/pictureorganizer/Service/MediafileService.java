@@ -170,6 +170,8 @@ public class MediafileService {
             image.setDateTaken(mediaFile.getDateStored());
             image.setOriginalFilename(origFileName);
             mediaFile.setOriginal(true);
+            if (mediaFile instanceof VideoMediaFile)
+                image.setDuration(((VideoMediaFile)mediaFile).getDuration());
             return true;
         } else {
             if (!origFileName.equals(image.getOriginalFilename()) || !mediaFile.getFilehash().equals(image.getOriginalFileHash()) || (!mediaFile.getDateStored().isEqual(image.getDateTaken()) && !mediaFile.getDateStored().isEqual(image.getActualDate()))) {
@@ -191,6 +193,10 @@ public class MediafileService {
         return mediaFiles;
     }
  */
+    public void reOrganizeBackupAccordingTo(Drive backupDrive, Path rootFromMain) {
+
+    }
+
     public Set<MediafileDTO> reOrganizeFilesInSubFolders(Path path, ProgressLeakingTask progress) {
         Set<MediafileDTO> result = new HashSet<>();
         if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
@@ -231,6 +237,7 @@ public class MediafileService {
         //pick the first matching
         Set<MediaFile> toSave = new HashSet<>();
         for (File unknownFile : unknownFiles) {
+            System.out.println(unknownFile);
             progressing++;
             progress.updateProgress(progressing, paths.size() + unknownFiles.size());
             MediaFile mediaFile = null;
@@ -308,6 +315,8 @@ public class MediafileService {
                     actFile = new RAWMediaFile(folder, filePath, fileSize, dateMod, original);
                 } else if (supportedJPGFileType(name)) {
                     actFile = new JPGMediaFile(folder, filePath, fileSize, dateMod, original);
+                } else if (supportedVideoFileType(name)) {
+                    actFile = new VideoMediaFile(folder, filePath, fileSize, dateMod, original);
                 } else {
                     actFile = new MediaFile(folder, filePath, fileSize, dateMod, original);
                 }
@@ -318,7 +327,7 @@ public class MediafileService {
                     whatToSave.add("file");
                 }
             }
-            if (force || actFile.getId() < 0 || actFile.getSize() != fileSize || actFile.getDateMod().compareTo(dateMod) != 0) {
+            if (force || actFile.getId() < 0 || actFile.getSize() != fileSize || actFile.getDateMod().compareTo(dateMod) != 0 || (actFile instanceof VideoMediaFile && ((VideoMediaFile)actFile).getDuration() == 0)) {
                 actFile.setDateMod(dateMod);
                 actFile.setSize(fileSize);
                 ImageDTO imageDTO = getHash(filePath.toFile());
@@ -332,6 +341,9 @@ public class MediafileService {
                 Meta meta = ExifService.readMeta(filePath.toFile(), zone);
                 if (actFile instanceof JPGMediaFile) {
                     ((JPGMediaFile) actFile).setWithQuality(meta.quality);
+                }
+                if (actFile instanceof VideoMediaFile) {
+                    ((VideoMediaFile) actFile).setDuration(meta.duration);
                 }
                 actFile.setDateStored(meta.date);
                 actFile.setImage(image);

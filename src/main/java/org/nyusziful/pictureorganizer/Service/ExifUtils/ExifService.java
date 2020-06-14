@@ -53,7 +53,4 @@ public class ExifService {
     public static void updateExif(List<String> valuePairs, File directory) {
         ExifReadWriteET.updateExif(valuePairs, directory);
     }
-
-
-
 }

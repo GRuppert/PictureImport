@@ -29,7 +29,7 @@ import org.nyusziful.pictureorganizer.UI.StaticTools;
 public class MediaFileHash {
     public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
     public enum Type {
-        MP4 ("mp4", new String[] {"mp4"}),
+        MP4 ("mp4", new String[] {"mp4", "3gp"}),
         JPG ("jpg", new String[] {"jpg", "jpeg"}),
         TIFF ("tif", new String[] {"arw", "dng", "nef", "tif", "tiff"}),
         UNKNOWN ("n/a", new String[] {});
@@ -59,6 +59,11 @@ public class MediaFileHash {
 
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileHash.class);
 
+    public static void main(String[] args) {
+        ImageDTO hash = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\QTVV7462.MP4"));
+        ImageDTO hash2 = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\VID_20101120_120509.3gp"));
+        System.out.println(hash2);
+    }
     /**
      * 
      * @param file

@@ -55,7 +55,7 @@ public class MP4Hash implements Hasher {
                     if (read == -1) {throw new IOException("File ended unexpectedly");}
                     length -= read;
                 }
-//                            break;
+                break;
             } else {
                 if (!skipBytes(in, length)) break;
             }

@@ -52,3 +52,10 @@ CREATE VIEW pictureorganizer.imagecomments AS SELECT * FROM digikam.imagecomment
 CREATE VIEW pictureorganizer.imagehistory AS SELECT * FROM digikam.imagehistory;
 CREATE VIEW pictureorganizer.videometadata AS SELECT * FROM digikam.videometadata;#duration
 CREATE VIEW pictureorganizer.imagemetadata AS SELECT * FROM digikam.imagemetadata;#camera spec
+
+UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = 'mp4'; -- 9795
+UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = 'mov'; -- 435
+UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = 'avi'; -- 560
+UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = 'mts'; -- 576
+UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = 'mpg'; -- 259
+UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = '3gp'; -- 663
