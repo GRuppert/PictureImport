@@ -5,6 +5,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
+import org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
@@ -37,7 +38,7 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-        read();
+        readDNG();
 //        FolderService folderService = new FolderService();
 //        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
 //        System.out.println(folder);
@@ -102,7 +103,7 @@ public class PresetUseCases {
     }
 
     private static void readDNG() {
-        Path path = Paths.get();
+        Path path = Paths.get("G:\\Pictures\\Photos");
         HashSet<Path> paths = new HashSet<>();
         try {
             Files.find(path, Integer.MAX_VALUE,

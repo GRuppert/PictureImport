@@ -1,16 +1,17 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
-import org.hibernate.Hibernate;
 
 import javax.persistence.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.TextStyle;
+import java.util.Locale;
 import java.util.Objects;
-
-import static org.nyusziful.pictureorganizer.UI.StaticTools.XmpDateFormatTZ;
 
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -49,8 +50,17 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Column(name = "date_mod")
     private Timestamp dateMod;
 
-    @Column(name = "date_stored", updatable = false)
+    @Column(name = "date_stored")
     private String dateStoredString;
+
+    @Column(name = "date_stored_local")
+    private Timestamp dateStoredLocal;
+
+    @Column(name = "date_stored_utc")
+    private Timestamp dateStoredUTC;
+
+    @Column(name = "date_stored_tz")
+    private String dateStoredTZString;
 
     @Transient
     private ZonedDateTime dateStored;
@@ -66,16 +76,14 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Transient
     private Boolean original;
 
-    @PrePersist
-    private void dateToString() {
-        if (dateStored != null)
-            dateStoredString = XmpDateFormatTZ.format(dateStored);
-    }
-
     private void stringToDate() {
-        if (dateStoredString != null)
-            dateStored = ZonedDateTime.parse(dateStoredString, XmpDateFormatTZ);
-
+//        if (dateStoredString != null)
+//            dateStored = ZonedDateTime.parse(dateStoredString, XmpDateFormatTZ);
+        String prefix = "";
+        if (dateStoredTZString.startsWith("+") || dateStoredTZString.startsWith("-"))
+            prefix = "UTC";
+        if (dateStoredLocal != null && dateStoredTZString != null)
+            dateStored = dateStoredLocal.toLocalDateTime().atZone(ZoneId.of(prefix + dateStoredTZString));
     }
 
     private void loadPath() {
@@ -242,6 +250,15 @@ public class MediaFile extends TrackingEntity implements Cloneable {
 
     public void setDateStored(ZonedDateTime dateCorrected) {
         this.dateStored = dateCorrected;
+        if (dateStored != null) {
+            dateStoredLocal = Timestamp.valueOf(dateStored.toLocalDateTime());
+            dateStoredUTC = Timestamp.valueOf(dateStored.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime());
+            dateStoredTZString = dateStored.getZone().getId();
+        } else {
+            dateStoredLocal = null;
+            dateStoredUTC = null;
+            dateStoredTZString = null;
+        }
     }
 
     public String getLatitude() {

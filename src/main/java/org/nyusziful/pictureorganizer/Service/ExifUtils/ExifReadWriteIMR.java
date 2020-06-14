@@ -14,6 +14,7 @@ import com.drew.imaging.mp4.Mp4MetadataReader;
 import com.drew.imaging.png.PngMetadataReader;
 import com.drew.imaging.quicktime.QuickTimeMetadataReader;
 import com.drew.imaging.tiff.TiffMetadataReader;
+import com.drew.metadata.mp4.Mp4Directory;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import com.adobe.internal.xmp.XMPException;
 import com.adobe.internal.xmp.XMPIterator;
@@ -28,10 +29,11 @@ import com.drew.metadata.Tag;
 import com.drew.metadata.xmp.XmpDirectory;
 
 import java.io.*;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
+import java.time.temporal.TemporalField;
 import java.util.ArrayList;
 import java.util.Collection;
 import org.apache.commons.io.FilenameUtils;
@@ -51,6 +53,15 @@ public class ExifReadWriteIMR {
         return results;
     }
 
+    public static void main(String[] args) {
+        readFileMeta(new File("G:\\Pictures\\Photos\\DBSaved\\2017-12-31 - 2018-01-01 Europapark szilveszter\\V6_K2017-12-3_1@11-2_3-40(+0100)(Sun)-6d6d425fbb10fd44c077ca69af817ab3-0-C0001.mp4"), ZoneId.systemDefault());
+        readFileMeta(new File("G:\\Pictures\\Photos\\Új\\Sustenpass\\2019_0922_150428_412.mov"), ZoneId.systemDefault());
+        readFileMeta(new File("G:\\Pictures\\Photos\\Új\\14584100.avi"), ZoneId.systemDefault());
+        readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Szelektálás\\!Válogatós\\Gabus\\!IMAG\\2007-05-05 - 2007-05-05\\MPG_0008.mpg"), ZoneId.systemDefault());
+        readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Original\\Közös\\2016-06-19 - 2016-06-19 Streetworkout\\K2016-06-1_9@11-1_0-02(+0200)(Sun)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-00041.mts"), ZoneId.systemDefault());
+        readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Szelektálás\\!Válogatós\\Gabus\\20101121 Düsseldorf\\Modern\\VID_20101120_120509.3gp"), ZoneId.systemDefault());
+    }
+
     public static Meta readFileMeta(File file, ZoneId defaultTZ) {
         ArrayList<String[]> tags;
         String model = null;
@@ -63,6 +74,7 @@ public class ExifReadWriteIMR {
         Boolean dateFormat = false;
         String orig = null;
         String quality = null;
+        long duration = 0;
         try {
             tags = readMeta(file);
         } catch (ImageProcessingException | IOException ex) {
@@ -117,6 +129,18 @@ public class ExifReadWriteIMR {
                 case "Image Quality":
                     quality = tag[1];
                     break;
+                case "Duration in Seconds":
+                    try{
+                        duration = Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
+                    }catch(DateTimeParseException excep){
+                        excep.printStackTrace();
+                    }
+                    break;
+                case "Duration":
+                    try{
+                        duration = Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
+                    }catch(DateTimeParseException excep){}
+                    break;
             }
         }
         ZonedDateTime OrigDT = null;
@@ -126,7 +150,7 @@ public class ExifReadWriteIMR {
         } else if (wTZ != null) {
             OrigDT = wTZ;
         }
-        Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality);
+        Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
         System.out.println(meta);
         return meta;
     }
@@ -217,8 +241,9 @@ public class ExifReadWriteIMR {
                 return Mp4MetadataReader.readMetadata(file);
             case "heif":
                 return HeifMetadataReader.readMetadata(new FileInputStream(file));
-            default:
+            case "Unknown":
                 throw new ImageProcessingException("File format could not be determined");
-        }
+            default:
+                return new Metadata();        }
     }
 }
