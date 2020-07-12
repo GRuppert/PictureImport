@@ -23,6 +23,7 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.util.*;
 
+import static java.lang.Boolean.TRUE;
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
@@ -59,9 +60,9 @@ public class MediafileService {
         return mediafileDAO.getByFile(drive, path, withImega);
     }
 
-    public MediaFile getMediaFile(Path path, boolean withImega) {
+    public MediaFile getMediaFile(Path path, boolean withImage) {
         Drive localDrive = driveService.getLocalDrive(path);
-        return getMediafile(localDrive, path, withImega);
+        return getMediafile(localDrive, path, withImage);
     }
 
     public MediaFile getMediaFile(MediafileDTO mediafileDTO, boolean withImega) {
@@ -80,7 +81,7 @@ public class MediafileService {
             mediafileDTO.dateMod = mediafile.getDateMod();
             mediafileDTO.fileHash = mediafile.getFilehash();
             mediafileDTO.size = mediafile.getSize();
-            mediafileDTO.isOriginal = Boolean.TRUE.equals(mediafile.isOriginal());
+            mediafileDTO.isOriginal = TRUE.equals(mediafile.isOriginal());
         }
         return mediafileDTO;
     }
@@ -128,14 +129,7 @@ public class MediafileService {
 
     public static void main(String[] args) {
         final MediafileService mediafileService = new MediafileService();
-        MediaFile mediafileDTO = new MediaFile(
-
-        );
-        final Drive driveDTO = new Drive();
-        driveDTO.setId(100);
-/*        MediafileDTO mediafile = mediafileService.getMediafile("001ccb41c7eb77075051f3febdcafe71");
-        System.out.println(mediafile);
-        mediafileService.updateMediafile(mediafile);*/
+        mediafileService.syncFolder(Paths.get("g:\\Pictures\\Photos\\DBSaved\\"), Paths.get("h:\\Képek\\Photos\\Processed"));
     }
 
     public List<MediaFile> getMediaFilesFromPath(Path path, boolean recursive) {
@@ -193,27 +187,62 @@ public class MediafileService {
         return mediaFiles;
     }
  */
-    public void syncFolder(Path target, Path source) {
+    public void syncFolder(Path source, Path target) {
         final Drive targetDrive = driveService.getLocalDrive(target.toString().substring(0, 1));
         if (targetDrive == null) return;
         List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(source, true);
-        Set<MediaFile> toSave = new HashSet<>();
+        inputLoop:
         for (MediaFile sourceMediaFile : filesInFolderFromDB) {
             List<MediaFile> filesInTarget = mediafileDAO.getMediaFilesFromPathOfImage(sourceMediaFile.getImage(), targetDrive, target);
             if (filesInTarget.size() == 0) continue;
             final String subFolder = sourceMediaFile.getFilePath().toString().substring(source.toString().length());
-            if (filesInTarget.size() == 1) {
-                Path newPath = Paths.get(target.toString()+subFolder);
-                MediaFile mediaFileToMove = filesInTarget.get(0);
-                renameMediaFile(getMediafileDTO(mediaFileToMove), newPath, TableViewMediaFile.WriteMethod.MOVE, false);
-            } else if (filesInTarget.size() > 1) {
-                Path newPath = Paths.get(target.toString()+"\\conflict"+subFolder);
-                for (MediaFile mediaFileToMove : filesInTarget) {
-                    renameMediaFile(getMediafileDTO(mediaFileToMove), newPath, TableViewMediaFile.WriteMethod.MOVE, false);
+            HashMap<String, Set<MediaFile>> versions = new HashMap<>();
+            MediaFile atPlace = null;
+            boolean atPlaceMatch = false;
+            for (MediaFile mediaFileToMove : filesInTarget) {
+                Set<MediaFile> mediaFiles = versions.get(mediaFileToMove.getFilehash());
+                if (mediaFiles == null) {
+                    mediaFiles = new HashSet<>();
+                }
+                mediaFiles.add(mediaFileToMove);
+                versions.put(mediaFileToMove.getFilehash(), mediaFiles);
+                for (MediaFile mediaFile : mediaFiles) {
+                    if (mediaFile.getFilePath().getParent().toString().equals(target.toString() + subFolder)) {
+                        atPlace = mediaFile;
+                        atPlaceMatch = mediaFile.getFilehash().equals(sourceMediaFile.getFilehash());
+                    }
+                }
+            }
+            Set<MediaFile> exactMatch = versions.get(sourceMediaFile.getFilehash());
+            int i = 0;
+            if (atPlaceMatch)
+            //TODO already at the right place
+            if (exactMatch != null) {
+                for (MediaFile mediaFileToMove : exactMatch) {
+                    renameMediaFile(mediaFileToMove, Paths.get(target.toString() + (i == 0 ? "" : "\\duplicate\\" + i) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
+                    i++;
+                }
+                versions.remove(sourceMediaFile.getFilehash());
+            } else if (versions.size() == 1) {
+                for (Set<MediaFile> value : versions.values()) {
+                    for (MediaFile mediaFileToMove : value) {
+                        renameMediaFile(mediaFileToMove, Paths.get(target.toString() + (i == 0 ? "" : "\\duplicate\\" + i) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
+                        i++;
+                    }
+                }
+                continue inputLoop;
+            }
+            i = 1;
+            for (Set<MediaFile> value : versions.values()) {
+                for (MediaFile mediaFileToMove : value) {
+                    renameMediaFile(mediaFileToMove, Paths.get(target.toString()+"\\conflict\\" + i + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
+                    i++;
                 }
             }
         }
     }
+
+
 
     public Set<MediafileDTO> reOrganizeFilesInSubFolders(Path path, ProgressLeakingTask progress) {
         Set<MediafileDTO> result = new HashSet<>();
@@ -368,7 +397,7 @@ public class MediafileService {
                 actFile.setFilehash(fullHash);
                 whatToSave.add("file");
             }
-            if (Boolean.TRUE.equals(fileOriginal)) {
+            if (TRUE.equals(fileOriginal)) {
                 try {
                     final boolean updated = updateOriginalImage(actFile);
                     if (updated) {
@@ -400,6 +429,10 @@ public class MediafileService {
 
     public boolean renameMediaFile(MediafileDTO mediafileDTO, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
         MediaFile mediaFile = getMediaFile(mediafileDTO, true);
+        return renameMediaFile(mediaFile, newPath, writeMethod, overwrite);
+    }
+
+    public boolean renameMediaFile(MediaFile mediaFile, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
         final boolean rename = RenameService.write(mediaFile.getFilePath(), newPath, writeMethod, overwrite);
         if (overwrite || rename) {
             Folder folder = folderService.getFolder(newPath.getParent());
@@ -413,7 +446,7 @@ public class MediafileService {
             }
             mediaFile.moveFile(folder, newPath);
 
-            if (mediaFile instanceof JPGMediaFile && mediaFile.isOriginal() && !((JPGMediaFile) mediaFile).isExifbackup()) {
+            if (mediaFile instanceof JPGMediaFile && TRUE.equals(mediaFile.isOriginal()) && !((JPGMediaFile) mediaFile).isExifbackup()) {
                 ((JPGMediaFile) mediaFile).addExifbackup();
             }
             if (mediaFile instanceof RAWMediaFile && !((RAWMediaFile) mediaFile).isXMPattached()) {
@@ -425,4 +458,5 @@ public class MediafileService {
 
         return rename;
     }
+
 }

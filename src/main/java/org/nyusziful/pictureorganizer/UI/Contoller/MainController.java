@@ -223,6 +223,21 @@ public class MainController implements Initializable {
         }
     }
 
+    @FXML
+    private void handleSyncButtonAction() {
+        File fileMaster = getDir(commonProperties.getFromDir());
+        if(fileMaster != null) {
+            File fileSlave = getDir(commonProperties.getToDir().toFile());
+            if(fileSlave != null) {
+                disableButtons(true);
+                MediafileService mediafileService = new MediafileService();
+                mediafileService.syncFolder(fileMaster.toPath(), fileSlave.toPath());
+                resetAction();
+            }
+        }
+    }
+
+
 
     /**
      * Compare Files according to their filenames
@@ -349,7 +364,9 @@ public class MainController implements Initializable {
     private void disableButtons(boolean disabled) {
         ObservableList<Node> children = buttonHBox.getChildren();
         for (Node buttonNode : children) {
-            buttonNode.setDisable(disabled);
+            if (buttonNode.getId() != null)
+                if (buttonNode.getId().startsWith("off")) buttonNode.setDisable(true);
+                else buttonNode.setDisable(disabled);
         }
     }
     // </editor-fold>

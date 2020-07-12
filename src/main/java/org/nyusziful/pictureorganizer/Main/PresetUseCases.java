@@ -2,15 +2,22 @@ package org.nyusziful.pictureorganizer.Main;
 
 import javafx.application.Platform;
 import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAO;
+import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAOImplHib;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
+import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Service.DriveService;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
+import org.nyusziful.pictureorganizer.Service.ImageService;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
@@ -27,6 +34,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.List;
 
+import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
@@ -38,7 +46,7 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-        readDNG();
+        repairMP4();
 //        FolderService folderService = new FolderService();
 //        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
 //        System.out.println(folder);
@@ -102,26 +110,78 @@ public class PresetUseCases {
 
     }
 
-    private static void readDNG() {
-        Path path = Paths.get("G:\\Pictures\\Photos");
-        HashSet<Path> paths = new HashSet<>();
-        try {
-            Files.find(path, Integer.MAX_VALUE,
-                    (filePath, fileAttr) -> fileAttr.isRegularFile() && FilenameUtils.getExtension(filePath.getFileName().toString().toLowerCase()).equals("dng"))
-                    .forEach(paths::add);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        MediafileService mediafileService = new MediafileService();
-        for (Path file : paths) {
-            final MediaFile mediaFile = mediafileService.getMediaFile(file, false);
-            if (mediaFile.getDateStored() == null) {
-                Meta result = ExifService.readFileMeta(new File[] {file.toFile()}, ZoneId.systemDefault()).iterator().next();
-                mediaFile.setDateStored(result.date);
-                mediafileService.saveMediaFile(mediaFile);
+    private static void readJPGBakHash() {
+/*
+        Path target = Paths.get("H:\\Képek\\Photos");
+        DriveService driveService = new DriveService();
+        ImageService imageService = new ImageService();
+        ImageDAOImplHib imageDAO = new ImageDAOImplHib();
+        MediafileDAO mediafileDAO = new MediafileDAOImplHib();
+        final Drive targetDrive = driveService.getLocalDrive(target.toString().substring(0, 1));
+        List<Image> updateImages = imageDAO.getJPGUpdate();
+        Set<Image> toSave = new HashSet<>();
+        outerloop:
+        for (Image updateImage : updateImages) {
+            List<MediaFile> filesInTarget = mediafileDAO.getMediaFilesFromPathOfImage(updateImage, targetDrive, target);
+            for (MediaFile mediaFile : filesInTarget) {
+                if (FolderService.winToDataPath(mediaFile.getFolder().getJavaPath()).endsWith("/Képek/Photos/Új2/6-3 Szilveszter Állatkert AnyuékRigi Frauenlauf/DCIM/100MSDCF")) {
+                    updateImage.setOriginalFileHash(getFullHash(mediaFile.getFilePath().toFile()));
+                    updateImage.setValid(true);
+                    toSave.add(updateImage);
+                    continue outerloop;
+                }
+
+
+                File bak = new File(mediaFile.getFilePath().toString()+".bak");
+                if (bak.exists()) {
+                    updateImage.setOriginalFileHash(getFullHash(bak));
+                    updateImage.setValid(true);
+                    toSave.add(updateImage);
+                    continue outerloop;
+                }
             }
         }
+        imageService.saveImage(toSave, false);
+*/
+    }
 
+    private static void repairMP4() {
+//        Path target = Paths.get("G:\\Pictures\\Photos");
+//        Path target = Paths.get("H:\\Képek\\Photos");
+        Path target = Paths.get("I:\\Photos");
+        DriveService driveService = new DriveService();
+        ImageService imageService = new ImageService();
+        ImageDAOImplHib imageDAO = new ImageDAOImplHib();
+        MediafileDAO mediafileDAO = new MediafileDAOImplHib();
+        final Drive targetDrive = driveService.getLocalDrive(target.toString().substring(0, 1));
+        List<Image> updateImages = imageDAO.getInvalid();
+//        Set<Image> toSave = new HashSet<>();
+        int i = 0;
+        outerloop:
+        for (Image updateImage : updateImages) {
+            List<MediaFile> filesInTarget = mediafileDAO.getMediaFilesFromPathOfImage(updateImage, targetDrive, target);
+            for (MediaFile mediaFile : filesInTarget) {
+                File file = mediaFile.getFilePath().toFile();
+                if (file.exists() && file.length() == mediaFile.getSize()) {
+                    ImageDTO hash = getHash(file);
+                    Image imageByHash = imageDAO.getImageByHash(hash, false);
+                    if (imageByHash == null) {
+                        updateImage.correctHash(hash);
+                        imageService.saveImage(updateImage);
+                        continue outerloop;
+                    } else {
+                        if ((updateImage.getOriginalFilename() == null && imageByHash.getOriginalFilename() == null) || updateImage.getOriginalFilename().equals(imageByHash.getOriginalFileHash())) {
+                            imageDAO.merge(imageByHash, updateImage);
+                            continue outerloop;
+                        } else {
+                            i++;
+                        }
+                    }
+                }
+            }
+        }
+//        imageService.saveImage(toSave, false);
+        System.out.println(i);
 
     }
 

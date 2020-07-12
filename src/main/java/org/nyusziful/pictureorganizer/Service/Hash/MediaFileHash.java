@@ -60,9 +60,10 @@ public class MediaFileHash {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileHash.class);
 
     public static void main(String[] args) {
-        ImageDTO hash = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\QTVV7462.MP4"));
-        ImageDTO hash2 = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\VID_20101120_120509.3gp"));
-        System.out.println(hash2);
+        ImageDTO hash = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\diff\\2\\V6_K2017-08-3_1@16-2_6-35(+0200)(Thu)-2104cc0ae509423700f1c0a6695f76f0-0-C0018.MP4"));
+        ImageDTO hash2 = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\diff\\1\\V6_K2017-08-3_1@16-2_6-35(+0200)(Thu)-d2054e7f9e485f415a5e7bcc8b35b835-0-C0018.MP4"));
+        System.out.println(hash.hash);
+        System.out.println(hash2.hash);
     }
     /**
      * 

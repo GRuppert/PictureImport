@@ -163,7 +163,7 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
         EntityTransaction transaction = entityManager.getTransaction();
         List<MediaFile> results = new ArrayList<>();
         try{
-            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i WHERE i.drive.id=:driveId and i.folder.path like :path and i.image=:image", MediaFile.class);
+            TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i LEFT JOIN FETCH i.image WHERE i.drive.id=:driveId and i.folder.path like :path and i.image=:image", MediaFile.class);
             typedQuery.setParameter("driveId", drive.getId());
             typedQuery.setParameter("path", FolderService.winToDataPath(target) + "%");
             typedQuery.setParameter("image", image);

@@ -1,5 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
+
 import javax.persistence.*;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
@@ -19,7 +21,7 @@ public class Image extends TrackingEntity implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
     protected int id = -1;
-    @Column(name = "odid", updatable = false, nullable = false)
+    @Column(name = "odid", nullable = false)
     private String hash;
     @Column(name = "original_file_hash")
     private String originalFileHash;
@@ -46,6 +48,7 @@ public class Image extends TrackingEntity implements Serializable {
     @OneToMany(mappedBy = "parent")
     private Set<Image> children = new HashSet<>();
 
+    private boolean valid = true;
 
     @PostLoad
     private void stringToDate() {
@@ -185,5 +188,20 @@ public class Image extends TrackingEntity implements Serializable {
 
     public long getDuration() {
         return duration;
+    }
+
+    public boolean isValid() {
+        return valid;
+    }
+
+    public void setValid(boolean valid) {
+        this.valid = valid;
+    }
+
+    public void correctHash(ImageDTO hash) {
+        if (!valid) {
+            this.hash = hash.hash;
+            valid = true;
+        }
     }
 }

@@ -13,17 +13,18 @@
             <HBox fx:id="buttonHBox" alignment="CENTER">
                 <Button text="Import" onAction="#handleImportButtonAction" fx:id="btnImport" />
                 <Button text="Import From Directory" onAction="#handleImportFromButtonAction" fx:id="btnImportFrom" />
-                <Button text="Rename" onAction="#handleRenameButtonAction" fx:id="btnRename" />
-                <Button text="Rename Rec." onAction="#handleRenameRecursiveButtonAction" fx:id="btnRenameRec" />
+                <Button text="Rename" onAction="#handleRenameButtonAction" fx:id="offbtnRename" disable="true" />
+                <Button text="Rename Rec." onAction="#handleRenameRecursiveButtonAction" fx:id="offbtnRenameRec" disable="true" />
                 <Separator orientation="VERTICAL"/>
-                <Button text="Shift" onAction="#handleShiftButtonAction" fx:id="btnShift" />
-                <Button text="Meta" onAction="#handleMetaButtonAction" fx:id="btnMeta" />
+                <Button text="Shift" onAction="#handleShiftButtonAction" fx:id="offbtnShift" disable="true" />
+                <Button text="Meta" onAction="#handleMetaButtonAction" fx:id="offbtnMeta" disable="true" />
                 <Separator orientation="VERTICAL"/>
-                <Button text="Reorganize Directories" onAction="#handleReorgButtonAction" fx:id="btnReorg" />
-                <Button text="Sort to Directories" onAction="#handleMoveButtonAction" fx:id="btnMove" />
+                <Button text="Resync DB for Folder with Subfolders" onAction="#handleReorgButtonAction" fx:id="btnResync" />
+                <Button text="Sync location of files" onAction="#handleSyncButtonAction" fx:id="btnReorg" />
+                <Button text="Sort to Directories" onAction="#handleMoveButtonAction" fx:id="offbtnMove" disable="true" />
                 <Separator orientation="VERTICAL"/>
-                <Button text="Compare" onAction="#handleCompareButtonAction" fx:id="btnCompare" />
-                <Button text="List" onAction="#handleListButtonAction" fx:id="btnList" />
+                <Button text="Compare" onAction="#handleCompareButtonAction" fx:id="offbtnCompare" disable="true" />
+                <Button text="List" onAction="#handleListButtonAction" fx:id="offbtnList" disable="true" />
             </HBox>
             <HBox>
                 <HBox alignment="CENTER_LEFT">
