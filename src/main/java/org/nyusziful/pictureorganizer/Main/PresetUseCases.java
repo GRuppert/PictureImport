@@ -148,6 +148,7 @@ public class PresetUseCases {
     private static void repairMP4() {
 //        Path target = Paths.get("G:\\Pictures\\Photos");
 //        Path target = Paths.get("H:\\Képek\\Photos");
+/*
         Path target = Paths.get("I:\\Photos");
         DriveService driveService = new DriveService();
         ImageService imageService = new ImageService();
@@ -182,6 +183,7 @@ public class PresetUseCases {
         }
 //        imageService.saveImage(toSave, false);
         System.out.println(i);
+*/
 
     }
 

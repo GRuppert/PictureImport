@@ -129,7 +129,7 @@ public class MediafileService {
 
     public static void main(String[] args) {
         final MediafileService mediafileService = new MediafileService();
-        mediafileService.syncFolder(Paths.get("g:\\Pictures\\Photos\\DBSaved\\"), Paths.get("h:\\Képek\\Photos\\Processed"));
+//        mediafileService.syncFolder(Paths.get("g:\\Pictures\\Photos\\DBSaved\\"), Paths.get("h:\\Képek\\Photos\\Processed"));
     }
 
     public List<MediaFile> getMediaFilesFromPath(Path path, boolean recursive) {
@@ -187,12 +187,15 @@ public class MediafileService {
         return mediaFiles;
     }
  */
-    public void syncFolder(Path source, Path target) {
+    public Boolean syncFolder(Path source, Path target, ProgressLeakingTask progress) {
         final Drive targetDrive = driveService.getLocalDrive(target.toString().substring(0, 1));
-        if (targetDrive == null) return;
+        if (targetDrive == null) return false;
         List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(source, true);
+        int progressing = 0;
+        progress.updateProgress(progressing, filesInFolderFromDB.size());
         inputLoop:
         for (MediaFile sourceMediaFile : filesInFolderFromDB) {
+            progress.updateProgress(progressing++, filesInFolderFromDB.size());
             List<MediaFile> filesInTarget = mediafileDAO.getMediaFilesFromPathOfImage(sourceMediaFile.getImage(), targetDrive, target);
             if (filesInTarget.size() == 0) continue;
             final String subFolder = sourceMediaFile.getFilePath().toString().substring(source.toString().length());
@@ -205,40 +208,61 @@ public class MediafileService {
                     mediaFiles = new HashSet<>();
                 }
                 mediaFiles.add(mediaFileToMove);
-                versions.put(mediaFileToMove.getFilehash(), mediaFiles);
                 for (MediaFile mediaFile : mediaFiles) {
                     if (mediaFile.getFilePath().getParent().toString().equals(target.toString() + subFolder)) {
                         atPlace = mediaFile;
                         atPlaceMatch = mediaFile.getFilehash().equals(sourceMediaFile.getFilehash());
+                        break;
                     }
                 }
+                versions.put(mediaFileToMove.getFilehash(), mediaFiles);
             }
             Set<MediaFile> exactMatch = versions.get(sourceMediaFile.getFilehash());
-            int i = 0;
-            if (atPlaceMatch)
-            //TODO already at the right place
-            if (exactMatch != null) {
-                for (MediaFile mediaFileToMove : exactMatch) {
-                    renameMediaFile(mediaFileToMove, Paths.get(target.toString() + (i == 0 ? "" : "\\duplicate\\" + i) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
-                    i++;
+            boolean originalPlace = true;
+            if (atPlace != null) {
+                if (atPlaceMatch || (exactMatch == null && versions.size() == 1)) {
+                    originalPlace = false;
+                    Set<MediaFile> mediaFiles = versions.get(atPlace.getFilehash());
+                    mediaFiles.remove(atPlace);
+                    versions.put(atPlace.getFilehash(), mediaFiles);
                 }
+            }
+            if (exactMatch != null) {
                 versions.remove(sourceMediaFile.getFilehash());
+                int j = 1;
+                for (Set<MediaFile> value : versions.values()) {
+                    for (MediaFile mediaFileToMove : value) {
+                        renameMediaFile(mediaFileToMove, Paths.get(getFreeDir(target.toString()+"\\conflict\\", subFolder) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
+                        j++;
+                    }
+                }
+                for (MediaFile mediaFileToMove : exactMatch) {
+                    renameMediaFile(mediaFileToMove, Paths.get((originalPlace ? target.toString() : getFreeDir(target.toString()+"\\duplicate\\", subFolder)) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
+                    originalPlace = false;
+                }
             } else if (versions.size() == 1) {
                 for (Set<MediaFile> value : versions.values()) {
                     for (MediaFile mediaFileToMove : value) {
-                        renameMediaFile(mediaFileToMove, Paths.get(target.toString() + (i == 0 ? "" : "\\duplicate\\" + i) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
-                        i++;
+                        renameMediaFile(mediaFileToMove, Paths.get((originalPlace ? target.toString() : getFreeDir(target.toString()+"\\duplicate\\", subFolder)) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
+                        originalPlace = false;
                     }
                 }
-                continue inputLoop;
-            }
-            i = 1;
-            for (Set<MediaFile> value : versions.values()) {
-                for (MediaFile mediaFileToMove : value) {
-                    renameMediaFile(mediaFileToMove, Paths.get(target.toString()+"\\conflict\\" + i + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
-                    i++;
+            } else {
+                for (Set<MediaFile> value : versions.values()) {
+                    for (MediaFile mediaFileToMove : value) {
+                        renameMediaFile(mediaFileToMove, Paths.get(getFreeDir(target.toString()+"\\conflict\\", subFolder) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
+                    }
                 }
             }
+        }
+        return true;
+    }
+
+    private String getFreeDir(String input, String subFolder) {
+        int i  = 1;
+        while (true) {
+            if (!new File(input+i+subFolder).exists()) return input+i;
+            i++;
         }
     }
 

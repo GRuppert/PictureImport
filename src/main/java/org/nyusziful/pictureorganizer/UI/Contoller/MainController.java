@@ -10,6 +10,8 @@ import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Node;
 import javafx.scene.control.*;
+import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
@@ -29,13 +31,13 @@ import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 
-import static java.lang.Integer.*;
 import static org.nyusziful.pictureorganizer.Service.MediafileService.getMediafileDTO;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 import org.nyusziful.pictureorganizer.Service.TimeShift.TimeLine;
 
+import java.awt.*;
 import java.nio.file.Files;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -60,6 +62,7 @@ import javafx.scene.layout.BorderPane;
 import javax.swing.JOptionPane;
 
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
+import org.nyusziful.pictureorganizer.UI.ProgressLeakingTask;
 
 //Exiftool must be in PATH
 // <2GB file support
@@ -198,7 +201,7 @@ public class MainController implements Initializable {
             }
             disableButtons(true);
             showTablePane();
-            ReadFolders(directories, false, false);
+            ReadFolders(directories, false, true);
         }
     }
 
@@ -229,10 +232,7 @@ public class MainController implements Initializable {
         if(fileMaster != null) {
             File fileSlave = getDir(commonProperties.getToDir().toFile());
             if(fileSlave != null) {
-                disableButtons(true);
-                MediafileService mediafileService = new MediafileService();
-                mediafileService.syncFolder(fileMaster.toPath(), fileSlave.toPath());
-                resetAction();
+                syncFolders(fileMaster.toPath(), fileSlave.toPath());
             }
         }
     }
@@ -319,11 +319,22 @@ public class MainController implements Initializable {
     //Sets the center view to table format
     private void showTablePane() {
         BorderPane tablePane = null;
-        TableView<? extends TableViewMediaFile> table = null;
         mediaFileSet.reset();
         try {
             FXMLLoader loaderTable = new FXMLLoader(getClass().getResource("/fxml/mediaFileTableView.fxml"));
-            table = (TableView) loaderTable.load();
+            final TableView<? extends TableViewMediaFile> table = (TableView) loaderTable.load();
+
+            table.setOnMousePressed(new EventHandler<MouseEvent>() {
+                @Override
+                public void handle(MouseEvent event) {
+                    if (event.isPrimaryButtonDown() && event.getClickCount() == 2) {
+                        try{
+                            Desktop.getDesktop().open(new File(table.getSelectionModel().getSelectedItem().getMediafileDTO().abolutePath));
+                        } catch (Exception e ){
+                        }
+                    }
+                }
+            });
             MediaFileTableViewController ctrlTable = loaderTable.getController();
             ctrlTable.setMediaFileSet(mediaFileSet);
 
@@ -419,6 +430,23 @@ public class MainController implements Initializable {
         return files;
     }
 
+    public class SyncTask extends ProgressLeakingTask<Boolean> {
+        private Path source;
+        private Path target;
+
+        public SyncTask(Path source, Path target) {
+            this.source = source;
+            this.target = target;
+        }
+
+        @Override
+        public Boolean call() {
+            MediafileService mediafileService = new MediafileService();
+            return mediafileService.syncFolder(source, target, this);
+        }
+
+    }
+
     public class ReadTask extends RenamingTask<Integer> {
         private int numberOfFiles;
         private int processedFiles;
@@ -498,6 +526,22 @@ public class MainController implements Initializable {
         }
     }
 
+    public void syncFolders(Path source, Path target) {
+        disableButtons(true);
+        SyncTask task = new SyncTask(source, target);
+        statusLabel.setText("");
+        task.setOnFailed(a -> {task.getException().printStackTrace(); progressIndicator.progressProperty().unbind(); resetAction();});
+        task.setOnSucceeded(
+                new EventHandler<WorkerStateEvent>() {
+                    @Override
+                    public void handle(WorkerStateEvent t) {
+                        resetAction();
+                    }
+                });
+        progressIndicator.progressProperty().bind(task.progressProperty());
+        new Thread(task).start();
+    }
+
     public void reorganizeFolder(File directory) {
         ReorganizatorTask task = new ReorganizatorTask(Collections.singleton(directory));
         statusLabel.setText("");
@@ -556,10 +600,6 @@ public class MainController implements Initializable {
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
         return ExifService.readFileMeta(fileList.toArray(new File[0]), commonProperties.getZone());
     }
-
-
-
-
 
     /**
      * Creates a new background task which reads the From directory files' hashes into a list file
