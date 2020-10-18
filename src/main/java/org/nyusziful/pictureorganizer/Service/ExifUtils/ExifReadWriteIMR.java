@@ -36,6 +36,8 @@ import java.time.temporal.TemporalAccessor;
 import java.time.temporal.TemporalField;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+
 import org.apache.commons.io.FilenameUtils;
 
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
@@ -246,4 +248,34 @@ public class ExifReadWriteIMR {
             default:
                 return new Metadata();        }
     }
+
+    public static Boolean originalJPG(File file) {
+        try {
+            ArrayList<String[]> strings = readMetaNew(file);
+            HashMap<String, String > tags = new HashMap<>();
+            for (String[] string : strings) {
+                String s = tags.get(string[0]);
+                if (s != null) System.out.println(string[0] + s);
+                tags.put(string[0], string[1]);
+            }
+            if (tags.get("Application Record Version") != null || tags.get("Enveloped Record Version") != null) return false;
+            switch (tags.get("Model")) {
+                case "Lumia 1020":
+                    if (!"2.20".equals(tags.get("Exif Version"))) return false;
+                    if (!"Windows Phone".equals(tags.get("Software"))) return false;
+
+                    break;
+                case "":
+                    break;
+                default:
+                    System.out.println(tags.get("Model"));
+            }
+
+            return true;
+        } catch (Exception e) {
+            return null;
+        }
+
+    }
+
 }

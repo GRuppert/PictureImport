@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -53,4 +54,8 @@ public class ExifService {
     public static void updateExif(List<String> valuePairs, File directory) {
         ExifReadWriteET.updateExif(valuePairs, directory);
     }
+
+    public static Boolean originalJPG(File file) {return ExifReadWriteIMR.originalJPG(file);
+    }
+
 }

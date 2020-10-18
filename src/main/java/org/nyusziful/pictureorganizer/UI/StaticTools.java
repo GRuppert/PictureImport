@@ -47,6 +47,9 @@ public class StaticTools {
             "\\PRIVATE\\AVCHD\\BDMV\\STREAM\\",
             "\\PRIVATE\\M4ROOT\\CLIP\\"
     };
+    static String[] GoPro = {
+            "\\DCIM\\100GOPRO",
+    };
     static String[] Android = {
             "\\DCIM\\Camera",
             "\\WhatsApp\\Media\\WhatsApp Images"
@@ -161,6 +164,7 @@ public class StaticTools {
         if (folder == null || !folder.isDirectory()) return resultDirs;
         String absolutePath = folder.getAbsolutePath();
         if (absolutePath.endsWith("\\")) absolutePath = absolutePath.substring(0, absolutePath.length()-1);
+
         for(String criteria:Sony) {
             File probe = new File(absolutePath+criteria);
             if(probe.exists() && probe.isDirectory()) {
@@ -175,9 +179,23 @@ public class StaticTools {
             }
             resultDirs.add(new File(absolutePath+Sony[1]));
             resultDirs.add(new File(absolutePath+Sony[2]));
+        } else {
+            valid = true;
+            for(String criteria:GoPro) {
+                File probe = new File(absolutePath+criteria);
+                if(probe.exists() && probe.isDirectory()) {
+                    continue;
+                }
+                valid = false;
+                break;
+            }
+            if (valid) {
+                resultDirs.add(new File(absolutePath + GoPro[0]));
+            }
         }
         return resultDirs;
     }
+
 
     /**
      * Open up a <code> JOptionPane </code> with the given parameters

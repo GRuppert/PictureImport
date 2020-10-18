@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.Main;
 
+import com.drew.imaging.ImageProcessingException;
 import javafx.application.Platform;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAO;
@@ -47,6 +48,10 @@ public class PresetUseCases {
 
     public static void main(String[] args) {
         repairMP4();
+        ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_1@13-5_9-01(+0200)(Sat)-9d4a49eac2a2f1881ec75b8ec7cc3303-ae3af2ee22193e0d8d39ae3df3c6a441-WP_20150711_15_59_03_Pro__highres.jpg"));
+        ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_2@05-1_9-31(+0200)(Sun)-a2612d542f9e0349e6247811e0e973c5-b182d0b5f660f245d4ec3fe9973246ea-DSC08954.JPG "));
+        ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\2\\V5_K2015-07-1_1@13-5_9-01(+0200)(Sat)-9d4a49eac2a2f1881ec75b8ec7cc3303-ae3af2ee22193e0d8d39ae3df3c6a441-WP_20150711_15_59_03_Pro__highres.jpg"));
+        ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\2\\V5_K2015-07-1_2@05-1_9-31(+0200)(Sun)-a2612d542f9e0349e6247811e0e973c5-b182d0b5f660f245d4ec3fe9973246ea-DSC08954.JPG "));
 //        FolderService folderService = new FolderService();
 //        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
 //        System.out.println(folder);
@@ -109,6 +114,7 @@ public class PresetUseCases {
 
 
     }
+
 
     private static void readJPGBakHash() {
 /*
