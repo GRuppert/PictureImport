@@ -59,3 +59,90 @@ UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(file
 UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = 'mts'; -- 576
 UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = 'mpg'; -- 259
 UPDATE pictureorganizer.media_file SET type = 'VID' WHERE LOWER(RIGHT(RTRIM(filename), 3)) = '3gp'; -- 663
+
+-- 2017-08-24_20.45.33.jpg
+-- 2019_0922_150428_412.MOV
+-- PICT_20151101_111321.JPG
+-- PANO_20141028_163707.jpg
+-- PhotoNote_WP_20150328_13_35_15_Pro_9859.jpg
+-- ContactPhoto-IMG_20140502_161421.jpg
+-- 2014_08_20_08_16_35_ProShot.jpg 2014_09_21_12_26_56_HDR.jpg
+-- 20181007_165559402_iOS.jpg
+-- 20160410_125658_LLS.jpg
+-- Office Lens_20151211_124602.jpg
+-- IMG_20131212_181620.963.jpg
+-- IMG_20101120_103708.jpg
+-- VID_20101118_172251.3gp
+-- SELECT count(*) FROM (
+SELECT m.original_filename FROM pictureorganizer.media_file m
+WHERE 1 = 1
+AND original_filename NOT LIKE 'C00%' -- Nem kell 99
+AND original_filename NOT LIKE 'SDC%' -- 1602
+AND original_filename NOT LIKE 'DSC%' -- 84616
+AND original_filename NOT LIKE '_DSC%' -- 7648
+AND original_filename NOT LIKE 'HPIM%' -- 2275
+AND original_filename NOT LIKE 'dscf%' -- 505
+AND original_filename NOT LIKE 'D5C%' -- 130
+AND original_filename NOT LIKE '200%' -- 1525 Ez ok
+AND original_filename NOT LIKE '201%' -- 24376 Ez ok
+AND original_filename NOT LIKE 'PICT%' -- 11
+AND original_filename NOT LIKE 'Picture%' -- 404
+AND original_filename NOT LIKE 'picture%' -- 229
+AND original_filename NOT LIKE '100_%' -- 1204
+AND NOT (length(original_filename) = 12 AND original_filename LIKE 'P%') -- 2560
+-- AND filename NOT LIKE '_%'
+AND original_filename NOT LIKE '_IGP%' -- 24
+AND original_filename NOT LIKE 'img%' -- 413
+AND original_filename NOT LIKE 'image%' -- 29
+AND original_filename NOT LIKE 'IMG%' -- 10724
+AND original_filename NOT LIKE '_MG%' -- 10773
+AND original_filename NOT LIKE 'IMAG%' -- 681
+AND original_filename NOT LIKE 'SAM%' -- 928
+AND original_filename NOT LIKE 'Fénykép%' -- 120
+AND original_filename NOT LIKE '_T9A%' -- 57
+AND original_filename NOT LIKE 'Kép%' -- 2055
+AND original_filename NOT LIKE 'WP_%' -- 22879 Ez ok
+AND NOT (REGEXP_LIKE(m.original_filename, '^[0-9]{6}_WP') = 1 OR REGEXP_LIKE(m.original_filename, '^[0-9]{6}_DSC') = 1) -- Amerika sorrend 10434
+AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NULL) GROUP BY m.original_filename ORDER BY m.original_filename DESC
+-- ) a
+;
+
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE original_filename LIKE '_DSC%' AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NULL) GROUP BY m.filename) a;
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE (REGEXP_LIKE(m.original_filename, '^[0-9]{6}_WP') = 1 OR REGEXP_LIKE(m.original_filename, '^[0-9]{6}_DSC') = 1) AND SUBSTRING(original_filename, 7, 1) = "_" AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NULL) GROUP BY m.filename) a;
+
+SELECT count(*) id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NULL;
+
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE original_filename LIKE 'WP_%' AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NULL) GROUP BY m.filename) a;
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE original_filename LIKE 'WP_%' AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NOT NULL) GROUP BY m.filename) a;
+
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE original_filename LIKE '200%' AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NULL) GROUP BY m.filename) a;
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE original_filename LIKE '200%' AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NOT NULL) GROUP BY m.filename) a;
+
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE original_filename LIKE '201%' AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NULL) GROUP BY m.filename) a;
+SELECT count(*) FROM (SELECT m.filename FROM pictureorganizer.media_file m WHERE original_filename LIKE '201%' AND m.image_id IN (SELECT id FROM pictureorganizer.image WHERE type = "jpg" and original_filename IS NOT NULL) GROUP BY m.filename) a;
+
+
+-- SELECT count(*) FROM (
+SELECT m.original_filename, COUNT(*) OVER (PARTITION BY m.original_filename) colliding, m.date_stored, m.filehash FROM pictureorganizer.media_file m
+WHERE length(m.original_filename) > 16
+AND duration + 3 > ABS(TIMESTAMPDIFF(SECOND, m.date_mod, CONVERT(CONCAT(SUBSTRING(m.original_filename, 1, 4), '-', SUBSTRING(m.original_filename, 5, 2), '-', SUBSTRING(m.original_filename, 7, 2), ' ', SUBSTRING(m.original_filename, 10, 2), ':', SUBSTRING(m.original_filename, 12, 2), ':', SUBSTRING(m.original_filename, 14, 2)), datetime)))
+-- AND CONCAT(SUBSTRING(m.original_filename, 1, 8), SUBSTRING(m.original_filename, 10, 6)) = CONCAT(SUBSTRING(m.date_mod, 1, 4), SUBSTRING(m.date_mod, 6, 2), SUBSTRING(m.date_mod, 9, 2), SUBSTRING(m.date_mod, 12, 2), SUBSTRING(m.date_mod, 15, 2), SUBSTRING(m.date_mod, 18, 2))
+GROUP BY m.original_filename, m.date_stored, m.filehash ORDER BY colliding DESC
+-- ) a
+;
+
+ SELECT count(*) FROM (
+SELECT m.original_filename, m.date_mod, duration + 3, ABS(TIMESTAMPDIFF(SECOND, m.date_mod, CONVERT(CONCAT(SUBSTRING(m.original_filename, 1, 4), '-', SUBSTRING(m.original_filename, 5, 2), '-', SUBSTRING(m.original_filename, 7, 2), ' ', SUBSTRING(m.original_filename, 10, 2), ':', SUBSTRING(m.original_filename, 12, 2), ':', SUBSTRING(m.original_filename, 14, 2)), datetime))) FROM
+ pictureorganizer.media_file m WHERE
+ length(m.original_filename) > 16
+ AND duration + 3 > ABS(TIMESTAMPDIFF(SECOND, m.date_mod, CONVERT(CONCAT(SUBSTRING(m.original_filename, 1, 4), '-', SUBSTRING(m.original_filename, 5, 2), '-', SUBSTRING(m.original_filename, 7, 2), ' ', SUBSTRING(m.original_filename, 10, 2), ':', SUBSTRING(m.original_filename, 12, 2), ':', SUBSTRING(m.original_filename, 14, 2)), datetime)))
+ ) a
+ ;
+
+-- SELECT count(*) FROM (
+SELECT m.original_filename, m.date_mod, duration + 3, ABS(TIMESTAMPDIFF(SECOND, m.date_mod, CONVERT(CONCAT(SUBSTRING(m.original_filename, 1, 4), '-', SUBSTRING(m.original_filename, 5, 2), '-', SUBSTRING(m.original_filename, 7, 2), ' ', SUBSTRING(m.original_filename, 10, 2), ':', SUBSTRING(m.original_filename, 12, 2), ':', SUBSTRING(m.original_filename, 14, 2)), datetime))) FROM pictureorganizer.media_file m
+ WHERE
+ length(m.original_filename) > 16
+ AND duration + 3 > ABS(3600 - ABS(TIMESTAMPDIFF(SECOND, m.date_mod, CONVERT(CONCAT(SUBSTRING(m.original_filename, 1, 4), '-', SUBSTRING(m.original_filename, 5, 2), '-', SUBSTRING(m.original_filename, 7, 2), ' ', SUBSTRING(m.original_filename, 10, 2), ':', SUBSTRING(m.original_filename, 12, 2), ':', SUBSTRING(m.original_filename, 14, 2)), datetime))))
+-- ) a
+ ;

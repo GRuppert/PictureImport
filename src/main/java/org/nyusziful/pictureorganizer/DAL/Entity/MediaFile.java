@@ -1,6 +1,8 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory;
 
 import javax.persistence.*;
 import java.nio.file.Path;
@@ -9,8 +11,6 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.TextStyle;
-import java.util.Locale;
 import java.util.Objects;
 
 @Entity
@@ -36,6 +36,12 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     private Folder folder;
 
     private String filename;
+
+    @Column(name = "original_filename")
+    private String originalFilename;
+
+    @Column(name = "name_version")
+    private int nameVersion;
 
     @ManyToOne(
             fetch = FetchType.LAZY,
@@ -68,6 +74,15 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     private String latitude;
     private String longitude;
     private String altitude;
+    @Column(name = "orientation")
+    private Integer orientation;
+    @Column(name = "rating")
+    private Integer rating;
+    @Column(name = "title")
+    private String title;
+    @Column(name = "keyword")
+    private String keyword;
+
 
 
     @Transient
@@ -128,8 +143,20 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     public void moveFile(Folder folder, Path filePath) {
         this.filePath = filePath;
         this.filename = filePath.getFileName().toString();
+        updateVersion();
         this.drive = folder.getDrive();
         this.folder = folder;
+    }
+
+    public void updateVersion() {
+        Meta result = FileNameFactory.getV(filename);
+        if (result != null) {
+            this.originalFilename = result.originalFilename;
+            this.nameVersion = result.nameVersion;
+        } else {
+            this.originalFilename = filename;
+            this.nameVersion = 0;
+        }
     }
 
     public String getFilename() {
@@ -296,5 +323,57 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Override
     public String toString() {
         return folder + "\\" + filename;
+    }
+
+    public String getOriginalFilename() {
+        return originalFilename;
+    }
+
+    public void setOriginalFilename(String originalFilename) {
+        this.originalFilename = originalFilename;
+    }
+
+    public int getNameVersion() {
+        return nameVersion;
+    }
+
+    public void setNameVersion(int nameVersion) {
+        this.nameVersion = nameVersion;
+    }
+
+    public void setMeta(Meta meta) {
+        setDateStored(meta.date);
+    }
+
+    public Integer getOrientation() {
+        return orientation;
+    }
+
+    public void setOrientation(Integer orientation) {
+        this.orientation = orientation;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
     }
 }

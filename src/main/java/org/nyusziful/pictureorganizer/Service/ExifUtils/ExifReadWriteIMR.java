@@ -80,7 +80,7 @@ public class ExifReadWriteIMR {
         try {
             tags = readMeta(file);
         } catch (ImageProcessingException | IOException ex) {
-            Meta meta = new Meta(file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), orig, quality);
+            Meta meta = new Meta(0, file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), orig, quality);
             System.out.println(meta);
             return meta;
         }
@@ -152,7 +152,7 @@ public class ExifReadWriteIMR {
         } else if (wTZ != null) {
             OrigDT = wTZ;
         }
-        Meta meta = new Meta(file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
+        Meta meta = new Meta(0, file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
         System.out.println(meta);
         return meta;
     }

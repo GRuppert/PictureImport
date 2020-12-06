@@ -35,12 +35,20 @@ public class MediafileService {
     private DriveService driveService;
     private FolderService folderService;
     private ImageService imageService;
+    private static MediafileService instance;
 
-    public MediafileService() {
+    private MediafileService() {
         driveService = new DriveService();
         folderService = new FolderService();
         imageService = new ImageService();
         mediafileDAO = new MediafileDAOImplHib();
+    }
+
+    public static MediafileService getInstance() {
+        if (instance == null) {
+            instance = new MediafileService();
+        }
+        return instance;
     }
 
 /*    public List<MediaFile> getMediafiles() {
@@ -150,6 +158,10 @@ public class MediafileService {
         mediafileDAO.flush();
     }
 
+    public void close() {
+        mediafileDAO.close();
+    }
+
     /**
      * @param mediaFile
      * @return true if data has been written into the image entity, which has to be persisted
@@ -168,14 +180,36 @@ public class MediafileService {
                 image.setDuration(((VideoMediaFile)mediaFile).getDuration());
             return true;
         } else {
-            if (!origFileName.equals(image.getOriginalFilename()) || !mediaFile.getFilehash().equals(image.getOriginalFileHash()) || (!mediaFile.getDateStored().isEqual(image.getDateTaken()) && !mediaFile.getDateStored().isEqual(image.getActualDate()))) {
+            if (!origFileName.equals(image.getOriginalFilename()) || !mediaFile.getFilehash().equals(image.getOriginalFileHash()) || ((image.getDateTaken() == null || mediaFile.getDateStored().compareTo(image.getDateTaken()) != 0) && (image.getActualDate() == null || mediaFile.getDateStored().compareTo(image.getActualDate()) != 0 ))) {
                 throw new Exception("Mismatch");
             }
         }
         return false;
     }
 
-/*    public Set<MediaFile> readMediaFilesFromFolderRecursive(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
+    public boolean updateBestimateImage(MediaFile mediaFile) throws Exception {
+        final Image image = mediaFile.getImage();
+        final Meta metaOrig = getV(mediaFile.getFilename());
+        String origFileName = (metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : mediaFile.getFilename();
+        if (image.getOriginalFileHash() == null && image.getDateTaken() == null && image.getOriginalFilename() == null
+        && image.getBestimateFileHash() == null && image.getDateCorrected() == null && image.getBestimateFilename() == null) {
+            image.setBestimateFileHash(mediaFile.getFilehash());
+            image.setDateCorrected(mediaFile.getDateStored());
+            image.setBestimateFilename(origFileName);
+            if (mediaFile instanceof VideoMediaFile)
+                image.setDuration(((VideoMediaFile)mediaFile).getDuration());
+            return true;
+        } else {
+            if (!(origFileName.equals(image.getBestimateFilename()) || origFileName.equals(image.getOriginalFilename()))
+                    || !(mediaFile.getFilehash().equals(image.getOriginalFileHash()) || mediaFile.getFilehash().equals(image.getBestimateFileHash()))
+                    || ((image.getDateTaken() == null || mediaFile.getDateStored().compareTo(image.getDateTaken()) != 0) && (image.getActualDate() == null || mediaFile.getDateStored().compareTo(image.getActualDate()) != 0 ))) {
+                throw new Exception("Mismatch");
+            }
+        }
+        return false;
+    }
+
+    /*    public Set<MediaFile> readMediaFilesFromFolderRecursive(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
         ProgressDTO progress = new ProgressDTO();
         progress.reset();
         Set<MediaFile> mediaFiles = new HashSet<>();
@@ -361,7 +395,7 @@ public class MediafileService {
         return result;
     }
 
-    private MediaFile readMediaFile(File file) {
+    public MediaFile readMediaFile(File file) {
         MediaFile result = mediafileDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath(), false);
         return result != null ? result : readMediaFile(file, null, folderService.getFolder(file.getParentFile().toPath()), false, false, CommonProperties.getInstance().getZone(), "");
     }
@@ -404,19 +438,13 @@ public class MediafileService {
                 ImageDTO imageDTO = getHash(filePath.toFile());
                 Image image;
                 image = imageService.getImage(imageDTO, true);
+                Meta meta = ExifService.readMeta(filePath.toFile(), zone);
                 if (image == null) {
-                    image = new Image(imageDTO.hash, imageDTO.type);
+                    image = new Image(imageDTO.hash, imageDTO.type, meta.make, meta.model);
                     whatToSave.add("image");
                 }
                 final String fullHash = getFullHash(filePath.toFile());
-                Meta meta = ExifService.readMeta(filePath.toFile(), zone);
-                if (actFile instanceof JPGMediaFile) {
-                    ((JPGMediaFile) actFile).setWithQuality(meta.quality);
-                }
-                if (actFile instanceof VideoMediaFile) {
-                    ((VideoMediaFile) actFile).setDuration(meta.duration);
-                }
-                actFile.setDateStored(meta.date);
+                actFile.setMeta(meta);
                 actFile.setImage(image);
                 actFile.setFilehash(fullHash);
                 whatToSave.add("file");
@@ -424,6 +452,16 @@ public class MediafileService {
             if (TRUE.equals(fileOriginal)) {
                 try {
                     final boolean updated = updateOriginalImage(actFile);
+                    if (updated) {
+                        whatToSave.add("file");
+                        whatToSave.add("image");
+                    }
+                } catch (Exception e) {
+                    notes += actFile + "\n";
+                }
+            } else {
+                try {
+                    final boolean updated = updateBestimateImage(actFile);
                     if (updated) {
                         whatToSave.add("file");
                         whatToSave.add("image");
@@ -470,8 +508,8 @@ public class MediafileService {
             }
             mediaFile.moveFile(folder, newPath);
 
-            if (mediaFile instanceof JPGMediaFile && TRUE.equals(mediaFile.isOriginal()) && !((JPGMediaFile) mediaFile).isExifbackup()) {
-                ((JPGMediaFile) mediaFile).addExifbackup();
+            if (mediaFile instanceof JPGMediaFile && !((JPGMediaFile) mediaFile).isExifbackup()) {
+                ((JPGMediaFile) mediaFile).addExifbackup(TRUE.equals(mediaFile.isOriginal()));
             }
             if (mediaFile instanceof RAWMediaFile && !((RAWMediaFile) mediaFile).isXMPattached()) {
                 ((RAWMediaFile) mediaFile).setXMPattached(createXmp(mediaFile.getFilePath().toFile()) != null);

@@ -14,6 +14,7 @@ import java.time.ZonedDateTime;
  * @author gabor
  */
 public class Meta {
+    public int nameVersion;
     public String originalFilename;
     public ZonedDateTime date;
     public String model;
@@ -39,11 +40,12 @@ public class Meta {
      * @param orig
      * @param quality
      */
-    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality) {
-        this(originalFilename, date, dateFormat, model, iID, dID, odID, note, orig, quality, 0);
+    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality) {
+        this(nameVersion, originalFilename, date, dateFormat, model, iID, dID, odID, note, orig, quality, 0);
     }
 
-    public Meta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, long duration) {
+    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, long duration) {
+        this.nameVersion = nameVersion;
         this.originalFilename = originalFilename;
         this.date = date;
         this.dateFormat = dateFormat;

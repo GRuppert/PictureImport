@@ -11,7 +11,7 @@ import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile.WriteMethod;
 public class CommonProperties {
     private static CommonProperties instance;
 
-    private WriteMethod copyOrMove = WriteMethod.COPY;
+    private WriteMethod copyOrMove = WriteMethod.MOVE;
     private boolean overwrite = false;
     private ZoneId zone = ZoneId.systemDefault();
     private String pictureSet = "K";

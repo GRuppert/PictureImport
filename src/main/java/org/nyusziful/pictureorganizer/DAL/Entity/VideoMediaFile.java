@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 
 import javax.persistence.DiscriminatorValue;
@@ -31,6 +32,12 @@ public class VideoMediaFile extends MediaFile {
         VideoMediaFile rawMediaFile = (VideoMediaFile)super.clone();
         rawMediaFile.duration = this.getDuration();
         return rawMediaFile;
+    }
+
+    @Override
+    public void setMeta(Meta meta) {
+        super.setMeta(meta);
+        setDuration(meta.duration);
     }
 
 

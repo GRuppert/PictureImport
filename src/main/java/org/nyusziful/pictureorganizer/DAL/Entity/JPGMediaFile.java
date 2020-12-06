@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.Hash.JPGHash;
 
 import javax.persistence.*;
@@ -11,6 +12,9 @@ import java.sql.Timestamp;
 public class JPGMediaFile extends MediaFile {
     private boolean exifbackup = false;
     private boolean standalone = true;
+    @Column(name = "exif")
+    private byte[] exif;
+
 
     public JPGMediaFile() {
         // this form used by Hibernate
@@ -35,8 +39,8 @@ public class JPGMediaFile extends MediaFile {
 
     }
 
-    public boolean addExifbackup() {
-        exifbackup = JPGHash.addBackupExif(filePath.toFile());
+    public boolean addExifbackup(boolean orig) {
+        exifbackup = JPGHash.addBackupExif(filePath.toFile(), orig);
         return exifbackup;
     }
 
@@ -55,6 +59,12 @@ public class JPGMediaFile extends MediaFile {
 
     public boolean isStandalone() {
         return standalone;
+    }
+
+    @Override
+    public void setMeta(Meta meta) {
+        super.setMeta(meta);
+        setWithQuality(meta.quality);
     }
 
     public void setWithQuality(String quality) {
@@ -76,4 +86,7 @@ public class JPGMediaFile extends MediaFile {
         return jpgMediaFile;
     }
 
+    public byte[] getExif() {
+        return exif;
+    }
 }

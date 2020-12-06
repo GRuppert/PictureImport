@@ -50,7 +50,7 @@ public class HashTest {
                      "943819f7c307879c6e832b409f9c5dea"),
         new TestData("K2008-08-1_7@09-1_4-28(+0200)(Sun)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-MOV03819.3GP",
                      "4e5ba5e19219ffe63a9d139749bf6fec",
-                     "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"),
+                     "4b85f324b4b928416ad0dd75efa5d7b1"),
         new TestData("V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-4f0f7fe2fabb83c399af967ccf860d88-47e0be579ef91106cdd6c818b2976ce2-DSC09459.ARW",
                      "4f0f7fe2fabb83c399af967ccf860d88",
                      "47e0be579ef91106cdd6c818b2976ce2"),
@@ -59,7 +59,7 @@ public class HashTest {
                      "47e0be579ef91106cdd6c818b2976ce2"),
         new TestData("C0014.MP4",
                 "b4278e971969f65ea6a3c15f0a99c4fc",
-                "094045abbb125b1bf7482d79afd9682b"),
+                "c39f306638d73d2f8819e4112acff665"),//old "094045abbb125b1bf7482d79afd9682b"),
 /*            new TestData("1.mp4",
                     "fcc9ab21a2fd849ef07a1b8b1045e0cf",
                     "47e0be579ef91106cdd6c818b2976ce2"),*/

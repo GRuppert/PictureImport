@@ -441,7 +441,7 @@ public class MainController implements Initializable {
 
         @Override
         public Boolean call() {
-            MediafileService mediafileService = new MediafileService();
+            MediafileService mediafileService = MediafileService.getInstance();
             return mediafileService.syncFolder(source, target, this);
         }
 
@@ -468,13 +468,13 @@ public class MainController implements Initializable {
             processedFiles = 0;
             numberOfFiles = directoryElements.size();
             updateProgress(0, numberOfFiles);
-            MediafileService mediafileService = new MediafileService();
+            MediafileService mediafileService = MediafileService.getInstance();
             String notes = "";
             for (File directory : directories) {
                 final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), original, false, commonProperties.getZone(), notes, this);
                 Set<RenameMediaFile> renameMediaFiles = new HashSet<>();
                 for (MediafileDTO mediafileDTO : mediaFiles) {
-                    RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", notes, commonProperties.getToDir().toString());
+                    RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", notes, commonProperties.getToDir().toString() + (original ? "" : "\\" + directory.getName()));
                     renameMediaFiles.add(renameMediaFile);
                     Platform.runLater(new Runnable() {
                         @Override public void run() {
@@ -506,7 +506,7 @@ public class MainController implements Initializable {
 
         @Override
         protected Integer call() throws Exception {
-            MediafileService mediafileService = new MediafileService();
+            MediafileService mediafileService = MediafileService.getInstance();
             Set<MediafileDTO> mediaFiles = new HashSet<>();
             for (File directory : directories) {
                 mediaFiles.addAll(mediafileService.reOrganizeFilesInSubFolders(directory.toPath(), this));

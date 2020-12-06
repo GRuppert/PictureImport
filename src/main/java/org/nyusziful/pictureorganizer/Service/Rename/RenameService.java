@@ -54,7 +54,7 @@ public class RenameService {
         this.zone = zone;
         this.pictureSet = pictureSet;
         this.version = version;
-        mediafileService = new MediafileService();
+        mediafileService = MediafileService.getInstance();
     }
 
 
@@ -178,7 +178,7 @@ public class RenameService {
                     v.dID == null ||
                             EMPTYHASH.equals(v.dID) ||
                             v.date == null ||
-                            !v.date.isEqual(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFile.getDateStored())
+                            v.date.compareTo(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFile.getDateStored()) != 0
             ) return null;
         }
         return desiredFileName;

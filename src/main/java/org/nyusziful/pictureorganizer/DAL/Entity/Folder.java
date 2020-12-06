@@ -59,7 +59,7 @@ public class Folder extends TrackingEntity {
 
     @Override
     public String toString() {
-        return javaPath.toString();
+        return getJavaPath().toString();
     }
 
     public void updatePath(Path path) {

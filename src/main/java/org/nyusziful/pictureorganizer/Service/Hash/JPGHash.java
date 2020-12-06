@@ -25,7 +25,8 @@ public class JPGHash implements Hasher {
     private static final int markerLength = 2;
     private static final Logger LOG = LoggerFactory.getLogger(JPGHash.class);
     private static final String BACKUPID = "Backup";
-    
+    private static final String BACKUP_EST_ID = "BakEst";
+
     private static long startOfImageJPG(BufferedInputStream in) throws IOException {
         int lastReadByte;
         long lastReadBytePosition = -1;
@@ -54,7 +55,7 @@ public class JPGHash implements Hasher {
         final JPEGMediaFileStruct fileStruct = scan(file);
         final boolean b = validateAgainstBackupExif(file, fileStruct);
         if (checkIntegrity(file, fileStruct))
-            addBackupExif(file, fileStruct);
+            addBackupExif(file, fileStruct, true);
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\20181007_120044331_iOS.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\V6_K2018-06-1_6@19-5_7-24(-0500)(Sat)-ecb60326c6f29a67b8e39c1825cfc083-0-D5C04877.jpg");
 //        File file  = new File("E:\\work\\JAVA\\pictureOrganizer\\pictureOrganizer\\src\\test\\resources\\K2005-01-3_1@10-0_1-12(+0100)(Mon)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-IMAG0001.jpg");
@@ -92,12 +93,12 @@ public class JPGHash implements Hasher {
     }
 
     //TODO use it
-    public static boolean addBackupExif(File file) {
+    public static boolean addBackupExif(File file, boolean orig) {
         final JPEGMediaFileStruct fileStruct = scan(file);
-        return addBackupExif(file, fileStruct);
+        return addBackupExif(file, fileStruct, orig);
     }
 
-    public static boolean addBackupExif(File file, JPEGMediaFileStruct fileStruct) {
+    public static boolean addBackupExif(File file, JPEGMediaFileStruct fileStruct, boolean orig) {
         boolean result = true;
         if (!fileStruct.isBackup()) {
             result = false;
@@ -116,8 +117,11 @@ public class JPGHash implements Hasher {
                     byte[] bytes = writeBytes(bis, bos, segment.getLength());
                     totalBytesWritten += bytes.length;
                     if (segment.getId().equals("Exif\0\0")) {
-                        bytes = turnExiftoBackup(bytes);
-                        bos.write(bytes);
+                        final byte[] chars = orig ? BACKUPID.getBytes() : BACKUP_EST_ID.getBytes();
+                        for (int i = 0; i < chars.length; i++) {
+                            bytes[i+4] = chars[i];
+                        }
+                       bos.write(bytes);
                         result = true;
                     }
                 }
@@ -157,7 +161,10 @@ public class JPGHash implements Hasher {
                     if (segment.getId().equals("Exif\0\0") && exif == null) {
                         exif = Arrays.copyOfRange(segmentContent, 4+6, (int) (segment.getLength()-4-6));
                     }
-                    if (segment.getId().equals(BACKUPID) && backup == null) {
+                    if (segment.getId().equals(BACKUPID)) {
+                        backup = Arrays.copyOfRange(segmentContent, 4+6, (int) (segment.getLength()-4-6));
+                    }
+                    if (segment.getId().equals(BACKUP_EST_ID) && backup == null) {
                         backup = Arrays.copyOfRange(segmentContent, 4+6, (int) (segment.getLength()-4-6));
                     }
                 }
@@ -189,13 +196,7 @@ public class JPGHash implements Hasher {
         return false;
     }
 
-    private static byte[] turnExiftoBackup(byte[] bytes) {
-        final byte[] chars = BACKUPID.getBytes();
-        for (int i = 0; i < chars.length; i++) {
-            bytes[i+4] = chars[i];
-        }
-        return bytes;
-    }
+
 
     private static byte[] writeBytes(BufferedInputStream bis, BufferedOutputStream bos, long length) throws IOException {
         byte[] segment = new byte[0];

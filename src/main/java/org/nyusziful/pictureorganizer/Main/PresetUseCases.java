@@ -20,6 +20,7 @@ import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 import org.nyusziful.pictureorganizer.Service.ImageService;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
+import org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
@@ -47,11 +48,14 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
+        addOrigFilename();
+/*
         repairMP4();
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_1@13-5_9-01(+0200)(Sat)-9d4a49eac2a2f1881ec75b8ec7cc3303-ae3af2ee22193e0d8d39ae3df3c6a441-WP_20150711_15_59_03_Pro__highres.jpg"));
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_2@05-1_9-31(+0200)(Sun)-a2612d542f9e0349e6247811e0e973c5-b182d0b5f660f245d4ec3fe9973246ea-DSC08954.JPG "));
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\2\\V5_K2015-07-1_1@13-5_9-01(+0200)(Sat)-9d4a49eac2a2f1881ec75b8ec7cc3303-ae3af2ee22193e0d8d39ae3df3c6a441-WP_20150711_15_59_03_Pro__highres.jpg"));
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\2\\V5_K2015-07-1_2@05-1_9-31(+0200)(Sun)-a2612d542f9e0349e6247811e0e973c5-b182d0b5f660f245d4ec3fe9973246ea-DSC08954.JPG "));
+ */
 //        FolderService folderService = new FolderService();
 //        Folder folder = folderService.getFolder(Paths.get("E:\\ŰÜüű"));
 //        System.out.println(folder);
@@ -72,6 +76,16 @@ public class PresetUseCases {
 //        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
     }
 
+    private static void addOrigFilename() {
+        MediafileDAOImplHib hib = new MediafileDAOImplHib();
+        List<MediaFile> all = hib.getAll();
+        List<MediaFile> empty = new ArrayList<>();
+        all.forEach(a-> {if (FileNameFactory.getV(a.getOriginalFilename()) != null) empty.add(a);});
+        empty.forEach(MediaFile::updateVersion);
+        MediafileService.getInstance().saveMediaFiles(empty, true);
+        MediafileService.getInstance().close();
+    }
+
     private static void migrationV4() {
         File dir = new File("G:\\Pictures\\Photos\\V4\\Gabus");
         String toDir = "g:\\Pictures\\Photos\\DBSaved\\";
@@ -79,7 +93,7 @@ public class PresetUseCases {
             public boolean accept(File dir, String name) {
                 return (new File(dir + "\\" + name).isDirectory());
             }});
-        MediafileService mediafileService = new MediafileService();
+        MediafileService mediafileService = MediafileService.getInstance();
         for (File directory : directories) {
             final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), false, false, CommonProperties.getInstance().getZone(), "", null);
 /*            for (MediafileDTO mediafileDTO : mediaFiles) {
@@ -93,7 +107,8 @@ public class PresetUseCases {
     }
 
     private static void read() {
-        File dir = new File("H:\\Képek\\ExtPhotos\\Babi");
+        //"f:\\Pictures\\Photos"
+        File dir = new File("G:\\Képek\\Photos");
         ArrayList<File> directories = new ArrayList<>();
         try {
             Files.walk(dir.toPath())
@@ -102,7 +117,7 @@ public class PresetUseCases {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        MediafileService mediafileService = new MediafileService();
+        MediafileService mediafileService = MediafileService.getInstance();
         for (File directory : directories) {
             final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), false, false, CommonProperties.getInstance().getZone(), "", null);
 /*            for (MediafileDTO mediafileDTO : mediaFiles) {

@@ -28,7 +28,7 @@ public class ImageServiceTest {
         imageSearch.type = testType;
         Image image = imageService.getImage(imageSearch);
         assertTrue(image == null);
-        image = new Image(testHash, testType);
+        image = new Image(testHash, testType, "test", "test");
         imageService.persistImage(image);
         Image imageRetrieved = imageService.getImage(imageSearch);
         assertTrue(imageRetrieved.getId() > -1);
@@ -53,7 +53,7 @@ public class ImageServiceTest {
     public void testBiDirectional() {
         final ImageService imageService = new ImageService();
         final FolderService folderService = new FolderService();
-        final MediafileService mediafileService = new MediafileService();
+        final MediafileService mediafileService = MediafileService.getInstance();
         ImageDTO imageFirstDTO = new ImageDTO();
         String testHash = "TESTFIRST";
         String testType = "type";
@@ -61,7 +61,7 @@ public class ImageServiceTest {
         imageFirstDTO.type = testType;
         Image image = imageService.getImage(imageFirstDTO);
         assertTrue(image == null);
-        image = new Image(testHash, testType);
+        image = new Image(testHash, testType, "test", "test");
         imageService.persistImage(image);
         image = imageService.getImage(imageFirstDTO);
         assertTrue(image.getId() > -1);
@@ -80,7 +80,7 @@ public class ImageServiceTest {
         imageSecondDTO.type = testType;
         Image image2 = imageService.getImage(imageSecondDTO);
         assertTrue(image2 == null);
-        image2 = new Image(testHash, testType);
+        image2 = new Image(testHash, testType, "test", "test");
         imageService.persistImage(image2);
         image2 = imageService.getImage(imageSecondDTO);
         assertTrue(image2.getId() > -1);

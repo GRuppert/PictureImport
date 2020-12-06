@@ -16,7 +16,7 @@ public abstract class ProgressLeakingTask<V> extends Task<V> {
     }
 
     protected void createNewName(Set<RenameMediaFile> renameMediaFiles) {
-        MediafileService mediafileService = new MediafileService();
+        MediafileService mediafileService = MediafileService.getInstance();
         for (RenameMediaFile renameMediaFile : renameMediaFiles) {
             final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
             Platform.runLater(new Runnable() {

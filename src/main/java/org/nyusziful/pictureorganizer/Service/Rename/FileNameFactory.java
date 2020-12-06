@@ -34,12 +34,29 @@ public class FileNameFactory {
         "ILCE-6000",
         "GT-I9192",
         "GT-I9195I",
+        "GT-I9505",
         "Lumia 1020",
         "FinePix S5800 S800",
         "TG-3            ",
         "ST25i",
         "GT-I8190N",
-        "E52-1"
+        "E52-1",
+        "DMC-TZ1",
+        "Acer Liquid",
+        "DSC-W40",
+        "SGH-F480",
+        "Canon DIGITAL IXUS 400",
+        "DiMAGE Z20",
+        "NIKON D70s",
+        "SAMSUNG",
+        "GT-B7722",
+        "PENTAX Optio WG-1 GPS",
+        "ST27i",
+        "SGH-L700",
+        "FE-120,X-700",
+        "DSC-P32",
+        "DMC-LS2",
+        "K610i"
     };
 
     /**
@@ -70,18 +87,18 @@ public class FileNameFactory {
         }
         return metaFile;
     }
-    
+
     private static Meta getV1(String filename) {//20160924_144402_ILCE-5100-DSC00615.JPG
         if (filename.length() > 17+4+1) {
             try {
                 ZonedDateTime captureDate = LocalDateTime.parse(filename.substring(0, 15), dfV1).atZone(ZoneId.systemDefault());
                 String[] parts = filename.substring(15 + 1).split("-");
                 if (parts.length == 2)
-                    return new Meta(parts[1], captureDate, null, parts[0], null, null, null, null, null, null);
+                    return new Meta(1, parts[1], captureDate, null, parts[0], null, null, null, null, null, null);
                 if (parts.length > 2)
                     for (String camera : CAMERAS)
                         if (filename.substring(15 + 1).startsWith(camera)) {
-                            return new Meta(filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null, null, null, null);
+                            return new Meta(1, filename.substring(15 + 1 + camera.length() + 1), captureDate, null, camera, null, null, null, null, null, null);
                         }
                 //errorOut("Not recognized camera", new Exception());
             } catch (Exception e) {
@@ -95,7 +112,7 @@ public class FileNameFactory {
         if (filename.length() > 34+1+4) {
             try {
                 ZonedDateTime captureDate = ZonedDateTime.parse(filename.substring(1, 10) + filename.substring(11, 17) + filename.substring(18, 22) + (filename.substring(27, 28).equals("p") ? "+" : "-") + filename.substring(28, 32), dfV2);
-                return new Meta(filename.substring(34), captureDate, null, null, null, null, null, null, null, null);
+                return new Meta(2, filename.substring(34), captureDate, null, null, null, null, null, null, null, null);
             } catch (Exception e) {
                 return null;
             }
@@ -118,7 +135,7 @@ public class FileNameFactory {
                 ;
                 ZonedDateTime captureDate = LocalDateTime.parse(dateString, dfV3).atZone(ZoneOffset.UTC);
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
-                return new Meta(filename.substring(35), captureDate, null, null, null, null, null, null, null, null);
+                return new Meta(3, filename.substring(35), captureDate, null, null, null, null, null, null, null, null);
             } catch (Exception e) {
                 return null;
             }
@@ -143,7 +160,7 @@ public class FileNameFactory {
                 captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23, 28)));
                 
                 if (filename.substring(34, 35).equals("-") && filename.substring(67, 68).equals("-")) {
-                    return new Meta(filename.substring(101), captureDate, null, null, null, filename.substring(35, 67), filename.substring(68, 100), null, null, null);
+                    return new Meta(4, filename.substring(101), captureDate, null, null, null, filename.substring(35, 67), filename.substring(68, 100), null, null, null);
                     
                 }
             } catch (Exception e) {
@@ -167,15 +184,16 @@ public class FileNameFactory {
                         filename.substring(18 + offsetV, 19 + offsetV) +
                         filename.substring(20 + offsetV, 22 + offsetV)
                 ;
-                ZonedDateTime captureDate = LocalDateTime.parse(dateString, dfV3).atZone(ZoneOffset.UTC);
-                captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
-                
+                ZonedDateTime captureDate = null;
+                if (!("00000000000000".equals(dateString) && "E".equals(filename.substring(0 + offsetV, 1 + offsetV)) && "+0000".equals(filename.substring(23 + offsetV, 28 + offsetV)))) {
+                    captureDate = LocalDateTime.parse(dateString, dfV3).atZone(ZoneOffset.UTC);
+                    captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
+                }
+
                 if (filename.substring(34 + offsetV, 35 + offsetV).equals("-") && filename.substring(67 + offsetV, 68 + offsetV).equals("-")) {
-                    return new Meta(filename.substring(101 + offsetV), captureDate, null, null, filename.substring(35 + offsetV, 67 + offsetV), filename.substring(68 + offsetV, 100 + offsetV), null, null, null, null);
-                    
+                    return new Meta(5, filename.substring(101 + offsetV), captureDate, null, null, filename.substring(35 + offsetV, 67 + offsetV), filename.substring(68 + offsetV, 100 + offsetV), null, null, null, null);
                 }
             } catch (Exception e) {
-                return null;
             }
         }
         return null;
@@ -195,11 +213,13 @@ public class FileNameFactory {
                         filename.substring(18 + offsetV, 19 + offsetV) +
                         filename.substring(20 + offsetV, 22 + offsetV)
                 ;
-                ZonedDateTime captureDate = LocalDateTime.parse(dateString, dfV3).atZone(ZoneOffset.UTC);
-                captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
-                
+                ZonedDateTime captureDate = null;
+                if (!("00000000000000".equals(dateString) && "E".equals(filename.substring(0 + offsetV, 1 + offsetV)) && "+0000".equals(filename.substring(23 + offsetV, 28 + offsetV)))) {
+                    captureDate = LocalDateTime.parse(dateString, dfV3).atZone(ZoneOffset.UTC);
+                    captureDate = captureDate.withZoneSameInstant(ZoneId.of(filename.substring(23 + offsetV, 28 + offsetV)));
+                }
                 if (filename.substring(34 + offsetV, 35 + offsetV).equals("-") && filename.substring(67 + offsetV, 68 + offsetV).equals("-")) {
-                    return new Meta(filename.substring(70 + offsetV), captureDate, null, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, filename.substring(68 + offsetV, 69 + offsetV), null);
+                    return new Meta(6, filename.substring(70 + offsetV), captureDate, null, null, null, filename.substring(35 + offsetV, 67 + offsetV), null, null, filename.substring(68 + offsetV, 69 + offsetV), null);
                     
                 }
             } catch (Exception e) {

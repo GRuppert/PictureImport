@@ -23,7 +23,7 @@ public class RenameMediaFile extends AbstractTableViewMediaFile {
 
     public boolean write(WriteMethod writeMethod, boolean overwrite) {
         if (processing.get()) {
-            MediafileService mediafileService = new MediafileService();
+            MediafileService mediafileService = MediafileService.getInstance();
             return mediafileService.renameMediaFile(getMediafileDTO(), Paths.get(targetDirectory.getValue() + "\\" + newName.get()), writeMethod, overwrite);
         }
         return false;

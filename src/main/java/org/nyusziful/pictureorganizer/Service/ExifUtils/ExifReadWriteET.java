@@ -63,7 +63,7 @@ public class ExifReadWriteET {
                 String line = iterator.next();
                 if (line.startsWith("========")) {
                     if (i > -1) {
-                        Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null, quality);
+                        Meta meta = new Meta(0, filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null, quality);
                         System.out.println(meta);
                         results.add(meta);
                     }
@@ -114,7 +114,7 @@ public class ExifReadWriteET {
                 }
             }
             if (filename != null) {
-                Meta meta = new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null, quality);
+                Meta meta = new Meta(0, filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null, quality);
                 System.out.println(meta);
                 results.add(meta);
 //            results.add(new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));

@@ -25,6 +25,12 @@ public class Image extends TrackingEntity implements Serializable {
     private String hash;
     @Column(name = "original_file_hash")
     private String originalFileHash;
+    @Column(name = "bestimate_file_hash")
+    private String bestimateFileHash;
+    @Column(name = "original_filename")
+    private String originalFilename;
+    @Column(name = "bestimate_filename")
+    private String bestimateFilename;
     @Column(name = "date_taken")
     private String dateTakenString;
     @Transient
@@ -33,13 +39,24 @@ public class Image extends TrackingEntity implements Serializable {
     private String dateCorrectedString;
     @Transient
     private ZonedDateTime dateCorrected;
-    @Column(name = "original_filename")
-    private String originalFilename;
     @Column(name = "type", updatable = false, nullable = false)
     private String type;
     private String latitude;
     private String longitude;
     private String altitude;
+    @Column(name = "orientation")
+    private Integer orientation;
+    @Column(name = "rating")
+    private Integer rating;
+    @Column(name = "title")
+    private String title;
+    @Column(name = "keyword")
+    private String keyword;
+    @Column(name = "camera_make")
+    private String camera_make;
+    @Column(name = "camera_model")
+    private String camera_model;
+
     @Column(name = "duration")
     private long duration;
     @ManyToOne
@@ -61,9 +78,11 @@ public class Image extends TrackingEntity implements Serializable {
 
     protected Image() {}
 
-    public Image(String hash, String type) {
+    public Image(String hash, String type, String make, String model) {
         this.hash = hash;
         this.type = type;
+        setCamera_make(make);
+        setCamera_model(model);
     }
 
 /*
@@ -203,5 +222,69 @@ public class Image extends TrackingEntity implements Serializable {
             this.hash = hash.hash;
             valid = true;
         }
+    }
+
+    public String getBestimateFileHash() {
+        return bestimateFileHash;
+    }
+
+    public void setBestimateFileHash(String bestimateFileHash) {
+        this.bestimateFileHash = bestimateFileHash;
+    }
+
+    public String getBestimateFilename() {
+        return bestimateFilename;
+    }
+
+    public void setBestimateFilename(String bestimateFilename) {
+        this.bestimateFilename = bestimateFilename;
+    }
+
+    public Integer getOrientation() {
+        return orientation;
+    }
+
+    public void setOrientation(Integer orientation) {
+        this.orientation = orientation;
+    }
+
+    public Integer getRating() {
+        return rating;
+    }
+
+    public void setRating(Integer rating) {
+        this.rating = rating;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
+    }
+
+    public String getCamera_make() {
+        return camera_make;
+    }
+
+    public void setCamera_make(String camera_make) {
+        this.camera_make = camera_make;
+    }
+
+    public String getCamera_model() {
+        return camera_model;
+    }
+
+    public void setCamera_model(String camera_model) {
+        this.camera_model = camera_model;
     }
 }

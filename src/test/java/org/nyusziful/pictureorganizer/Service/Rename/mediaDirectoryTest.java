@@ -45,8 +45,8 @@ public class mediaDirectoryTest {
         new TestData(
             "2018-06-14 - 2018-07-10 Peru",
                 true,
-                LocalDate.of(2018, 5,14),
-                LocalDate.of(2018, 6,10)
+                LocalDate.of(2018, 6,14),
+                LocalDate.of(2018, 7,10)
         ),
         new TestData(
                 "UnsupportedFolder",
