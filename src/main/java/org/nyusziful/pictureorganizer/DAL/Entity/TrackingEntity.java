@@ -30,4 +30,8 @@ public abstract class TrackingEntity {
         upddate = new java.sql.Timestamp(System.currentTimeMillis());
         updater = System.getenv("COMPUTERNAME");
     }
+
+    public Timestamp getUpddate() {
+        return upddate;
+    }
 }

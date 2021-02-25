@@ -8,6 +8,8 @@ package org.nyusziful.pictureorganizer.Service.Hash;
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
+
+import org.junit.Ignore;
 import org.junit.Test;
 import static org.junit.Assert.*;
 import org.junit.runner.RunWith;
@@ -76,6 +78,7 @@ public class HashTest {
      * Test of getHash method, of class Hash.
      */
     @Test
+    @Ignore
     public void testFullHash() {
         File file = new File(this.getClass().getClassLoader().getResource(filename).getFile());
         String result = MediaFileHash.getFullHash(file);
@@ -90,6 +93,7 @@ public class HashTest {
         File file = new File(this.getClass().getClassLoader().getResource(filename).getFile());
         ImageDTO result = MediaFileHash.getHash(file);
         assertEquals("Hash of file(" + filename + ") counted: " + result.hash + " awaited: " + Hash, Hash, result.hash);
+        assertEquals("MD5 of file(" + filename + ") counted: " + result.fullhash + " awaited: " + fullHash, fullHash, result.fullhash);
     }
 
     public HashTest(TestData data) {

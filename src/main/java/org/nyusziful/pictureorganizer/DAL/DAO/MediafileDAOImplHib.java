@@ -13,6 +13,7 @@ import javax.persistence.criteria.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements MediafileDAO {
 
@@ -96,15 +97,23 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
 
     @Override
     public List<MediaFile> getByPath(Drive drive, Path path, boolean batch) {
+        long start = System.nanoTime();
         EntityManager entityManager = jpaConnection.getEntityManager();
+        long entity = System.nanoTime();
         EntityTransaction transaction = entityManager.getTransaction();
+        long trans = System.nanoTime();
         List<MediaFile> results = new ArrayList<>();
+        long query = System.nanoTime();
+        long commit = query;
+        long close = query;
         try{
             TypedQuery<MediaFile> typedQuery = entityManager.createQuery("SELECT i from MediaFile i LEFT JOIN FETCH i.image WHERE i.drive.id=:driveId and i.folder.path=:path", MediaFile.class);
             typedQuery.setParameter("driveId", drive.getId());
             typedQuery.setParameter("path", FolderService.winToDataPath(path));
             results = typedQuery.getResultList();
+            query = System.nanoTime();
             if (!batch) transaction.commit();
+            commit = System.nanoTime();
         }catch(RuntimeException e){
             try{
                 transaction.rollback();
@@ -114,11 +123,25 @@ public class MediafileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
             throw e;
 
         }finally{
+            close = System.nanoTime();
             if(entityManager!=null && !batch){
                 entityManager.close();
             }
         }
-        return results;    }
+        long end = System.nanoTime();
+/*
+        System.out.println(
+                "Init  " + TimeUnit.NANOSECONDS.toMillis(entity - start)
+                        + "\nTrans " + TimeUnit.NANOSECONDS.toMillis(trans - entity)
+                        + "\nQuery " + TimeUnit.NANOSECONDS.toMillis(query - trans)
+                        + "\nComit " + TimeUnit.NANOSECONDS.toMillis(commit - query)
+                        + "\nClose " + TimeUnit.NANOSECONDS.toMillis(end - close)
+                        + "\nWhole " + TimeUnit.NANOSECONDS.toMillis(end - start)
+
+        );
+*/
+        return results;
+    }
 
     @Override
     public List<MediaFile> getByPathRec(Drive drive, Path path) {

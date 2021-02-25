@@ -5,11 +5,7 @@
  */
 package org.nyusziful.pictureorganizer.Service.Hash;
 
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.*;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -60,10 +56,15 @@ public class MediaFileHash {
     private static final Logger LOG = LoggerFactory.getLogger(MediaFileHash.class);
 
     public static void main(String[] args) {
+        ImageDTO hashJ = getHash(new File("H:\\Képek\\Photos\\Új\\Frankfurt\\5100\\PRIVATE\\M4ROOT\\CLIP\\C0006.MP4"));
+/*
+        ImageDTO hashJ = getHash(new File("G:\\Képek\\Photos\\Regi Kepek\\Meg nem\\!Válogatós\\Gabus\\!IMAG\\2005-07-04 - 2005-07-04\\x\\IMAG0001.JPG"));
         ImageDTO hash = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\diff\\2\\V6_K2017-08-3_1@16-2_6-35(+0200)(Thu)-2104cc0ae509423700f1c0a6695f76f0-0-C0018.MP4"));
         ImageDTO hash2 = getHash(new File("e:\\Work\\Testfiles\\failingmp4\\diff\\1\\V6_K2017-08-3_1@16-2_6-35(+0200)(Thu)-d2054e7f9e485f415a5e7bcc8b35b835-0-C0018.MP4"));
-        System.out.println(hash.hash);
-        System.out.println(hash2.hash);
+
+*/
+        System.out.println(hashJ.hash);
+//        System.out.println(hash2.hash);
     }
     /**
      * 
@@ -80,31 +81,44 @@ public class MediaFileHash {
         }
         byte[] digestDef = md5Digest.digest();
         byte[] digest = null;
-        Type type = Type.UNKNOWN;
-        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
-            type = Type.getType(file);
-            imageDTO.type = type.getDBName();
-            switch (type) {
-                case TIFF:
-                    digest = TIFFHash.readDigest(file, fileStream);
-                    break;
-                case JPG:
-                    digest = JPGHash.readDigest(file, fileStream, md5Digest, in);
-                    break;
-                case MP4:
-                    digest = MP4Hash.readDigest(file, fileStream, md5Digest, in);
-                    break;
-/*                case "heif":
-                case "heifs":
-                case "heic":
-                case "heics":
-                case "avci":
-                case "avcs":
-                    break;*/
+        byte[] fileContent = null;
+        try (FileInputStream fileStream = new FileInputStream(file.toString()); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
+            in.on(true);
+            if (file.length() < Integer.MAX_VALUE - 5) {
+                fileContent = new byte[in.available()];
+                int read = in.read(fileContent);
+                if (read == -1) {
+                    throw new IOException("File ended unexpectedly");
+                }
+            } else {
+                byte[] buffer = new byte[4096];
+                while (in.read(buffer) != -1) {}
             }
-        }  catch(IOException e) {
-//            errorOut("Hash", e);
+            in.on(false);
+            imageDTO.fullhash = processHash(md5Digest.digest());
+            md5Digest.reset();
+        } catch (Exception ex) {
+            LOG.warn("Returning EMPTYHASH: " + ex.getMessage());
             return imageDTO;
+        }
+
+        Type type = Type.getType(file);
+        imageDTO.type = type.getDBName();
+        if (fileContent != null) {
+            try (DigestInputStream in = new DigestInputStream(new ByteArrayInputStream(fileContent), md5Digest)) {
+                digest = getDigest(type, file, fileContent, md5Digest, in, imageDTO);
+            }  catch(Exception e) {
+//            errorOut("Hash", e);
+                return imageDTO;
+            }
+        } else {
+            try (FileInputStream fileInStream = new FileInputStream(file.toString()); DigestInputStream in = new DigestInputStream(fileInStream, md5Digest);) {
+//        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
+                digest = getDigest(type, file, fileContent, md5Digest, in, imageDTO);
+            }  catch(Exception e) {
+//            errorOut("Hash", e);
+                return imageDTO;
+            }
         }
         if (digest == null) {
             return imageDTO;
@@ -112,12 +126,39 @@ public class MediaFileHash {
         if (Arrays.equals(digest, digestDef)) {
             return imageDTO;
         }
+        imageDTO.hash = processHash(digest);
+        return imageDTO;
+    }
+
+    private static byte[] getDigest(Type type, File file, byte[] fileContent, MessageDigest md5Digest, DigestInputStream in, ImageDTO imageDTO) throws IOException {
+        byte[] digest = null;
+        switch (type) {
+            case TIFF:
+                digest = TIFFHash.readDigest(file);
+                break;
+            case JPG:
+                digest = JPGHash.readDigest(file, fileContent, md5Digest, in, imageDTO);
+                break;
+            case MP4:
+                digest = MP4Hash.readDigest(md5Digest, in);
+                break;
+/*                case "heif":
+                case "heifs":
+                case "heic":
+                case "heics":
+                case "avci":
+                case "avcs":
+                    break;*/
+        }
+        return digest;
+    }
+
+    private static String processHash(byte[] digest) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < digest.length; ++i) {
             sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1,3));
         }
-        imageDTO.hash = sb.toString();
-        return imageDTO;
+        return sb.toString();
     }
     
     private static String getFullHashPS(File file) throws FileNotFoundException, IOException {

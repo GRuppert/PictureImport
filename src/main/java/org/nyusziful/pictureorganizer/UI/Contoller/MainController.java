@@ -183,7 +183,7 @@ public class MainController implements Initializable {
             directories.add(file);
             disableButtons(true);
             showTablePane();
-            ReadFolders(directories, false, true);
+            ReadFolders(directories, null, true);
         }
     }
 
@@ -201,7 +201,7 @@ public class MainController implements Initializable {
             }
             disableButtons(true);
             showTablePane();
-            ReadFolders(directories, false, true);
+            ReadFolders(directories, null, true);
         }
     }
 
@@ -450,10 +450,10 @@ public class MainController implements Initializable {
     public class ReadTask extends RenamingTask<Integer> {
         private int numberOfFiles;
         private int processedFiles;
-        private boolean original;
+        private Boolean original;
         private boolean rename;
 
-        public ReadTask(Collection<File> directories, boolean original, boolean rename) {
+        public ReadTask(Collection<File> directories, Boolean original, boolean rename) {
             super(directories);
             this.original = original;
             this.rename = rename;
@@ -562,7 +562,7 @@ public class MainController implements Initializable {
 
 
     //Input mediafiles Output standard
-    public void ReadFolders(Collection<File> directories, boolean original, boolean rename) {
+    public void ReadFolders(Collection<File> directories, Boolean original, boolean rename) {
         Task<Integer> task = new ReadTask(directories, original, rename);
         statusLabel.setText("");
         task.setOnFailed(a -> {task.getException().printStackTrace(); progressIndicator.progressProperty().unbind(); mediaFileSet.reset(); resetAction();});

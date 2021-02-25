@@ -19,7 +19,7 @@ public class VideoMediaFile extends MediaFile {
         // this form used by Hibernate
     }
 
-    public VideoMediaFile(Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
+    public VideoMediaFile(Folder folder, Path path, long size, Timestamp dateMod, Boolean original) {
         super(folder, path, size, dateMod, original);
      }
 

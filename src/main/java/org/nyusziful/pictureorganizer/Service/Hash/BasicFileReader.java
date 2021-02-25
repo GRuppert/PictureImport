@@ -25,11 +25,12 @@ public class BasicFileReader {
     }
 
     public static boolean skipBytes(InputStream in, long pointer) throws IOException {
-        do {
+        while (pointer > 0) {
             long skip = in.skip(pointer);
-            if (skip < 0) return false;
+            if (skip < 1)
+                return false;
             pointer -= skip;
-        } while (pointer > 0);
+        }
         return true;
     }
     

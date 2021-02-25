@@ -14,6 +14,7 @@ import com.drew.imaging.mp4.Mp4MetadataReader;
 import com.drew.imaging.png.PngMetadataReader;
 import com.drew.imaging.quicktime.QuickTimeMetadataReader;
 import com.drew.imaging.tiff.TiffMetadataReader;
+import com.drew.metadata.*;
 import com.drew.metadata.mp4.Mp4Directory;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import com.adobe.internal.xmp.XMPException;
@@ -23,9 +24,6 @@ import com.adobe.internal.xmp.XMPMetaFactory;
 import com.adobe.internal.xmp.properties.XMPPropertyInfo;
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
-import com.drew.metadata.Directory;
-import com.drew.metadata.Metadata;
-import com.drew.metadata.Tag;
 import com.drew.metadata.xmp.XmpDirectory;
 
 import java.io.*;
@@ -56,6 +54,8 @@ public class ExifReadWriteIMR {
     }
 
     public static void main(String[] args) {
+        readFileMeta(new File("e:\\Work\\Testfiles\\failingmp4\\diff\\2\\V6_K2017-08-3_1@16-2_6-35(+0200)(Thu)-2104cc0ae509423700f1c0a6695f76f0-0-C0018.MP4"), ZoneId.systemDefault());
+        readFileMeta(new File("E:\\Work\\Testfiles\\DSC07666.jpg"), ZoneId.systemDefault());
         readFileMeta(new File("G:\\Pictures\\Photos\\DBSaved\\2017-12-31 - 2018-01-01 Europapark szilveszter\\V6_K2017-12-3_1@11-2_3-40(+0100)(Sun)-6d6d425fbb10fd44c077ca69af817ab3-0-C0001.mp4"), ZoneId.systemDefault());
         readFileMeta(new File("G:\\Pictures\\Photos\\Új\\Sustenpass\\2019_0922_150428_412.mov"), ZoneId.systemDefault());
         readFileMeta(new File("G:\\Pictures\\Photos\\Új\\14584100.avi"), ZoneId.systemDefault());
@@ -65,6 +65,16 @@ public class ExifReadWriteIMR {
     }
 
     public static Meta readFileMeta(File file, ZoneId defaultTZ) {
+        String name = file.getName();
+        try {
+            return readFileMeta(new FileInputStream(file), name, defaultTZ);
+        } catch (IOException ex) {
+            Meta meta = new Meta(0, name, null, false, null, null, null, null, null, null, null);
+            return meta;
+        }
+    }
+
+    public static Meta readFileMeta(InputStream inputStream, String name, ZoneId defaultTZ) {
         ArrayList<String[]> tags;
         String model = null;
         String note = "";
@@ -77,13 +87,25 @@ public class ExifReadWriteIMR {
         String orig = null;
         String quality = null;
         long duration = 0;
+        Integer orientation = null;
+        Integer rating = null;
+        String make = null;
+        String title = null;
+        String keyword = null;
         try {
-            tags = readMeta(file);
+            tags = readMeta(inputStream, name);
         } catch (ImageProcessingException | IOException ex) {
-            Meta meta = new Meta(0, file.getName(), getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), orig, quality);
+            Meta meta = new Meta(0, name, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), orig, quality);
             System.out.println(meta);
             return meta;
         }
+
+
+        for (String[] tag : tags) {
+            System.out.println(tag[0] + " : " + tag[1]);
+        }
+
+
         for (String[] tag : tags) {
 //                System.out.println(tag[0] + " : " + tag[1]);
             switch (tag[0]) {
@@ -114,7 +136,7 @@ public class ExifReadWriteIMR {
                         dateFormat = true;
                     break;
                 case "Creation Time":
-                    if (FilenameUtils.getExtension(file.getName().toLowerCase()).equals("mp4"))
+                    if (FilenameUtils.getExtension(name.toLowerCase()).equals("mp4"))
                         try {
                             wTZ = ZonedDateTime.parse(tag[1], MP4DateFormatTZ);
                         } catch (DateTimeParseException exc) {
@@ -123,7 +145,7 @@ public class ExifReadWriteIMR {
                     try {
                         wTZ = ZonedDateTime.parse(tag[1], XmpDateFormatTZ);
                         if ((captureDate != null && LocalDateTime.parse(captureDate, ExifDateFormat).equals(wTZ.toLocalDateTime()))
-                                || FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp"))
+                                || FilenameUtils.getExtension(name.toLowerCase()).equals("xmp"))
                             dateFormat = true;
                     } catch (DateTimeParseException exc) {
                     }
@@ -133,7 +155,13 @@ public class ExifReadWriteIMR {
                     break;
                 case "Duration in Seconds":
                     try{
-                        duration = Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
+                        if ("00:00:60".equals(tag[1])) {
+                            duration = 60;
+                        } else {
+                            duration = Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
+                        }
+                    }catch(NumberFormatException excep){
+                        excep.printStackTrace();
                     }catch(DateTimeParseException excep){
                         excep.printStackTrace();
                     }
@@ -142,6 +170,40 @@ public class ExifReadWriteIMR {
                     try{
                         duration = Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
                     }catch(DateTimeParseException excep){}
+                    break;
+                case "Orientation":
+                    try {
+                        orientation = Integer.parseInt(tag[1]);
+                    } catch (NumberFormatException nfe) {
+  /*
+                            1	top	left side
+                            2	top	right side
+                            3	bottom	right side
+                            4	bottom	left side
+                            5	left side	top
+                            6	right side	top
+                            7	right side	bottom
+                            8	left side	bottom
+*/
+                    }
+                    break;
+                case "Image Description":
+                case "Windows XP Title":
+                    title = tag[1];
+                    break;
+                case "Make":
+                    make = tag[1];
+                    break;
+                case "Windows XP Keywords":
+                case "Keywords":
+                    keyword = tag[1];
+                    break;
+                case "Rating":
+                case "xmp:Rating":
+                    try {
+                        rating = Integer.parseInt(tag[1]);
+                    } catch (NumberFormatException nfe) {
+                    }
                     break;
             }
         }
@@ -152,7 +214,12 @@ public class ExifReadWriteIMR {
         } else if (wTZ != null) {
             OrigDT = wTZ;
         }
-        Meta meta = new Meta(0, file.getName(), OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
+        Meta meta = new Meta(0, name, OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
+        meta.orientation = orientation;
+        meta.title = title;
+        meta.keyword = keyword;
+        meta.rating = rating;
+        meta.make = make;
         System.out.println(meta);
         return meta;
     }
@@ -160,15 +227,19 @@ public class ExifReadWriteIMR {
 
     //_tagType == exiftool TagId
     public static ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException {
+        return readMeta(new FileInputStream(file), file.getName());
+    }
+
+    public static ArrayList<String[]> readMeta(InputStream inputStream, String name) throws ImageProcessingException, IOException {
         Metadata metadata;
         ArrayList<String[]> tags = new ArrayList();
         Collection<XmpDirectory> xmpDirectories = null;
-        if (FilenameUtils.getExtension(file.getName().toLowerCase()).equals("xmp")) {
+        if (FilenameUtils.getExtension(name.toLowerCase()).equals("xmp")) {
             XmpDirectory directory = new XmpDirectory();
             try {
                 XMPMeta xmpMeta;
                 // If all xmpBytes are requested, no need to make a new ByteBuffer
-                xmpMeta = XMPMetaFactory.parse(new FileInputStream(file));
+                xmpMeta = XMPMetaFactory.parse(inputStream);
                 directory.setXMPMeta(xmpMeta);
             } catch (XMPException e) {
                 directory.addError("Error processing XMP data: " + e.getMessage());
@@ -177,12 +248,17 @@ public class ExifReadWriteIMR {
             collect.add(directory);
             xmpDirectories = collect;
         } else {
-            metadata = readDrew(file);
+            metadata = readDrew(inputStream, name);
             for (Directory directory : metadata.getDirectories()) {
                 if (!directory.getClass().equals(XmpDirectory.class))
                     for (Tag tag : directory.getTags()) {
-                        String[] temp = {tag.getTagName(), tag.getDescription()};
-                        String value = tag.getDescription();
+                        String value = null;
+                        try {
+                            value = "Orientation".equals(tag.getTagName()) ? Integer.toString(directory.getInt(tag.getTagType())) : tag.getDescription();
+                        } catch (MetadataException e) {
+                            value = tag.getDescription();
+                        }
+                        String[] temp = {tag.getTagName(), value};
                         if (value != null && !value.replaceAll("\\s+", "").equals("")) tags.add(temp);
                     }
             }
@@ -218,35 +294,42 @@ public class ExifReadWriteIMR {
     }
 
     private static Metadata readDrew(File file) throws ImageProcessingException, IOException {
-        String ext = FilenameUtils.getExtension(file.getName()).toLowerCase();
+        return readDrew(new FileInputStream(file), file.getName());
+    }
+
+    private static Metadata readDrew(InputStream inputStream, String name) throws ImageProcessingException, IOException {
+        String ext = FilenameUtils.getExtension(name).toLowerCase();
         switch(ext) {
+//            case "mts":
+//                return MetadataReader..readMetadata(inputStream);
             case "jpeg":
             case "jpg":
-                return JpegMetadataReader.readMetadata(file);
+                return JpegMetadataReader.readMetadata(inputStream);
             case "tiff":
             case "tif":
             case "arw":
             case "dng":
             case "nef":
-                return TiffMetadataReader.readMetadata(file);
+                return TiffMetadataReader.readMetadata(inputStream);
             case "png":
-                return PngMetadataReader.readMetadata(file);
+                return PngMetadataReader.readMetadata(inputStream);
             case "bmp":
-                return BmpMetadataReader.readMetadata(file);
+                return BmpMetadataReader.readMetadata(inputStream);
             case "gif":
-                return GifMetadataReader.readMetadata(file);
+                return GifMetadataReader.readMetadata(inputStream);
             case "avi":
-                return AviMetadataReader.readMetadata(file);
+                return AviMetadataReader.readMetadata(inputStream);
             case "mov":
-                return QuickTimeMetadataReader.readMetadata(file);
+                return QuickTimeMetadataReader.readMetadata(inputStream);
             case "mp4":
-                return Mp4MetadataReader.readMetadata(file);
+                return Mp4MetadataReader.readMetadata(inputStream);
             case "heif":
-                return HeifMetadataReader.readMetadata(new FileInputStream(file));
+                return HeifMetadataReader.readMetadata(inputStream);
             case "Unknown":
                 throw new ImageProcessingException("File format could not be determined");
             default:
-                return new Metadata();        }
+                return new Metadata();
+        }
     }
 
     public static Boolean originalJPG(File file) {

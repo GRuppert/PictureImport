@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.IOException;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.readBytes;
@@ -24,7 +26,7 @@ import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.skipBy
 public class MP4Hash implements Hasher {
     private static final Logger LOG = LoggerFactory.getLogger(MP4Hash.class);
 
-    public static byte[] readDigest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
+    public static byte[] readDigest(MessageDigest md5Digest, DigestInputStream in) throws IOException {
         byte[] buffer = new byte[4096];
         long length;
         in.on(false);
@@ -48,6 +50,9 @@ public class MP4Hash implements Hasher {
                 in.on(true);
                 while (buffer.length <= length) {
                     int read = in.read(buffer);
+                    if (read == -1) {
+                        throw new IOException("File ended unexpectedly");
+                    }
                     length -= read;
                 }
                 while (length > 0) {
@@ -57,6 +62,13 @@ public class MP4Hash implements Hasher {
                 }
                 in.on(false);
                 if (in.available() < 1) break;
+/*
+            } else if (desc.equals("meta")) {
+                imageDTO.exif = new byte[(int)length];
+                int read = in.read(imageDTO.exif, 0, (int)length);
+                if (read == -1) {throw new IOException("File ended unexpectedly");}
+                if (read != length) {throw new IOException("Read error");}
+*/
             } else {
                 if (!skipBytes(in, length)) break;
             }

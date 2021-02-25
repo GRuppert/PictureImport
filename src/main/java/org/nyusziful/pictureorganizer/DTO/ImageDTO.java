@@ -17,5 +17,7 @@ public class ImageDTO {
     public String longitude = "";
     public String altitude = "";
     public String parentHash = "";
+    public byte[] exif = null;
+    public String fullhash = EMPTYHASH;
 
 }

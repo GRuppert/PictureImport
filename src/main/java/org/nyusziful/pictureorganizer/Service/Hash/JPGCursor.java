@@ -15,14 +15,11 @@ import java.io.File;
  * @author gabor
  */
 public class JPGCursor {
-    private final File file;
     private int marker;
     long position = -1;
     private BufferedInputStream bufferedInStream;
 
-    public JPGCursor(File file) {
-        this.file = file;
-    }
+    public JPGCursor() { }
 
     public int getMarker() {
         return marker;

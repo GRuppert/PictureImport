@@ -1,3 +1,9 @@
+-- Number of files and images in different drives
+SELECT b.description, b.files, c.images FROM
+(SELECT a.description, a.files FROM (SELECT d.description, m.drive_id, COUNT(*) OVER (PARTITION BY m.drive_id) files FROM pictureorganizer.media_file m LEFT JOIN drive d ON m.drive_id = d.id) a GROUP BY a.description, a.files) b LEFT JOIN
+(SELECT a.description, a.images FROM (SELECT d.description, m.drive_id, m.image_id, COUNT(*) OVER (PARTITION BY m.drive_id) images FROM pictureorganizer.media_file m LEFT JOIN drive d ON m.drive_id = d.id GROUP BY m.drive_id, m.image_id) a GROUP BY a.description, a.images) c ON b.description = c.description;
+
+
 -- Fájlok száma egy könyvtárban, ami csak a G:-n van meg és a Porsche-n nem
 SELECT m.folder_id, f.path, count(*) FROM pictureorganizer.media_file AS m LEFT JOIN pictureorganizer.folder f ON f.id = m.folder_id WHERE m.drive_id = 3 AND 0 = (SELECT count(*) FROM media_file AS m2 WHERE m2.image_id = m.image_id AND m2.drive_id in (4,5)) group by m.folder_id;
 -- Fájlok száma egy könyvtárban, ami többször van meg egy meghajtón

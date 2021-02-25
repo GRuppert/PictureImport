@@ -57,6 +57,9 @@ public class Image extends TrackingEntity implements Serializable {
     @Column(name = "camera_model")
     private String camera_model;
 
+    @Column(name = "orig_exif")
+    private byte[] exif;
+
     @Column(name = "duration")
     private long duration;
     @ManyToOne
@@ -81,8 +84,8 @@ public class Image extends TrackingEntity implements Serializable {
     public Image(String hash, String type, String make, String model) {
         this.hash = hash;
         this.type = type;
-        setCamera_make(make);
         setCamera_model(model);
+        setCamera_make(make);
     }
 
 /*
@@ -286,5 +289,13 @@ public class Image extends TrackingEntity implements Serializable {
 
     public void setCamera_model(String camera_model) {
         this.camera_model = camera_model;
+    }
+
+    public byte[] getExif() {
+        return exif;
+    }
+
+    public void setExif(byte[] exif) {
+        this.exif = exif;
     }
 }

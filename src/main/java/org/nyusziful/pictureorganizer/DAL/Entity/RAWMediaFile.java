@@ -16,7 +16,7 @@ public class RAWMediaFile extends MediaFile {
         // this form used by Hibernate
     }
 
-    public RAWMediaFile(Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
+    public RAWMediaFile(Folder folder, Path path, long size, Timestamp dateMod, Boolean original) {
         super(folder, path, size, dateMod, original);
         this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
     }

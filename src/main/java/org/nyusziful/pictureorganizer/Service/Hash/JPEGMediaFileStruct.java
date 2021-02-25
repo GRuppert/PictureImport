@@ -8,9 +8,11 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
     private File file;
     private boolean backup = false;
     private JPEGSegment mainImage;
+    private JPEGSegment exifSegment;
     private List<JPEGSegment> segments;
     private String terminationMessage;
     private List<String> warningMessages;
+    private byte[] exif;
 
     public JPEGMediaFileStruct(File file) {
         this.file = file;
@@ -22,6 +24,8 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
     public void addSegment(JPEGSegment segment) {
         if ("Backup".equals(segment.getId())) backup = true;
         if (218 == segment.getMarker() && (mainImage == null || mainImage.getLength() < segment.getLength())) {mainImage = segment;}
+        if (segment.getId().equals("Exif\0\0") && (getExifSegment() == null || getExifSegment().getLength() < segment.getLength())) {
+            exifSegment = segment;}
         segments.add(segment);
     }
 
@@ -86,5 +90,17 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
 
     public JPEGSegment getMainImage() {
         return mainImage;
+    }
+
+    public JPEGSegment getExifSegment() {
+        return exifSegment;
+    }
+
+    public byte[] getExif() {
+        return exif;
+    }
+
+    public void setExif(byte[] exif) {
+        this.exif = exif;
     }
 }

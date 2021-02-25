@@ -1,10 +1,18 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
+import com.drew.imaging.jpeg.JpegMetadataReader;
+import com.drew.imaging.jpeg.JpegProcessingException;
+import com.drew.metadata.Metadata;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
+import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory;
 
 import javax.persistence.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;
@@ -12,6 +20,8 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Objects;
+
+import static javax.xml.bind.DatatypeConverter.parseHexBinary;
 
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
@@ -74,15 +84,13 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     private String latitude;
     private String longitude;
     private String altitude;
-    @Column(name = "orientation")
     private Integer orientation;
-    @Column(name = "rating")
     private Integer rating;
-    @Column(name = "title")
     private String title;
-    @Column(name = "keyword")
     private String keyword;
 
+    @Column(name = "exif")
+    private byte[] exif;
 
 
     @Transient
@@ -117,7 +125,7 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         // this form used by Hibernate
     }
 
-    public MediaFile(Folder folder, Path path, long size, Timestamp dateMod, boolean original) {
+    public MediaFile(Folder folder, Path path, long size, Timestamp dateMod, Boolean original) {
         moveFile(folder, path);
         this.size = size;
         this.dateMod = dateMod;
@@ -343,6 +351,10 @@ public class MediaFile extends TrackingEntity implements Cloneable {
 
     public void setMeta(Meta meta) {
         setDateStored(meta.date);
+        setOrientation(meta.orientation);
+        setKeyword(meta.keyword);
+        setTitle(meta.title);
+        setRating(meta.rating);
     }
 
     public Integer getOrientation() {
@@ -375,5 +387,13 @@ public class MediaFile extends TrackingEntity implements Cloneable {
 
     public void setKeyword(String keyword) {
         this.keyword = keyword;
+    }
+
+    public byte[] getExif() {
+        return exif;
+    }
+
+    public void setExif(byte[] exif) {
+        this.exif = exif;
     }
 }

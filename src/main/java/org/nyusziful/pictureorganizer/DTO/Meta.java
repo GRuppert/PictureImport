@@ -26,6 +26,12 @@ public class Meta {
     public Boolean dateFormat;
     public String quality;
     public long duration;
+    public Integer orientation;
+    public Integer rating;
+    public String title;
+    public String keyword;
+    public String make;
+
 
     /**
      *
@@ -95,6 +101,16 @@ public class Meta {
             .append(quality)
             .append(" ")
             .append(duration)
+            .append(" ")
+            .append(orientation)
+            .append(" ")
+            .append(rating)
+            .append(" ")
+            .append(title)
+            .append(" ")
+            .append(keyword)
+            .append(" ")
+            .append(make)
             ;
         return sb.toString();
     }

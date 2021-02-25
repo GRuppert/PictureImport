@@ -1,21 +1,22 @@
 package org.nyusziful.pictureorganizer.Main;
 
 import com.drew.imaging.ImageProcessingException;
+import com.drew.imaging.jpeg.JpegMetadataReader;
+import com.drew.imaging.jpeg.JpegProcessingException;
+import com.drew.metadata.Metadata;
 import javafx.application.Platform;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
-import org.nyusziful.pictureorganizer.DAL.Entity.Drive;
-import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
+import org.nyusziful.pictureorganizer.DAL.Entity.*;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
-import org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.DriveService;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWriteIMR;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 import org.nyusziful.pictureorganizer.Service.ImageService;
@@ -27,15 +28,15 @@ import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
 
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.List;
+import java.util.stream.Stream;
 
+import static javax.xml.bind.DatatypeConverter.parseHexBinary;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
@@ -48,8 +49,10 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-        addOrigFilename();
+        readDBExif2();
 /*
+        read();
+        addOrigFilename();
         repairMP4();
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_1@13-5_9-01(+0200)(Sat)-9d4a49eac2a2f1881ec75b8ec7cc3303-ae3af2ee22193e0d8d39ae3df3c6a441-WP_20150711_15_59_03_Pro__highres.jpg"));
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_2@05-1_9-31(+0200)(Sun)-a2612d542f9e0349e6247811e0e973c5-b182d0b5f660f245d4ec3fe9973246ea-DSC08954.JPG "));
@@ -76,6 +79,53 @@ public class PresetUseCases {
 //        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
     }
 
+    private static void readDBExif2() {
+        MediaFile mediaFile = MediafileService.getInstance().getMediaFile(Paths.get("G:\\Pictures\\Photos\\Régi képek\\Original\\Idozona\\2016-03-25 - 2016-04-17 Japán\\Európa\\20160324_060559_GT-I9195I-20160324_060559.jpg"), false);
+        if (mediaFile instanceof JPGMediaFile) {
+            ((JPGMediaFile) mediaFile).readDBExif();
+        }
+        mediaFile = MediafileService.getInstance().getMediaFile(Paths.get("G:\\Pictures\\Photos\\Régi képek\\Original\\Idozona\\2016-03-24 - 2016-04-17 Japán Nyers\\2403\\20160324_060559.jpg"), false);
+        if (mediaFile instanceof JPGMediaFile) {
+            ((JPGMediaFile)mediaFile).readDBExif();
+//            MediafileService.getInstance().saveMediaFile(mediaFile);
+        }
+    }
+
+    private static void readDBExif() {
+        ExifReadWriteIMR.readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Original\\Idozona\\2016-03-25 - 2016-04-17 Japán\\Európa\\20160324_060559_GT-I9195I-20160324_060559.jpg"), ZoneId.systemDefault());
+        byte[] jpgHeader = parseHexBinary("ffd8");//ffe000124A46494600010200000100010000");
+        byte[] exif = MediafileService.getInstance().getMediaFile(Paths.get("G:\\Pictures\\Photos\\Régi képek\\Original\\Idozona\\2016-03-25 - 2016-04-17 Japán\\Európa\\20160324_060559_GT-I9195I-20160324_060559.jpg"), false).getExif();
+        byte[] jpgClose = parseHexBinary("ffdaffd9");
+        int length = exif.length;
+        byte[] file = new byte[2 + length + 4];  //resultant array of size first array and second array
+        System.arraycopy(jpgHeader, 0, file, 0, 2);
+        System.arraycopy(exif, 0, file, 2, length);
+        System.arraycopy(jpgClose, 0, file, length + 2, 4);
+
+        InputStream stream = new ByteArrayInputStream(file);
+/*
+        File file = new File("e:\\temp.jpg");
+        file.delete();
+        try (FileOutputStream outputStream = new FileOutputStream(file)) {
+            outputStream.write(jpgHeader);
+            outputStream.write(exif);
+            outputStream.write(jpgClose);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+*/
+        try {
+            Metadata metadata = JpegMetadataReader.readMetadata(stream);
+            System.out.println(metadata);
+        } catch (JpegProcessingException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private static void addOrigFilename() {
         MediafileDAOImplHib hib = new MediafileDAOImplHib();
         List<MediaFile> all = hib.getAll();
@@ -95,7 +145,7 @@ public class PresetUseCases {
             }});
         MediafileService mediafileService = MediafileService.getInstance();
         for (File directory : directories) {
-            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), false, false, CommonProperties.getInstance().getZone(), "", null);
+            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), null, false, CommonProperties.getInstance().getZone(), "", null);
 /*            for (MediafileDTO mediafileDTO : mediaFiles) {
                 RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", toDir+directory.getName());
                 final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
@@ -108,7 +158,11 @@ public class PresetUseCases {
 
     private static void read() {
         //"f:\\Pictures\\Photos"
-        File dir = new File("G:\\Képek\\Photos");
+//        File dir = new File("f:\\Pictures\\Photos");
+//        File dir = new File("G:\\Képek\\Photos");
+//        File dir = new File("G:\\Pictures\\Photos");
+        File dir = new File("D:\\Képek\\Babi");
+//        File dir = new File("D:\\Photos");
         ArrayList<File> directories = new ArrayList<>();
         try {
             Files.walk(dir.toPath())
@@ -118,8 +172,11 @@ public class PresetUseCases {
             e.printStackTrace();
         }
         MediafileService mediafileService = MediafileService.getInstance();
+        boolean skip = false;
         for (File directory : directories) {
-            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), false, false, CommonProperties.getInstance().getZone(), "", null);
+//            if ("H:\\Képek\\Photos\\Új\\Frankfurt\\5100\\PRIVATE\\M4ROOT\\CLIP".equals(directory.toPath().toString())) skip = false;
+            if (skip) continue;
+            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), null, true, CommonProperties.getInstance().getZone(), "", null);
 /*            for (MediafileDTO mediafileDTO : mediaFiles) {
                 RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", toDir+directory.getName());
                 final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
