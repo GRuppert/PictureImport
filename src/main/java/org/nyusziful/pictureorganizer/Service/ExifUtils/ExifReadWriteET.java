@@ -9,6 +9,7 @@ import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.io.*;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 import static org.nyusziful.pictureorganizer.UI.StaticTools.errorOut;
@@ -63,7 +64,7 @@ public class ExifReadWriteET {
                 String line = iterator.next();
                 if (line.startsWith("========")) {
                     if (i > -1) {
-                        Meta meta = new Meta(0, filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null, quality);
+                        Meta meta = createMeta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, quality);
                         System.out.println(meta);
                         results.add(meta);
                     }
@@ -114,13 +115,26 @@ public class ExifReadWriteET {
                 }
             }
             if (filename != null) {
-                Meta meta = new Meta(0, filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, null, quality);
+                Meta meta = createMeta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, quality);
                 System.out.println(meta);
                 results.add(meta);
 //            results.add(new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
             }
         }
         return results;
+    }
+    
+    private static Meta createMeta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String quality) {
+        Meta meta = new Meta();
+        meta.originalFilename = originalFilename;
+        meta.date = date;
+        meta.dateFormat = dateFormat;
+        meta.model = model;
+        meta.odID = odID;
+        meta.dID = dID;
+        meta.iID = iID;
+        meta.quality = quality;
+        return meta;
     }
 
     public static File createXmp(File file) {

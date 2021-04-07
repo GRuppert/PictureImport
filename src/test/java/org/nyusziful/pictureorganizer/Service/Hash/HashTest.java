@@ -78,7 +78,6 @@ public class HashTest {
      * Test of getHash method, of class Hash.
      */
     @Test
-    @Ignore
     public void testFullHash() {
         File file = new File(this.getClass().getClassLoader().getResource(filename).getFile());
         String result = MediaFileHash.getFullHash(file);

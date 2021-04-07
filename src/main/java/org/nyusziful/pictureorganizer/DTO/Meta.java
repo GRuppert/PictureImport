@@ -32,25 +32,10 @@ public class Meta {
     public String keyword;
     public String make;
 
-
-    /**
-     *
-     * @param originalFilename
-     * @param date
-     * @param dateFormat
-     * @param model
-     * @param iID
-     * @param dID
-     * @param odID
-     * @param note
-     * @param orig
-     * @param quality
-     */
-    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality) {
-        this(nameVersion, originalFilename, date, dateFormat, model, iID, dID, odID, note, orig, quality, 0);
+    public Meta() {
     }
 
-    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, long duration) {
+    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, Integer orientation, String make, Integer rating/*, long duration*/) {
         this.nameVersion = nameVersion;
         this.originalFilename = originalFilename;
         this.date = date;
@@ -62,19 +47,9 @@ public class Meta {
         this.orig = orig;
         this.quality = quality;
         this.duration = duration;
-    }
-
-    public Meta(Meta meta) {
-        this.originalFilename = meta.originalFilename;
-        this.date = meta.date;
-        this.dateFormat = meta.dateFormat;
-        this.model = meta.model;
-        this.odID = meta.odID;
-        this.dID = meta.dID;
-        this.iID = meta.iID;
-        this.orig = meta.orig;
-        this.quality = meta.quality;
-        this.duration = duration;
+        this.orientation = orientation;
+        this.make = make;
+        this.rating = rating;
     }
 
     @Override
@@ -114,13 +89,5 @@ public class Meta {
             ;
         return sb.toString();
     }
-    
-/*    public Meta(String originalFilename, String date, String model, String iID, String dID, String odID) {
-        this.originalFilename = originalFilename;
-        this.date = date;
-        this.model = model;
-        this.odID = odID;
-        this.dID = dID;
-        this.iID = iID;
-    }*/
+
 }

@@ -69,7 +69,7 @@ public class ExifReadWriteIMR {
         try {
             return readFileMeta(new FileInputStream(file), name, defaultTZ);
         } catch (IOException ex) {
-            Meta meta = new Meta(0, name, null, false, null, null, null, null, null, null, null);
+            Meta meta = new Meta();
             return meta;
         }
     }
@@ -95,7 +95,7 @@ public class ExifReadWriteIMR {
         try {
             tags = readMeta(inputStream, name);
         } catch (ImageProcessingException | IOException ex) {
-            Meta meta = new Meta(0, name, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), orig, quality);
+            Meta meta = createMeta(name, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), orig, quality, duration);
             System.out.println(meta);
             return meta;
         }
@@ -214,7 +214,7 @@ public class ExifReadWriteIMR {
         } else if (wTZ != null) {
             OrigDT = wTZ;
         }
-        Meta meta = new Meta(0, name, OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
+        Meta meta = createMeta(name, OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
         meta.orientation = orientation;
         meta.title = title;
         meta.keyword = keyword;
@@ -224,6 +224,20 @@ public class ExifReadWriteIMR {
         return meta;
     }
 
+    private static Meta createMeta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, long duration) {
+        Meta meta = new Meta();
+        meta.originalFilename = originalFilename;
+        meta.date = date;
+        meta.dateFormat = dateFormat;
+        meta.model = model;
+        meta.odID = odID;
+        meta.dID = dID;
+        meta.iID = iID;
+        meta.orig = meta.orig;
+        meta.quality = quality;
+        meta.duration = duration;
+        return meta;
+    }
 
     //_tagType == exiftool TagId
     public static ArrayList<String[]> readMeta(File file) throws ImageProcessingException, IOException {
@@ -287,8 +301,16 @@ public class ExifReadWriteIMR {
         ArrayList<String[]> tags = new ArrayList();
         Metadata metadata = readDrew(file);
         metadata.getDirectories().forEach(directory -> directory.getTags().stream().forEach(tag -> {
-            if (tag.getDescription() != null && !tag.getDescription().replaceAll("\\s+", "").equals(""))
-                tags.add(new String[]{tag.getTagName(), tag.getDescription()});
+
+            if (tag.getDescription() != null && !tag.getDescription().replaceAll("\\s+", "").equals("")) {
+                String value = tag.getDescription();
+                if ("Orientation".equals(tag.getTagName()))
+                try {
+                    value = Integer.toString(directory.getInt(tag.getTagType()));
+                } catch (MetadataException e) {
+                }
+                tags.add(new String[]{tag.getTagName(), value});
+            }
         }));
         return tags;
     }

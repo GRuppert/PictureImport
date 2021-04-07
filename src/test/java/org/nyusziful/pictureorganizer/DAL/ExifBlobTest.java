@@ -21,10 +21,10 @@ public class ExifBlobTest {
         String fileLoc = "E:\\Work\\Testfiles\\conflictHandleResult\\WP_20150711_15_59_03_Pro__highres.jpg";
         MediaFile mediaFile = mediafileService.readMediaFile(new File(fileLoc));
         if (mediaFile instanceof JPGMediaFile) {
-            byte[] exif = ((JPGMediaFile) mediaFile).getExif();
+            byte[] exif = mediaFile.getExif();
             mediafileService.saveMediaFile(mediaFile);
             MediaFile mediaFileReRead = mediafileService.getMediaFile(Paths.get(fileLoc), false);
-            assertEquals(((JPGMediaFile) mediaFileReRead).getExif(), exif);
+            assertEquals(new String(mediaFileReRead.getExif()), new String(exif));
         }
     }
 }

@@ -1,6 +1,5 @@
 package org.nyusziful.pictureorganizer.UI.Contoller;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ListChangeListener;
@@ -415,7 +414,7 @@ public class MainController implements Initializable {
                     MediaDirectory mediaDirectory = null;
                     try {
                         mediaDirectory = new MediaDirectory(dirs[j]);
-                    } catch (InvalidArgumentException e) {
+                    } catch (IllegalArgumentException e) {
                         continue;
                     }
                     if ((fileDate.toLocalDate().isAfter(mediaDirectory.getFirstDate())) && (fileDate.toLocalDate().isAfter(mediaDirectory.getLastDate()))) {

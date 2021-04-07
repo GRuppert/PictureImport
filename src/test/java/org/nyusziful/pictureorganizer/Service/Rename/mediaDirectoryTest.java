@@ -5,7 +5,6 @@
  */
 package org.nyusziful.pictureorganizer.Service.Rename;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -83,7 +82,7 @@ public class mediaDirectoryTest {
         MediaDirectory result = null;
         try {
             result = new MediaDirectory(new File(filename));
-        } catch (InvalidArgumentException e) {
+        } catch (IllegalArgumentException e) {
         }
         if (valid) {
             assertEquals("Start date of folder(" + filename + ") result: " + result.getFirstDate() + " awaited: " + expFrom, expFrom, result.getFirstDate());

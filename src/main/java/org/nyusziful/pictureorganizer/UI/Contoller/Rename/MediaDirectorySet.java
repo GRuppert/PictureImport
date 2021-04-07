@@ -1,6 +1,6 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
+
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
@@ -22,7 +22,7 @@ public class MediaDirectorySet {
         for (File file : files) {
             try {
                 dataModel.add(new MediaDirectory(file));
-            } catch (InvalidArgumentException ex) {
+            } catch (IllegalArgumentException ex) {
 
             }
         }

@@ -1,6 +1,5 @@
 package org.nyusziful.pictureorganizer.Service.Rename;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.Meta;
@@ -168,7 +167,7 @@ public class RenameService {
                     actFileImage.getHash(),
                     version
             );
-        } catch (InvalidArgumentException e) {
+        } catch (IllegalArgumentException e) {
             return null;
         }
         if (!mediaFile.getFilename().equals(desiredFileName)) {

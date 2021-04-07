@@ -18,9 +18,18 @@ import java.io.File;
 public class ComparableMediaFile extends Meta {
     public File file;
 
-    public ComparableMediaFile(File fileIn, Meta metaIn) {
-        super(metaIn);
+    public ComparableMediaFile(File fileIn, Meta meta) {
         this.file = fileIn;
+        this.originalFilename = meta.originalFilename;
+        this.date = meta.date;
+        this.dateFormat = meta.dateFormat;
+        this.model = meta.model;
+        this.odID = meta.odID;
+        this.dID = meta.dID;
+        this.iID = meta.iID;
+        this.orig = meta.orig;
+        this.quality = meta.quality;
+        this.duration = duration;
     }
 }              
 

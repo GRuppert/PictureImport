@@ -9,6 +9,7 @@ import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.Type;
 
 public class ImageDTO {
     public String hash = EMPTYHASH;
+    public String exifHash = EMPTYHASH;
     public ZonedDateTime dateTaken = null;
     public ZonedDateTime dateCorrected = null;
     public String originalFilename = "";

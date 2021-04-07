@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.Service.Hash;
 
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
+import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -12,12 +13,12 @@ public class HashToFile {
         File folder = new File(property);
         File output = new File(property+"\\imageHash.txt");
         try (FileOutputStream fileOutputStream = new FileOutputStream(output)) {
-            for (File file : folder.listFiles()) {
+            for (File file : folder.listFiles(a-> StaticTools.supportedFileType(a))) {
                 final ImageDTO hash = MediaFileHash.getHash(file);
-                fileOutputStream.write((file.getName() + " Image Hash:" + hash.hash + "\n").getBytes(StandardCharsets.UTF_8));
+                String outline = file.getName() + " Image Hash:" + hash.hash + "\n";
+                fileOutputStream.write(outline.getBytes(StandardCharsets.UTF_8));
             }
         } catch (Exception ex) {
-
         }
     }
 }

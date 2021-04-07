@@ -1,8 +1,5 @@
 package org.nyusziful.pictureorganizer.Model;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -19,7 +16,7 @@ public class MediaDirectory {
     private boolean conflicting = false;
 
 
-    public MediaDirectory(File directory) throws InvalidArgumentException {
+    public MediaDirectory(File directory) throws IllegalArgumentException {
         this.directory = directory;
         try {
             String directoryName = directory.getName();
@@ -36,7 +33,7 @@ public class MediaDirectory {
             else
                 label = "";
         } catch (Exception e) {
-            throw new InvalidArgumentException(new String[]{"Not valid"});
+            throw new IllegalArgumentException("Not valid");
         }
     }
 
