@@ -4,7 +4,6 @@ public class JPEGSegment implements MediaFileSegment {
     private long startAddress;
     private long length;
     private int marker;
-    private MediaFileStruct data;
     private long read = 0;
     private String id = "";
 
@@ -143,14 +142,6 @@ public class JPEGSegment implements MediaFileSegment {
             String payload = String.format(" payload: " + this.getId() + "%,8d length %n", this.getLength());
             return header + payload;
         }
-    }
-
-    public MediaFileStruct getData() {
-        return data;
-    }
-
-    public void setData(MediaFileStruct data) {
-        this.data = data;
     }
 
     public int getMarker() {

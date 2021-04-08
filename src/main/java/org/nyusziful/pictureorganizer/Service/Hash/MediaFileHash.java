@@ -80,7 +80,7 @@ public class MediaFileHash {
             return imageDTO;
         }
         byte[] fileContent = null;
-        try (FileInputStream fileStream = new FileInputStream(file.toString()); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
+        try (FileInputStream fileStream = new FileInputStream(file.toString()); DigestInputStream in = new DigestInputStream(fileStream, md5Digest)) {
             in.on(true);
             if (file.length() < Integer.MAX_VALUE - 5) {
                 fileContent = new byte[in.available()];
@@ -103,16 +103,8 @@ public class MediaFileHash {
         Type type = Type.getType(file);
         imageDTO.type = type.getDBName();
         if (fileContent != null) {
-            try (DigestInputStream in = new DigestInputStream(new ByteArrayInputStream(fileContent), md5Digest)) {
-                getDigest(type, file, fileContent, md5Digest, in, imageDTO);
-            }  catch(Exception e) {
-//            errorOut("Hash", e);
-                return imageDTO;
-            }
-        } else {
-            try (FileInputStream fileInStream = new FileInputStream(file.toString()); DigestInputStream in = new DigestInputStream(fileInStream, md5Digest);) {
-//        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream); DigestInputStream in = new DigestInputStream(fileStream, md5Digest);) {
-                getDigest(type, file, fileContent, md5Digest, in, imageDTO);
+            try {
+                getDigest(type, fileContent, imageDTO);
             }  catch(Exception e) {
 //            errorOut("Hash", e);
                 return imageDTO;
@@ -121,18 +113,17 @@ public class MediaFileHash {
         return imageDTO;
     }
 
-    private static void getDigest(Type type, File file, byte[] fileContent, MessageDigest md5Digest, DigestInputStream in, ImageDTO imageDTO) throws IOException {
-        byte[] digestDef = md5Digest.digest();
-        byte[] digest = null;
+    private static void getDigest(Type type, byte[] fileContent, ImageDTO imageDTO) throws IOException {
+
         switch (type) {
             case TIFF:
-                digest = TIFFHash.readDigest(file);
+                TIFFHash.readDigest(fileContent, imageDTO);
                 break;
             case JPG:
-                digest = JPGHash.readDigest(file, fileContent, md5Digest, in, imageDTO);
+                JPGHash.readDigest(fileContent, imageDTO);
                 break;
             case MP4:
-                digest = MP4Hash.readDigest(md5Digest, in);
+                MP4Hash.readDigest(fileContent, imageDTO);
                 break;
 /*                case "heif":
                 case "heifs":
@@ -142,12 +133,9 @@ public class MediaFileHash {
                 case "avcs":
                     break;*/
         }
-        if (digest != null && !Arrays.equals(digest, digestDef)) {
-            imageDTO.hash = processHash(digest);
-        }
     }
 
-    private static String processHash(byte[] digest) {
+    protected static String processHash(byte[] digest) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < digest.length; ++i) {
             sb.append(Integer.toHexString((digest[i] & 0xFF) | 0x100).substring(1,3));

@@ -91,6 +91,35 @@
                             </versionInfo>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>Verify-exe</id>
+                        <phase>package</phase>
+                        <goals><goal>launch4j</goal></goals>
+                        <configuration>
+                            <headerType>gui</headerType>
+                            <outfile>target/verify.exe</outfile>
+                            <jar>target/${project.build.finalName}-jar-with-dependencies.jar</jar>
+                            <classPath>
+                                <mainClass>org.nyusziful.pictureorganizer.Service.Hash.VerifyHash</mainClass>
+                                <addDependencies>false</addDependencies>
+                            </classPath>
+                            <jre>
+                                <path>${java.home}</path>
+                                <minVersion>1.8</minVersion>
+                            </jre>
+                            <versionInfo>
+                                <fileVersion>1.0.0.0</fileVersion>
+                                <txtFileVersion>text</txtFileVersion>
+                                <fileDescription>MediaFile Verifier</fileDescription>
+                                <copyright>Nyuszifuel</copyright>
+                                <productVersion>1.0.0.0</productVersion>
+                                <txtProductVersion>1.0.0.0</txtProductVersion>
+                                <productName>Verifier</productName>
+                                <internalName>Verifier</internalName>
+                                <originalFilename>verify.exe</originalFilename>
+                            </versionInfo>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

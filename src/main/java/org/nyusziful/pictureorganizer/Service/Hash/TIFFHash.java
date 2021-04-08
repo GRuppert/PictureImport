@@ -6,11 +6,15 @@
 package org.nyusziful.pictureorganizer.Service.Hash;
 
 import java.io.*;
+import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.readEndianValue;
@@ -23,7 +27,7 @@ import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.readEn
 public class TIFFHash implements Hasher {
     private static final Logger LOG = LoggerFactory.getLogger(TIFFHash.class);
     
-    private static byte[] getPointers(ArrayList<IfdTag> imageLocationFields, File file, boolean endian) throws IOException {
+    private static byte[] getPointers(ArrayList<IfdTag> imageLocationFields, TIFFMediaFileStruct tiffMediaFileStruct) throws IOException {
 /*      RawImageDigest
         Tag 50972 (C71C.H)
         Type BYTE
@@ -77,87 +81,85 @@ public class TIFFHash implements Hasher {
             }
         }
         if (pieceByteCountsCount != pieceOffsetsCount) return null;
-        try (RandomAccessFile fileRand = new RandomAccessFile(file.getAbsolutePath(), "r"); FileInputStream fis = new FileInputStream(fileRand.getFD()); BufferedInputStream bis = new BufferedInputStream(fis);) {
-//        try (RandomAccessFile fileRand = new RandomAccessFile(file.getAbsolutePath(), "r")) {
-            MessageDigest md5Digest = null;
-            try {
-                md5Digest = MessageDigest.getInstance("MD5");
-            } catch (NoSuchAlgorithmException ex) {
-                return null;
-            }
-            if (pieceOffsetsCount == 1) {
-                    System.out.println(file.getName() + " bytes readed: " + pieceByteCounts + " File size " + file.length() + " % " + (100*pieceByteCounts/file.length()));
-                    fileRand.seek(pieceOffsets);
+        RandomAccessStream fileRand = tiffMediaFileStruct.getRandomAccessStream();
+        MessageDigest md5Digest = null;
+        try {
+            md5Digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException ex) {
+            return null;
+        }
+        if (pieceOffsetsCount == 1) {
+            System.out.println(" bytes readed: " + pieceByteCounts + " File size " + tiffMediaFileStruct.length() + " % " + (100*pieceByteCounts/tiffMediaFileStruct.length()));
+            tiffMediaFileStruct.jumpTo(pieceOffsets);
 
-                    long readed = 0;
-                    int bufferSize = Integer.MAX_VALUE;
-                    while (readed + bufferSize < pieceByteCounts) {
-                        byte chunk[] = new byte[bufferSize];
-                        int read = bis.read(chunk);
-                        if (read == -1) return null;
-                        readed += read;
-                        md5Digest.update(chunk);
-                    }
-                    int residue = (int)(pieceByteCounts - readed);
-                    byte chunk[] = new byte[residue];
-                    int read = bis.read(chunk);
-                    if (read == -1) return null;
-                    md5Digest.update(chunk);
-            } else {
-                long totalread = 0;
-                for (int j = 0; j < pieceOffsetsCount; j++) {
-                    fileRand.seek(pieceByteCounts + j * pieceByteLength);
-                    long actualPieceBytes = 0;
-                    for(int i=0; i<pieceByteLength; i++) {
-                            long c = fileRand.read();
-                            if (endian) {
-                                c = (long) (c * Math.pow(256, i));
-                            } else {
-                                c = (long) (c * Math.pow(256, pieceByteLength-i));
-                            }
-                            actualPieceBytes += c;
-                    }
-        //            System.out.println("Count [" + j + "] =" + actualPieceBytes);
-                    fileRand.seek(pieceOffsets + j * pieceOffsetsLength);
-                    long actualPieceOffset = 0;
-                    for(int i=0; i<pieceOffsetsLength; i++) {
-                            long c = fileRand.read();
-                            if (endian) {
-                                c = (long) (c * Math.pow(256, i));
-                            } else {
-                                c = (long) (c * Math.pow(256, pieceOffsetsLength-i));
-                            }
-                            actualPieceOffset += c;
-                    }
-                    totalread += actualPieceBytes;
-        //            System.out.println("Offset [" + j + "] =" + actualPieceOffset);
-                    fileRand.seek(actualPieceOffset);
-                    long readed = 0;
-                    int bufferSize = 4096;
-                    while (readed + bufferSize < actualPieceBytes) {
-                        byte chunk[] = new byte[bufferSize];
-                        int read = fileRand.read(chunk);
-                        if (read == -1) return null;
-                        readed += read; 
-                        md5Digest.update(chunk);
-                    }
-                    int residue = (int)(actualPieceBytes - readed);
-                    byte chunk[] = new byte[residue];
+            long readed = 0;
+            int bufferSize = Integer.MAX_VALUE;
+            while (readed + bufferSize < pieceByteCounts) {
+                byte chunk[] = new byte[bufferSize];
+                int read = fileRand.read(chunk);
+                if (read == -1) return null;
+                readed += read;
+                md5Digest.update(chunk);
+            }
+            int residue = (int)(pieceByteCounts - readed);
+            byte chunk[] = new byte[residue];
+            int read = fileRand.read(chunk);
+            if (read == -1) return null;
+            md5Digest.update(chunk);
+        } else {
+            long totalread = 0;
+            for (int j = 0; j < pieceOffsetsCount; j++) {
+                tiffMediaFileStruct.jumpTo(pieceByteCounts + j * pieceByteLength);
+                long actualPieceBytes = 0;
+                for(int i=0; i<pieceByteLength; i++) {
+                        long c = fileRand.read();
+                        if (tiffMediaFileStruct.getEndian()) {
+                            c = (long) (c * Math.pow(256, i));
+                        } else {
+                            c = (long) (c * Math.pow(256, pieceByteLength-i));
+                        }
+                        actualPieceBytes += c;
+                }
+    //            System.out.println("Count [" + j + "] =" + actualPieceBytes);
+                tiffMediaFileStruct.jumpTo(pieceOffsets + j * pieceOffsetsLength);
+                long actualPieceOffset = 0;
+                for(int i=0; i<pieceOffsetsLength; i++) {
+                        long c = fileRand.read();
+                        if (tiffMediaFileStruct.getEndian()) {
+                            c = (long) (c * Math.pow(256, i));
+                        } else {
+                            c = (long) (c * Math.pow(256, pieceOffsetsLength-i));
+                        }
+                        actualPieceOffset += c;
+                }
+                totalread += actualPieceBytes;
+    //            System.out.println("Offset [" + j + "] =" + actualPieceOffset);
+                tiffMediaFileStruct.jumpTo(actualPieceOffset);
+                long readed = 0;
+                int bufferSize = 4096;
+                while (readed + bufferSize < actualPieceBytes) {
+                    byte chunk[] = new byte[bufferSize];
                     int read = fileRand.read(chunk);
                     if (read == -1) return null;
+                    readed += read;
                     md5Digest.update(chunk);
                 }
-                System.out.println(file.getName() + " bytes readed: " + totalread + " File size " + file.length() + " % " + (100*totalread/file.length()));
+                int residue = (int)(actualPieceBytes - readed);
+                byte chunk[] = new byte[residue];
+                int read = fileRand.read(chunk);
+                if (read == -1) return null;
+                md5Digest.update(chunk);
             }
-            return md5Digest.digest();
+            System.out.println(" bytes readed: " + totalread + " File size " + tiffMediaFileStruct.length() + " % " + (100*totalread/tiffMediaFileStruct.length()));
         }
+        return md5Digest.digest();
     }
     
     //0x8769 34665 Exif offset
     //700	, "	XMP
 
     private static boolean readSubDirectories(List<IfdTag> tags, TIFFMediaFileStruct tiffMediaFileStruct, ImageFileDirectory parent) throws IOException {
-        BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
+        RandomAccessStream bufferedInputStream = tiffMediaFileStruct.getRandomAccessStream();
         for (IfdTag ifdTag : tags) {
             long subIFDsPointer = ifdTag.offset;
             long subIFDs = ifdTag.count;
@@ -191,7 +193,7 @@ public class TIFFHash implements Hasher {
      * @throws IOException
      */
     private static boolean readIFDirectory(long thisIFD, String id, TIFFMediaFileStruct tiffMediaFileStruct, ImageFileDirectory parent) throws IOException {
-        BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
+        RandomAccessStream bufferedInputStream = tiffMediaFileStruct.getRandomAccessStream();
         if (!tiffMediaFileStruct.jumpTo(thisIFD)) return false;
         ImageFileDirectory imageFileDirectory = new ImageFileDirectory(thisIFD, id);
         parent.addTIFFDirectory(imageFileDirectory);
@@ -203,7 +205,7 @@ public class TIFFHash implements Hasher {
         boolean mainImage = false;
         ArrayList<IfdTag> imageLocationFields = new ArrayList<>();
         for (int i = 0; i < tagEntryCount; i++) {
-            IfdTag ifdTag = new IfdTag(tiffMediaFileStruct.getBufferedRandomAccessFile().getFilePosition());
+            IfdTag ifdTag = new IfdTag(tiffMediaFileStruct.getPosition());
             ifdTag.tagId = (int) BasicFileReader.readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
             ifdTag.tagIdName = ifdTag.getTagId();
             ifdTag.type = (int) BasicFileReader.readEndianValue(bufferedInputStream, 2, tiffMediaFileStruct.getEndian());
@@ -246,7 +248,11 @@ public class TIFFHash implements Hasher {
         }
         long nextIFD = BasicFileReader.readEndianValue(bufferedInputStream, 4, tiffMediaFileStruct.getEndian());
         if (tiffMediaFileStruct.getMode() == TIFFMediaFileStruct.HASHING) {
-            if (mainImage) {tiffMediaFileStruct.setDigestBytes(getPointers(imageLocationFields, tiffMediaFileStruct.getFile(), tiffMediaFileStruct.getEndian()));}
+            if (mainImage) {
+                long offset = tiffMediaFileStruct.getPosition();
+                tiffMediaFileStruct.setDigestBytes(getPointers(imageLocationFields, tiffMediaFileStruct));
+                tiffMediaFileStruct.jumpTo(offset);
+            }
         }
         final boolean brokenSubdir = readSubDirectories(recognizedSubDirs, tiffMediaFileStruct, imageFileDirectory);
 /*        if (subIFDs == 1) {
@@ -269,6 +275,7 @@ public class TIFFHash implements Hasher {
         if (nextIFD == 0) {
             return true;
         }
+        if (nextIFD < 0) return false;
         return readIFDirectory(nextIFD, "IFD", tiffMediaFileStruct, parent);
     }
 
@@ -285,11 +292,25 @@ public class TIFFHash implements Hasher {
         } catch (IOException e) {
             return null;
         }
+    }
 
+    public static TIFFMediaFileStruct scan(byte[] fileContent, Long startPosition, int mode) {
+        try (TIFFMediaFileStruct tiffMediaFileStruct = new TIFFMediaFileStruct(fileContent, startPosition, mode)) {
+            try {
+                scan(tiffMediaFileStruct, startPosition);
+            } catch (FileNotFoundException e) {
+                tiffMediaFileStruct.setTerminationMessage("File couldn't be opened.");
+            } catch (IOException e) {
+                tiffMediaFileStruct.setTerminationMessage("IO error: "+ e.getMessage());
+            }
+            return tiffMediaFileStruct;
+        } catch (IOException e) {
+            return null;
+        }
     }
 
     public static void scan(TIFFMediaFileStruct tiffMediaFileStruct, Long startPosition) throws IOException {
-        BufferedRandomAccessFile bufferedInputStream = tiffMediaFileStruct.getBufferedRandomAccessFile();
+        RandomAccessStream bufferedInputStream = tiffMediaFileStruct.getRandomAccessStream();
         if (!tiffMediaFileStruct.jumpTo(0)) {
             tiffMediaFileStruct.setTerminationMessage("Starting point " + startPosition + " could not be reached");
             return;
@@ -322,7 +343,30 @@ public class TIFFHash implements Hasher {
     }
 
     //returns the pointer to the main image data bufferedInputStream tiff based files
-    public static byte[] readDigest(File file) {
-        return scan(file, 0L, TIFFMediaFileStruct.HASHING).getDigestBytes();
+    public static void readDigest(byte[] fileContent, ImageDTO imageDTO) {        MessageDigest md5Digest = null;
+        try {
+            md5Digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException ex) {
+            return;
+        }
+        try {
+            byte[] digestDef = md5Digest.digest();
+            try (TIFFMediaFileStruct tiffMediaFileStruct = new TIFFMediaFileStruct(fileContent, 0L, TIFFMediaFileStruct.HASHING)) {
+                try {
+                    scan(tiffMediaFileStruct, 0L);
+                    byte[] digest = tiffMediaFileStruct.getDigestBytes();
+                    if (digest != null && !Arrays.equals(digest, digestDef)) {
+                        imageDTO.hash = MediaFileHash.processHash(digest);
+                    }
+                } catch (FileNotFoundException e) {
+                    tiffMediaFileStruct.setTerminationMessage("File couldn't be opened.");
+                } catch (IOException e) {
+                    tiffMediaFileStruct.setTerminationMessage("IO error: "+ e.getMessage());
+                }
+            } catch (IOException e) {
+            }
+        }  catch(Exception e) {
+        }
+
     }
 }

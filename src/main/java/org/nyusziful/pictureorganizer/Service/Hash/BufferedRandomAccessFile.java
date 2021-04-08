@@ -26,7 +26,7 @@ import java.util.Date;
      *
      * @author awa
      */
-public class BufferedRandomAccessFile implements Closeable {
+public class BufferedRandomAccessFile implements Closeable, RandomAccessStream {
     private boolean needsFill;
     private RandomAccessFile raf;
     private int bufferLength;
@@ -262,11 +262,24 @@ public class BufferedRandomAccessFile implements Closeable {
         return raf.readLine();
     }
 
-    public int read() throws IOException {
-        return readByte() & 0xFF;
+    public int read() {
+        try {
+            return readByte() & 0xFF;
+        } catch (IOException e) {
+            return -1;
+        }
     }
 
-    public byte readByte() throws IOException {
+        @Override
+        public int read(byte[] b) {
+            try {
+                return raf.read(b);
+            } catch (IOException e) {
+                return -1;
+            }
+        }
+
+        public byte readByte() throws IOException {
         if (bufferPos >= bufferLength) needsFill = true;
         fill();
         return buffer[bufferPos++];

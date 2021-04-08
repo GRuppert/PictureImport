@@ -17,4 +17,6 @@ public interface MediaFileStruct<T extends MediaFileSegment> {
     public  T getLastSegment();
 
     public T getSegment(int i);
+
+    public int getSegmentSize();
 }

@@ -4,6 +4,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.nyusziful.pictureorganizer.Service.Hash.BasicFileReader.skipBytes;
+
 public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>, AutoCloseable {
     public static int HASHING = 0;
     public static int MAPPING = 1;
@@ -15,42 +17,31 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
     private String terminationMessage;
     private List<String> warningMessages;
     private List<ReadRange> excludeRanges;
-//    private RandomAccessFile randomAccessFile;
-//    private FileInputStream fis;
-//    private BufferedInputStream bufferedInputStream;
-    private BufferedRandomAccessFile bufferedRandomAccessFile;
+    private RandomAccessStream randomAccessStream;
     private int mode;
-
-    public boolean jumpTo(long position) throws IOException {
-        bufferedRandomAccessFile.seek(position+startAddress);
-        return (bufferedRandomAccessFile.getFilePointer() == position + startAddress);
-/*        try {
-            bufferedInputStream.reset();
-            return skipBytes(bufferedInputStream, position);
-        } catch (IOException e) {
-            randomAccessFile.seek(position + startAddress);
-           openNewBufferStream();
-            return (randomAccessFile.getFilePointer() == position + startAddress);
-        }*/
-    }
+    private String name;
+    private long size;
 
     public TIFFMediaFileStruct(File file, long startAddress, int mode) throws IOException {
+        this.randomAccessStream = new BufferedRandomAccessFile(file, "r", 65536);
         this.file = file;
+        init(startAddress, mode);
+    }
+
+    public TIFFMediaFileStruct(byte[] fileContent, long startAddress, int mode) throws IOException {
+        this.randomAccessStream = new RandomAccessByteStream(fileContent);
+        size = fileContent.length;
+        init(startAddress, mode);
+    }
+
+    private void init(long startAddress, int mode) {
         this.startAddress = startAddress;
         this.mode = mode;
         segments = new ArrayList<>();
         warningMessages = new ArrayList<>();
         this.excludeRanges = new ArrayList<>();
-        bufferedRandomAccessFile = new BufferedRandomAccessFile(file, "r", 65536);
-/*        randomAccessFile = new RandomAccessFile(file.getAbsolutePath(), "r");
-        fis = new FileInputStream(randomAccessFile.getFD());
-        openNewBufferStream();*/
-    }
 
-/*    private void openNewBufferStream() throws IOException {
-//        if (bufferedInputStream != null) bufferedInputStream.flush();
-        bufferedInputStream = new BufferedInputStream(fis);
-    }*/
+    }
 
     @Override
     public String getTerminationMessage() {
@@ -77,9 +68,13 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
         segments.add(segment);
     }
 
+    public long length() {
+        return file == null ? size : file.length();
+    }
+
     @Override
     public void drawMap() {
-        System.out.format(file.getName() + " size: %,8d bytes %n", file.length());
+        System.out.format(name + " size: %,8d bytes %n", length());
         long readedBytes = 0;
         for (ImageFileDirectory segment : segments) {
             drawSegmentMap(segment, 1);
@@ -111,12 +106,17 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
 
         @Override
     public ImageFileDirectory getLastSegment() {
-        return null;
+        return segments.get(segments.size()-1);
     }
 
     @Override
     public ImageFileDirectory getSegment(int i) {
-        return null;
+        return segments.get(i);
+    }
+
+    @Override
+    public int getSegmentSize() {
+        return segments.size();
     }
 
     public byte[] getDigestBytes() {
@@ -135,10 +135,6 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
         return endian;
     }
 
-    public File getFile() {
-        return file;
-    }
-
     public List<ReadRange> getExcludeRanges() {
         return excludeRanges;
     }
@@ -146,35 +142,41 @@ public class TIFFMediaFileStruct implements MediaFileStruct<ImageFileDirectory>,
     public void addExcludeRange(ReadRange excludeRange) {
         this.excludeRanges.add(excludeRange);
     }
-/*
-    public RandomAccessFile getRandomAccessFile() {
-        return randomAccessFile;
-    }
 
-    public void setRandomAccessFile(RandomAccessFile randomAccessFile) {
-        this.randomAccessFile = randomAccessFile;
-    }
-
-    public BufferedInputStream getBufferedInputStream() {
-        return bufferedInputStream;
-    }
-
-    public void setBufferedInputStream(BufferedInputStream bufferedInputStream) {
-        this.bufferedInputStream = bufferedInputStream;
-    }
-*/
     @Override
     public void close() throws IOException {
 /*        bufferedInputStream.flush();
         randomAccessFile.flush();*/
-        bufferedRandomAccessFile.close();
+        randomAccessStream.close();
     }
 
     public int getMode() {
         return mode;
     }
 
-    public BufferedRandomAccessFile getBufferedRandomAccessFile() {
-        return bufferedRandomAccessFile;
+    public RandomAccessStream getRandomAccessStream() {
+        return randomAccessStream;
+    }
+
+    public long getPosition() throws IOException {
+        if (getRandomAccessStream() instanceof BufferedRandomAccessFile) {
+            return ((BufferedRandomAccessFile) getRandomAccessStream()).getFilePosition();
+        } else if (getRandomAccessStream() instanceof RandomAccessByteStream) {
+            return size - ((RandomAccessByteStream) getRandomAccessStream()).available();
+        }
+        throw new IOException();
+    }
+
+    public boolean jumpTo(long position) throws IOException {
+        if (getRandomAccessStream() instanceof BufferedRandomAccessFile) {
+            BufferedRandomAccessFile bufferedRandomAccessFile = (BufferedRandomAccessFile) getRandomAccessStream();
+            bufferedRandomAccessFile.seek(position+startAddress);
+            return (bufferedRandomAccessFile.getFilePointer() == position + startAddress);
+        } else if (getRandomAccessStream() instanceof RandomAccessByteStream) {
+            RandomAccessByteStream bufferedInputStream = (RandomAccessByteStream) getRandomAccessStream();
+            bufferedInputStream.reset();
+            return skipBytes(bufferedInputStream, position);
+        }
+        throw new IOException();
     }
 }

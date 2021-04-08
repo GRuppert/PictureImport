@@ -5,17 +5,16 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
-    private File file;
     private boolean backup = false;
     private JPEGSegment mainImage;
-    private JPEGSegment exifSegment;
+    private ExifSegment exifSegment;
     private List<JPEGSegment> segments;
     private String terminationMessage;
     private List<String> warningMessages;
     private byte[] exif;
+    private String name;
 
-    public JPEGMediaFileStruct(File file) {
-        this.file = file;
+    public JPEGMediaFileStruct() {
         segments = new ArrayList<>();
         warningMessages = new ArrayList<>();
     }
@@ -24,19 +23,21 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
     public void addSegment(JPEGSegment segment) {
         if ("Backup".equals(segment.getId())) backup = true;
         if (218 == segment.getMarker() && (mainImage == null || mainImage.getLength() < segment.getLength())) {mainImage = segment;}
-        if (segment.getId().equals("Exif\0\0") && (getExifSegment() == null || getExifSegment().getLength() < segment.getLength())) {
-            exifSegment = segment;}
+        if (segment instanceof ExifSegment && segment.getId().equals("Exif\0\0") && (getExifSegment() == null || getExifSegment().getLength() < segment.getLength())) {
+            exifSegment = (ExifSegment)segment;}
         segments.add(segment);
     }
 
     @Override
     public void drawMap() {
-        System.out.format(file.getName() + " size: %,8d bytes %n", file.length());
         long readedBytes = 0;
         for (JPEGSegment segment : segments) {
             System.out.format("%,10d / 0x%8X  " + segment.getMarkerText() + "%n%,10d / 0x%8X " + segment.getId() + "%n", segment.getStartAddress(), segment.getStartAddress(), segment.getLength(), segment.getLength());
             readedBytes += segment.getLength();
-            if (segment.getData() != null) segment.getData().drawMap();
+            if (segment instanceof ExifSegment) {
+                MediaFileStruct data = ((ExifSegment) segment).getData();
+                if (data != null) data.drawMap();
+            }
         }
         System.out.format("Recognized size: %,10d bytes %n", readedBytes);
         System.out.println("\n");
@@ -80,6 +81,11 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
         return segments.get(i);
     }
 
+    @Override
+    public int getSegmentSize() {
+        return getSegments().size();
+    }
+
     public List<JPEGSegment> getSegments() {
         return segments;
     }
@@ -92,7 +98,7 @@ public class JPEGMediaFileStruct implements MediaFileStruct<JPEGSegment> {
         return mainImage;
     }
 
-    public JPEGSegment getExifSegment() {
+    public ExifSegment getExifSegment() {
         return exifSegment;
     }
 

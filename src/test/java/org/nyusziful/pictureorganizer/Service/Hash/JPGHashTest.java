@@ -26,7 +26,7 @@ public class JPGHashTest {
     private static final TestData[] TESTS = new TestData[] {
             new TestData("20160627_183440_GT-I9195I-20160627_173440.jpg",
                     "Not found marker after segment",
-                    new JPEGSegment(2, 104, 225, "Exif\0\0")),
+                    new ExifSegment(2, 104, 225, "Exif\0\0")),
             new TestData("DSC08806.jpg",
                     "Reached the end of the file",
                     new JPEGSegment(3427848, 2, 217, "0xFFD9 End Of Image")),

@@ -11,6 +11,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
@@ -26,6 +28,7 @@ import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 public class JPGHash implements Hasher {
     private static final int markerLength = 2;
     private static final Logger LOG = LoggerFactory.getLogger(JPGHash.class);
+    private static final boolean SKIP_ORIENTATION = false;
     private static final String BACKUPID = "Backup";
     private static final String BACKUP_EST_ID = "BakEst";
 
@@ -255,7 +258,7 @@ public class JPGHash implements Hasher {
         return segment;
     }
 
-    private static JPEGSegment readAPP(BufferedInputStream in, AtomicInteger marker, long payLoadAddress, File file) throws IOException {
+    private static JPEGSegment readAPP(BufferedInputStream in, AtomicInteger marker, long payLoadAddress) throws IOException {
         int segmentMarker = marker.get();
         long lengthPayload = 0;
         long read = markerLength;
@@ -270,19 +273,25 @@ public class JPGHash implements Hasher {
 * APP13 IPTC usually "Photoshop 3.0\000", but also 'Adobe_Photoshop2.5:',
 * APP2 ICC 0..11 ICC_PROFILE\0 12 icc chunk-count 13 icc total chunks
 * */
-        JPEGSegment segment = new JPEGSegment(payLoadAddress - markerLength, lengthPayload + markerLength, segmentMarker);
+        JPEGSegment segment;
         if (Arrays.equals(b, new byte[] {0x45,0x78,0x69,0x66,0x00,0x00})) {
-            TIFFMediaFileStruct scan = TIFFHash.scan(file, payLoadAddress + read - markerLength, TIFFMediaFileStruct.MAPPING);
-            segment.setData(scan);
+            segment = new ExifSegment(payLoadAddress - markerLength, lengthPayload + markerLength, segmentMarker);
+            byte payload[] = new byte[(int) (lengthPayload-b.length-2)];
+            read += in.read(payload);
+//            byte exif[] = Arrays.copyOf(b, (int) lengthPayload);
+//            System.arraycopy(payload, 0, exif, 5, (int) (lengthPayload-6));
+            TIFFMediaFileStruct scan = TIFFHash.scan(payload, payLoadAddress + read - markerLength, TIFFMediaFileStruct.MAPPING);
+            ((ExifSegment) segment).setData(scan);
+        } else {
+            segment = new JPEGSegment(payLoadAddress - markerLength, lengthPayload + markerLength, segmentMarker);
         }
         String header = new String(b);
         segment.addRead(read);
         segment.setId(header);
         return segment;
-
     }
 
-    private static JPEGSegment readSegment(BufferedInputStream in, AtomicInteger marker, long payLoadAddress, File file) throws IOException {
+    private static JPEGSegment readSegment(BufferedInputStream in, AtomicInteger marker, long payLoadAddress) throws IOException {
         int segmentMarker = marker.get();
         long lengthPayload = 0;
         long read = markerLength;
@@ -293,7 +302,7 @@ public class JPGHash implements Hasher {
         } else if (218 == segmentMarker) {
             return readScan(in, marker, payLoadAddress);
         } else if (224 <= segmentMarker && segmentMarker <= 233) {
-            return readAPP(in, marker, payLoadAddress, file);
+            return readAPP(in, marker, payLoadAddress);
         } else {
             lengthPayload = 256*in.read() + in.read();
             read += 2;
@@ -305,10 +314,10 @@ public class JPGHash implements Hasher {
         return segment;
     }
 
-    public static JPEGMediaFileStruct scan(File file) {
-        JPEGMediaFileStruct fileStruct = new JPEGMediaFileStruct(file);
-        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream fileStream = new BufferedInputStream(fileInStream);) {
-            scan(fileStream, fileStruct, file);
+    public static JPEGMediaFileStruct scan(byte[] fileContent) {
+        JPEGMediaFileStruct fileStruct = new JPEGMediaFileStruct();
+        try (ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(fileContent); BufferedInputStream bufferedInputStream = new BufferedInputStream(byteArrayInputStream);) {
+            scan(bufferedInputStream, fileStruct);
         } catch (FileNotFoundException e) {
             fileStruct.setTerminationMessage("File couldn't be opened.");
         } catch (IOException e) {
@@ -317,7 +326,19 @@ public class JPGHash implements Hasher {
         return fileStruct;
     }
 
-    public static void scan(BufferedInputStream fileStream, JPEGMediaFileStruct fileStruct, File file) throws IOException {
+    public static JPEGMediaFileStruct scan(File file) {
+        JPEGMediaFileStruct fileStruct = new JPEGMediaFileStruct();
+        try (FileInputStream fileInStream = new FileInputStream(file.toString()); BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInStream);) {
+            scan(bufferedInputStream, fileStruct);
+        } catch (FileNotFoundException e) {
+            fileStruct.setTerminationMessage("File couldn't be opened.");
+        } catch (IOException e) {
+            fileStruct.setTerminationMessage("IO error: "+ e.getMessage());
+        }
+        return fileStruct;
+    }
+
+    public static void scan(BufferedInputStream fileStream, JPEGMediaFileStruct fileStruct) throws IOException {
         JPGCursor cursor = new JPGCursor();
         cursor.setBufferedInStream(fileStream);
         Integer lastReadByte = -1;
@@ -366,7 +387,7 @@ public class JPGHash implements Hasher {
                     }
 //                    System.out.print("ff" + Integer.toHexString(lastReadByte) + " ");
                     AtomicInteger segmentMarker = new AtomicInteger(lastReadByte);
-                    JPEGSegment segment = readSegment(fileStream, segmentMarker, cursor.position + 1, file);
+                    JPEGSegment segment = readSegment(fileStream, segmentMarker, cursor.position + 1);
                     if (segment == null) {
                         fileStruct.setTerminationMessage("Segment " + JPEGSegment.getMarkerText(lastReadByte) + " read error");
                         return;
@@ -436,42 +457,74 @@ public class JPGHash implements Hasher {
     }
 
 
-    public static byte[] readDigest(File file, byte[] fileContent, MessageDigest md5Digest, DigestInputStream in, ImageDTO imageDTO) throws IOException {
-        JPEGMediaFileStruct fileStruct = null;
-        if (fileContent != null) {
-            fileStruct = new JPEGMediaFileStruct(file);
-            scan(new BufferedInputStream(new ByteArrayInputStream(fileContent)), fileStruct, file);
-        } else {
-            fileStruct = scan(file);
+    public static void readDigest(byte[] fileContent, ImageDTO imageDTO) throws IOException {
+        MessageDigest md5Digest = null;
+        try {
+            md5Digest = MessageDigest.getInstance("MD5");
+        } catch (NoSuchAlgorithmException ex) {
+            return;
         }
-        final JPEGSegment mainImage = fileStruct.getMainImage();
-        if (mainImage == null) throw new IOException("No valid image found");
-        in.on(false);
-        final JPEGSegment exifSegment = fileStruct.getExifSegment();
-        if (exifSegment != null) {
-            try (BufferedInputStream fileStream = new BufferedInputStream(new ByteArrayInputStream(fileContent));) {
-                BasicFileReader.skipBytes(fileStream, exifSegment.getStartAddress());
-                if (exifSegment.getLength() < 65535)imageDTO.exif = BasicFileReader.readBytes(fileStream, (int) exifSegment.getLength());
+        try (DigestInputStream in = new DigestInputStream(new ByteArrayInputStream(fileContent), md5Digest)) {
+            byte[] digestDef = md5Digest.digest();
+            JPEGMediaFileStruct fileStruct = null;
+            fileStruct = scan(fileContent);
+            final JPEGSegment mainImage = fileStruct.getMainImage();
+            if (mainImage == null) throw new IOException("No valid image found");
+            in.on(false);
+            final ExifSegment exifSegment = fileStruct.getExifSegment();
+            if (exifSegment != null) {
+                BasicFileReader.skipBytes(in, exifSegment.getStartAddress());
+                if (exifSegment.getLength() < 65535) {
+                    in.on(true);
+                    if (SKIP_ORIENTATION) {
+                        byte[] exifBytes = new byte[0];
+                        for (Long address : exifSegment.getOrientationAddress()) {
+                            byte[] tempBytes = new byte[address.intValue()+1];
+                            int readlength = (int) (address-exifBytes.length);
+                            System.arraycopy(exifBytes, 0, tempBytes, 0, exifBytes.length);
+                            System.arraycopy(BasicFileReader.readBytes(in, readlength), 0, tempBytes, exifBytes.length, readlength);
+                            in.on(false);
+                            tempBytes[address.intValue()] =((byte) in.read());
+                            in.on(true);
+                            exifBytes = tempBytes;
+                        }
+                        imageDTO.exif = exifBytes;
+                    } else {
+                        imageDTO.exif = BasicFileReader.readBytes(in, (int) exifSegment.getLength());
+                    }
+                    in.on(false);
+                    byte[] digest = md5Digest.digest();
+                    if (digest != null && !Arrays.equals(digest, digestDef)) {
+                        imageDTO.exifHash = MediaFileHash.processHash(digest);
+                    }
+                    in.reset();
+                }
                 else {
-                    System.out.println("Exif too long for " + file.toPath());
+                    System.out.println("Exif too long");
                 }
             }
-        }
 
 
-        md5Digest.reset();
-        BasicFileReader.skipBytes(in, mainImage.getStartAddress() + markerLength);
-        in.on(true);
-        int c = 0;
-        int oldc;
-        do {
-            oldc = c;
-            c = in.read();
-            if (c == -1) {
-                throw new IOException("File ended unexpectedly");
+            md5Digest.reset();
+            BasicFileReader.skipBytes(in, mainImage.getStartAddress() + markerLength);
+            in.on(true);
+            int c = 0;
+            int oldc;
+            do {
+                oldc = c;
+                c = in.read();
+                if (c == -1) {
+                    throw new IOException("File ended unexpectedly");
+                }
+            } while (!(oldc == 0xFF && c == 0xD9/*217*/));
+
+
+            byte[] digest = md5Digest.digest();
+            if (digest != null && !Arrays.equals(digest, digestDef)) {
+                imageDTO.hash = MediaFileHash.processHash(digest);
             }
-        } while (!(oldc == 0xFF && c == 0xD9/*217*/));
-        return md5Digest.digest();
+        }  catch(Exception e) {
+        }
     }
 
     public static byte[] read_Digest(File file, BufferedInputStream fileStream, MessageDigest md5Digest, DigestInputStream in) throws IOException {
