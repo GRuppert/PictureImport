@@ -152,3 +152,23 @@ SELECT m.original_filename, m.date_mod, duration + 3, ABS(TIMESTAMPDIFF(SECOND, 
  AND duration + 3 > ABS(3600 - ABS(TIMESTAMPDIFF(SECOND, m.date_mod, CONVERT(CONCAT(SUBSTRING(m.original_filename, 1, 4), '-', SUBSTRING(m.original_filename, 5, 2), '-', SUBSTRING(m.original_filename, 7, 2), ' ', SUBSTRING(m.original_filename, 10, 2), ':', SUBSTRING(m.original_filename, 12, 2), ':', SUBSTRING(m.original_filename, 14, 2)), datetime))))
 -- ) a
  ;
+
+-- Képenkénti eltérő fájlok
+1	163104
+2	67348
+3	17371
+4	1335
+5	84
+6	2429
+7	301
+8	6
+12	6
+41	1
+2912	1
+
+SELECT duplicates, count(*) FROM (
+SELECT image_id, count(*) duplicates FROM (SELECT f.image_id, f.filehash FROM MEDIA_FILE f
+-- LEFT JOIN FOLDER fo ON fo.id = f.folder_id WHERE f.drive_id = 3 AND fo.path LIKE '/Pictures/Photos/DBSaved/%'
+GROUP BY f.image_id, f.filehash) subq GROUP BY image_id
+-- HAVING duplicates > 1
+) a GROUP BY duplicates;
