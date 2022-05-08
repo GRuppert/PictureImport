@@ -4,7 +4,7 @@
 
     <groupId>com.nyusziful</groupId>
     <artifactId>pictureOrganizer</artifactId>
-    <version>2.0-SNAPSHOT</version>
+    <version>3.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>pictureOrganizer</name>
@@ -129,46 +129,46 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.5</version>
+            <version>1.7.36</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-slf4j-impl</artifactId>
-            <version>2.13.1</version>
+            <version>2.17.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.13.1</version>
+            <version>2.17.2</version>
         </dependency>
         <dependency>
         <groupId>org.apache.logging.log4j</groupId>
         <artifactId>log4j-api</artifactId>
-            <version>2.13.1</version>
+            <version>2.17.2</version>
         </dependency>
         <!--Business-->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
-            <version>2.2</version>
+            <version>2.11.0</version>
             <type>jar</type>
         </dependency>
         <dependency>
             <groupId>com.univocity</groupId>
             <artifactId>univocity-parsers</artifactId>
-            <version>2.7.5</version>
+            <version>2.9.1</version>
             <type>jar</type>
         </dependency>        
         <dependency>
             <groupId>com.drewnoakes</groupId>
             <artifactId>metadata-extractor</artifactId>
-            <version>2.13.0</version>
+            <version>2.17.0</version>
             <type>jar</type>
         </dependency>        
         <dependency>
             <groupId>com.adobe.xmp</groupId>
             <artifactId>xmpcore</artifactId>
-            <version>6.0.6</version>
+            <version>6.1.11</version>
         </dependency>
         <dependency>
             <groupId>com.garmin.fit</groupId>
@@ -187,14 +187,14 @@
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest-core</artifactId>
-            <version>1.3</version>
+            <version>2.2</version>
             <scope>test</scope>
         </dependency>
         <!--DAL-->
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>8.0.15</version>
+            <version>8.0.27</version>
         </dependency>
         <dependency>
             <groupId>javax.persistence</groupId>
@@ -214,7 +214,7 @@
         <dependency>
             <groupId>org.ehcache</groupId>
             <artifactId>ehcache</artifactId>
-            <version>3.8.1</version>
+            <version>3.10.0</version>
         </dependency>
         <dependency>
             <groupId>org.hibernate</groupId>
@@ -225,7 +225,7 @@
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>RELEASE</version>
+            <version>23.0.0</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

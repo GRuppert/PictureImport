@@ -5,7 +5,7 @@
         <class>org.nyusziful.pictureorganizer.DAL.Entity.Drive</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.Folder</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.MediaFile</class>
-        <class>org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFile</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFileInstance</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.Image</class>
         <properties>

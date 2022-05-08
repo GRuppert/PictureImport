@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.lang.Boolean.TRUE;
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
@@ -447,7 +446,7 @@ public class MediafileService {
             if (actFile == null) {
                 final String name = filePath.getFileName().toString();
                 if (supportedRAWFileType(name)) {
-                    actFile = new RAWMediaFile(folder, filePath, fileSize, dateMod, original);
+                    actFile = new RAWMediaFileInstance(folder, filePath, fileSize, dateMod, original);
                 } else if (supportedJPGFileType(name)) {
                     actFile = new JPGMediaFile(folder, filePath, fileSize, dateMod, original);
                 } else if (supportedVideoFileType(name)) {
@@ -561,8 +560,8 @@ public class MediafileService {
             if (mediaFile instanceof JPGMediaFile && !((JPGMediaFile) mediaFile).isExifbackup()) {
                 ((JPGMediaFile) mediaFile).addExifbackup(TRUE.equals(mediaFile.isOriginal()));
             }
-            if (mediaFile instanceof RAWMediaFile && !((RAWMediaFile) mediaFile).isXMPattached()) {
-                ((RAWMediaFile) mediaFile).setXMPattached(createXmp(mediaFile.getFilePath().toFile()) != null);
+            if (mediaFile instanceof RAWMediaFileInstance && !((RAWMediaFileInstance) mediaFile).isXMPattached()) {
+                ((RAWMediaFileInstance) mediaFile).setXMPattached(createXmp(mediaFile.getFilePath().toFile()) != null);
             }
 
             saveMediaFile(mediaFile);

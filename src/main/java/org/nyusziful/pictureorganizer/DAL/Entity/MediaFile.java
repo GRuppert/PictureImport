@@ -1,34 +1,17 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import com.drew.imaging.jpeg.JpegMetadataReader;
-import com.drew.imaging.jpeg.JpegProcessingException;
-import com.drew.metadata.Metadata;
-import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
-import org.nyusziful.pictureorganizer.Service.MediafileService;
-import org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory;
 
 import javax.persistence.*;
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Objects;
 
-import static javax.xml.bind.DatatypeConverter.parseHexBinary;
-
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@Table(
-    name = "media_file",
-    uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "folder_id", "filename"})}
-)
+@Table(name = "media_file_instance")
 @DiscriminatorColumn(name = "type")
 @DiscriminatorValue("DEF")
 public class MediaFile extends TrackingEntity implements Cloneable {
@@ -37,34 +20,37 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Column(name = "id", updatable = false, nullable = false)
     protected int id = -1;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="drive_id", referencedColumnName="id", nullable=false)
-    private Drive drive;
-
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="folder_id", referencedColumnName="id", nullable=false)
-    private Folder folder;
-
-    private String filename;
-
-    @Column(name = "original_filename")
-    private String originalFilename;
-
-    @Column(name = "name_version")
-    private int nameVersion;
-
-    @ManyToOne(
-            fetch = FetchType.LAZY,
-            cascade = {CascadeType.REFRESH})
-    @JoinColumn(name="image_id", referencedColumnName="id")
-    private Image image;
-
+    @Column(name = "filehash")
     private String filehash;
+
+    @Column(name = "commit")
+    private String commit;
+
+//????
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="parent_id", referencedColumnName="id", nullable=false)
+    private MediaFile parent;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="main_id", referencedColumnName="id", nullable=false)
+    private MediaFile main;
 
     private Long size;
 
-    @Column(name = "date_mod")
-    private Timestamp dateMod;
+    //????
+    @Column(name = "original_filename")
+    private String originalFilename;
+
+/*
+    @ManyToMany(
+            fetch = FetchType.LAZY,
+            cascade = {CascadeType.REFRESH})
+*/
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="image_id", referencedColumnName="id")
+    private Image image;
+
 
     @Column(name = "date_stored")
     private String dateStoredString;
@@ -78,23 +64,10 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Column(name = "date_stored_tz")
     private String dateStoredTZString;
 
+    @Column(name = "invalid")
+    private Boolean invalid;
     @Transient
     private ZonedDateTime dateStored;
-
-    private String latitude;
-    private String longitude;
-    private String altitude;
-    private Integer orientation;
-    private Integer rating;
-    private String title;
-    private String keyword;
-
-    @Column(name = "exif")
-    private byte[] exif;
-
-
-    @Transient
-    protected Path filePath;
 
     @Transient
     private Boolean original;
@@ -109,12 +82,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
             dateStored = dateStoredLocal.toLocalDateTime().atZone(ZoneId.of(prefix + dateStoredTZString));
     }
 
-    private void loadPath() {
-        if (folder != null && folder.getJavaPath() != null && filename != null) {
-            filePath = Paths.get(folder.getJavaPath().toString() + "\\" + filename);
-        }
-    }
-
     private void loadOriginal() {
         if (image != null && image.getOriginalFileHash() != null) {
             original = filehash.equals(image.getOriginalFileHash());
@@ -125,19 +92,13 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         // this form used by Hibernate
     }
 
-    public MediaFile(Folder folder, Path path, long size, Timestamp dateMod, Boolean original) {
-        moveFile(folder, path);
+    public MediaFile(long size, Boolean original) {
         this.size = size;
-        this.dateMod = dateMod;
-        this.dateMod.setNanos(0);
         this.original = original;
     }
 
     public MediaFile(MediaFile mediaFile) {
-        moveFile(mediaFile.getFolder(), mediaFile.getFilePath());
         this.size = mediaFile.getSize();
-        this.dateMod = mediaFile.getDateMod();
-        this.dateMod.setNanos(0);
         this.original = mediaFile.isOriginal();
     }
 
@@ -146,34 +107,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         MediaFile mediaFile = (MediaFile)super.clone();
         mediaFile.id = -1;
         return mediaFile;
-    }
-
-    public void moveFile(Folder folder, Path filePath) {
-        this.filePath = filePath;
-        this.filename = filePath.getFileName().toString();
-        updateVersion();
-        this.drive = folder.getDrive();
-        this.folder = folder;
-    }
-
-    public void updateVersion() {
-        Meta result = FileNameFactory.getV(filename);
-        if (result != null) {
-            this.originalFilename = result.originalFilename;
-            this.nameVersion = result.nameVersion;
-        } else {
-            this.originalFilename = filename;
-            this.nameVersion = 0;
-        }
-    }
-
-    public String getFilename() {
-        return filename;
-    }
-
-    public void setFilename(String filename) {
-        this.filename = filename;
-        loadPath();
     }
 
     public String getFilehash() {
@@ -195,15 +128,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         this.size = size;
     }
 
-    public Timestamp getDateMod() {
-        return dateMod;
-    }
-
-    public void setDateMod(Timestamp dateMod) {
-        this.dateMod = dateMod;
-        this.dateMod.setNanos(0);
-    }
-
     @Override
     public boolean equals(Object anObject){
         if (this == anObject) {
@@ -215,13 +139,10 @@ public class MediaFile extends TrackingEntity implements Cloneable {
                 if (id == anotherFile.id) return true;
                 else return false;
             }
-            if ((this.filename != null && this.filename.equals(anotherFile.filename)) &&
-                (this.folder != null && this.folder.equals(anotherFile.folder)) &&
-                this.drive == anotherFile.drive &&
+            if (
                 (this.image != null && this.image.equals(anotherFile.image)) &&
                 (this.filehash != null && this.filehash.equals(anotherFile.filehash)) &&
-                this.size == anotherFile.size &&
-                (this.dateMod != null && this.dateMod.toInstant().toEpochMilli() == anotherFile.dateMod.toInstant().toEpochMilli())
+                this.size == anotherFile.size
             ) return true;
         }
         return false;
@@ -229,19 +150,11 @@ public class MediaFile extends TrackingEntity implements Cloneable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(filename, folder, drive);
+        return Objects.hash(filehash);
     }
 
     public int getId() {
         return id;
-    }
-
-    public Folder getFolder() {
-        return folder;
-    }
-
-    public Drive getDrive() {
-        return drive;
     }
 
     public Image getImage() {
@@ -258,15 +171,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
 
     private boolean sameAsFormer(Image newImage) {
         return image==null? newImage == null : image.equals(newImage);
-    }
-
-    public String getType() {
-        return FilenameUtils.getExtension(filename);
-    }
-
-    public Path getFilePath() {
-        if (filePath == null) loadPath();
-        return filePath;
     }
 
     public Boolean isOriginal() {
@@ -296,43 +200,6 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         }
     }
 
-    public String getLatitude() {
-        return latitude;
-    }
-
-    public void setLatitude(String latitude) {
-        this.latitude = latitude;
-    }
-
-    public String getLongitude() {
-        return longitude;
-    }
-
-    public void setLongitude(String longitude) {
-        this.longitude = longitude;
-    }
-
-    public String getAltitude() {
-        return altitude;
-    }
-
-    public void setAltitude(String altitude) {
-        this.altitude = altitude;
-    }
-
-    public void remove() {
-        setImage(null);
-    }
-
-    public void updateFolder(Folder folder) {
-        this.folder = folder;
-    }
-
-    @Override
-    public String toString() {
-        return folder + "\\" + filename;
-    }
-
     public String getOriginalFilename() {
         return originalFilename;
     }
@@ -341,59 +208,7 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         this.originalFilename = originalFilename;
     }
 
-    public int getNameVersion() {
-        return nameVersion;
-    }
-
-    public void setNameVersion(int nameVersion) {
-        this.nameVersion = nameVersion;
-    }
-
     public void setMeta(Meta meta) {
         setDateStored(meta.date);
-        setOrientation(meta.orientation);
-        setKeyword(meta.keyword);
-        setTitle(meta.title);
-        setRating(meta.rating);
-    }
-
-    public Integer getOrientation() {
-        return orientation;
-    }
-
-    public void setOrientation(Integer orientation) {
-        this.orientation = orientation;
-    }
-
-    public Integer getRating() {
-        return rating;
-    }
-
-    public void setRating(Integer rating) {
-        this.rating = rating;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getKeyword() {
-        return keyword;
-    }
-
-    public void setKeyword(String keyword) {
-        this.keyword = keyword;
-    }
-
-    public byte[] getExif() {
-        return exif;
-    }
-
-    public void setExif(byte[] exif) {
-        this.exif = exif;
     }
 }

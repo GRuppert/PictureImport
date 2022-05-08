@@ -20,7 +20,7 @@
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Drive"/>
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Folder"/>
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaFile"/>
-        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFile"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFileInstance"/>
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile"/>
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Image"/>
     </session-factory>

@@ -1,29 +1,19 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
-import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.property.StringProperty;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
-import org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile;
-import org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFile;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
-import org.nyusziful.pictureorganizer.UI.Progress;
-import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 
 public class MediaFileSet {

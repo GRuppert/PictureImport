@@ -1,20 +1,22 @@
-SET @rownr=0;
-CREATE TABLE media AS 
-SELECT (@rownr := @rownr + 1) AS id, t.*
-from
-(select
-filehash, type as filetype, parent_filehash, parent_type, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz
-FROM media_file 
+ALTER TABLE media_file RENAME media_file_old;
+
+CREATE TABLE media_file  (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  commit VARCHAR(45) NULL DEFAULT NULL,
+  invalid TINYINT UNSIGNED,
+  parent_id INT UNSIGNED NULL,
+  main_id INT UNSIGNED NULL  
+) select
+filehash, type as filetype, parent_id, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz
+FROM media_file_old 
 GROUP BY
-filehash, type, parent_filehash, parent_type, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz
-) t;
-ALTER TABLE `pictureorganizer`.`media` 
-CHANGE COLUMN `id` `id` INT UNSIGNED NOT NULL ,
-ADD PRIMARY KEY (`id`),
-ADD UNIQUE INDEX `id_UNIQUE` (`id` ASC) VISIBLE;
-ALTER TABLE `pictureorganizer`.`media` 
+filehash, type, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz;
+
+ALTER TABLE `pictureorganizer`.`media_file` 
+ADD UNIQUE INDEX `filehash_unique` (`filehash` ASC, `filetype` ASC) VISIBLE;
+ALTER TABLE `pictureorganizer`.`media_file` 
 ADD INDEX `filehash_idx` (`filehash` ASC) VISIBLE;
-ALTER TABLE `pictureorganizer`.`media` 
+ALTER TABLE `pictureorganizer`.`media_file` 
 ADD INDEX `parent_filehash_idx` (`parent_filehash` ASC) VISIBLE;
 
 
@@ -46,8 +48,9 @@ mf.id, mfo.image_id, mm.id, mfo.exifbackup
 ;
 
 SET @rownr=0;
-CREATE TABLE media_file_instance AS 
-SELECT (@rownr := @rownr + 1) AS media_file_instance_id, id as media_file_id, folder_id, filename, name_version, date_mod, XMPattached FROM media_file;
+CREATE TABLE media_file_instance (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+) SELECT id as media_file_old_id, folder_id, filename, name_version, date_mod, XMPattached FROM media_file;
 
 UPDATE media_file_instance mfi SET mfi.date_mod = (SELECT mf.date_mod FROM media_file mf WHERE mf.id = mfi.media_file_id); 
 UPDATE media_file_instance mfi SET mfi.new_media_id = (SELECT m.id FROM media m WHERE m.filehash = (SELECT mf.filehash FROM media_file mf WHERE mf.id = mfi.media_file_id)); 
@@ -63,9 +66,3 @@ UPDATE media_file_old mf SET mf.orientation = (SELECT * FROM (SELECT DISTINCT(mf
 UPDATE media_file_old mf SET mf.rating = (SELECT * FROM (SELECT DISTINCT(mf1.rating) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.rating IS NOT NULL) as t) WHERE mf.rating IS NULL;
 UPDATE media_file_old mf SET mf.exifbackup = (SELECT * FROM (SELECT DISTINCT(mf1.exifbackup) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.exifbackup IS NOT NULL) as t) WHERE mf.exifbackup IS NULL;
 UPDATE media_file_old mf SET mf.title = (SELECT * FROM (SELECT DISTINCT(mf1.title) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.title IS NOT NULL) as t) WHERE mf.title IS NULL;
-
-ALTER TABLE media_file RENAME media_file_old;
-
-ALTER TABLE media DROP COLUMN XMPattached;
-ALTER TABLE media DROP COLUMN size;
-ALTER TABLE media DROP COLUMN date_mod;

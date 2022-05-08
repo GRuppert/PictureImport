@@ -9,26 +9,26 @@ import java.sql.Timestamp;
 
 @Entity
 @DiscriminatorValue("RAW")
-public class RAWMediaFile extends MediaFile {
+public class RAWMediaFileInstance extends MediaFileInstance {
     private boolean XMPattached;
 
-    public RAWMediaFile() {
+    public RAWMediaFileInstance() {
         // this form used by Hibernate
     }
 
-    public RAWMediaFile(Folder folder, Path path, long size, Timestamp dateMod, Boolean original) {
+    public RAWMediaFileInstance(Folder folder, Path path, long size, Timestamp dateMod, Boolean original) {
         super(folder, path, size, dateMod, original);
         this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
     }
 
-    public RAWMediaFile(RAWMediaFile rawMediaFile) {
+    public RAWMediaFileInstance(RAWMediaFileInstance rawMediaFile) {
         super(rawMediaFile);
         this.XMPattached = rawMediaFile.isXMPattached();
     }
 
     @Override
     public Object clone() throws CloneNotSupportedException {
-        RAWMediaFile rawMediaFile = (RAWMediaFile)super.clone();
+        RAWMediaFileInstance rawMediaFile = (RAWMediaFileInstance)super.clone();
         rawMediaFile.XMPattached = this.isXMPattached();
         return rawMediaFile;
     }
