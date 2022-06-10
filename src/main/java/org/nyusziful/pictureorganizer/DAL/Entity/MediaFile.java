@@ -26,10 +26,9 @@ public class MediaFile extends TrackingEntity implements Cloneable {
     @Column(name = "commit")
     private String commit;
 
-//????
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="parent_id", referencedColumnName="id", nullable=false)
-    private MediaFile parent;
+    @JoinColumn(name="previous_id", referencedColumnName="id", nullable=false)
+    private MediaFile previous;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="main_id", referencedColumnName="id", nullable=false)
@@ -92,7 +91,9 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         // this form used by Hibernate
     }
 
-    public MediaFile(long size, Boolean original) {
+    public MediaFile(String filehash, long size, Boolean original) {
+        this.filehash = filehash;
+        this.size = size;
         this.size = size;
         this.original = original;
     }

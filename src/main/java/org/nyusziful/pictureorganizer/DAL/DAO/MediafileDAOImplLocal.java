@@ -7,7 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 
 public class MediafileDAOImplLocal {
-    public MediaFile save(MediaFile item) {
+/*    public MediaFile save(MediaFile item) {
         //TODO from global param
         String delimiter = "\t";
         int start = 0;
@@ -28,5 +28,5 @@ public class MediafileDAOImplLocal {
         }
         return item;
     }
-
+*/
 }

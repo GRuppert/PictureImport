@@ -92,6 +92,7 @@ public class PresetUseCases {
     }
 
     private static void readDBExif() {
+/*
         ExifReadWriteIMR.readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Original\\Idozona\\2016-03-25 - 2016-04-17 Japán\\Európa\\20160324_060559_GT-I9195I-20160324_060559.jpg"), ZoneId.systemDefault());
         byte[] jpgHeader = parseHexBinary("ffd8");//ffe000124A46494600010200000100010000");
         byte[] exif = MediafileService.getInstance().getMediaFile(Paths.get("G:\\Pictures\\Photos\\Régi képek\\Original\\Idozona\\2016-03-25 - 2016-04-17 Japán\\Európa\\20160324_060559_GT-I9195I-20160324_060559.jpg"), false).getExif();
@@ -115,7 +116,7 @@ public class PresetUseCases {
         } catch (IOException e) {
             e.printStackTrace();
         }
-*/
+* /
         try {
             Metadata metadata = JpegMetadataReader.readMetadata(stream);
             System.out.println(metadata);
@@ -124,16 +125,19 @@ public class PresetUseCases {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+ */
     }
 
     private static void addOrigFilename() {
-        MediafileDAOImplHib hib = new MediafileDAOImplHib();
+/*        MediafileDAOImplHib hib = new MediafileDAOImplHib();
         List<MediaFile> all = hib.getAll();
         List<MediaFile> empty = new ArrayList<>();
         all.forEach(a-> {if (FileNameFactory.getV(a.getOriginalFilename()) != null) empty.add(a);});
         empty.forEach(MediaFile::updateVersion);
         MediafileService.getInstance().saveMediaFiles(empty, true);
         MediafileService.getInstance().close();
+ */
     }
 
     private static void migrationV4() {

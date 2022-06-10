@@ -108,7 +108,7 @@ public class DBConnection {
     }
 
     public static void saveFile(Set<MediaFile> files) {
-        try {
+/*        try {
             Connection conn = getConnection();
             String sql = "INSERT INTO file (filename, path, drive_id, image_id, size, date_mod, exifbackup, filehash) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
             PreparedStatement ps = conn.prepareStatement(sql);
@@ -137,7 +137,7 @@ public class DBConnection {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
+*/
 
     }
 

@@ -2,6 +2,7 @@ package org.nyusziful.pictureorganizer.Service.Rename;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileInstance;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
@@ -143,18 +144,19 @@ public class RenameService {
         return false;
     }*/
 
-    public static String getName(MediaFile mediaFile, String nameVersion, String version) {
+    public static String getName(MediaFileInstance mediaFileInstance, String nameVersion, String version) {
+        MediaFile mediaFile = mediaFileInstance.getMediaFile();
         final Image actFileImage = mediaFile.getImage();
         String desiredFileName = null;
         String oldFilename;
         if (hasValue(actFileImage.getOriginalFilename())) {
             oldFilename = actFileImage.getOriginalFilename();
         } else {
-            final Meta v = getV(mediaFile.getFilename());
+            final Meta v = getV(mediaFileInstance.getFilename());
             if (v != null && hasValue(v.originalFilename)) {
                 oldFilename = v.originalFilename;
             } else {
-                oldFilename = mediaFile.getFilename();
+                oldFilename = mediaFileInstance.getFilename();
             }
         }
         try {
@@ -170,7 +172,7 @@ public class RenameService {
         } catch (IllegalArgumentException e) {
             return null;
         }
-        if (!mediaFile.getFilename().equals(desiredFileName)) {
+        if (!mediaFileInstance.getFilename().equals(desiredFileName)) {
             //Check if the created name has the minimum information
             final Meta v = getV(desiredFileName);
             if (
