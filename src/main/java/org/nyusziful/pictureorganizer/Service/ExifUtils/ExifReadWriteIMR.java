@@ -54,6 +54,9 @@ public class ExifReadWriteIMR {
     }
 
     public static void main(String[] args) {
+        readFileMeta(new File("t:\\G\\Pictures\\Photos\\V5\\Dupla\\KépekÚj\\2015-07-25 - 2015-07-25 Strasburg\\V5_K2015-07-2_5@12-3_2-49(+0200)(Sat)-9177e64514ec8ffd9deb8ff3d3fa0c5b-9e38b415d46f913693442b15012ab931-DSC09457.JPG"), ZoneId.systemDefault());
+
+/*
         readFileMeta(new File("e:\\Work\\Testfiles\\failingmp4\\diff\\2\\V6_K2017-08-3_1@16-2_6-35(+0200)(Thu)-2104cc0ae509423700f1c0a6695f76f0-0-C0018.MP4"), ZoneId.systemDefault());
         readFileMeta(new File("E:\\Work\\Testfiles\\DSC07666.jpg"), ZoneId.systemDefault());
         readFileMeta(new File("G:\\Pictures\\Photos\\DBSaved\\2017-12-31 - 2018-01-01 Europapark szilveszter\\V6_K2017-12-3_1@11-2_3-40(+0100)(Sun)-6d6d425fbb10fd44c077ca69af817ab3-0-C0001.mp4"), ZoneId.systemDefault());
@@ -62,6 +65,7 @@ public class ExifReadWriteIMR {
         readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Szelektálás\\!Válogatós\\Gabus\\!IMAG\\2007-05-05 - 2007-05-05\\MPG_0008.mpg"), ZoneId.systemDefault());
         readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Original\\Közös\\2016-06-19 - 2016-06-19 Streetworkout\\K2016-06-1_9@11-1_0-02(+0200)(Sun)-d41d8cd98f00b204e9800998ecf8427e-d41d8cd98f00b204e9800998ecf8427e-00041.mts"), ZoneId.systemDefault());
         readFileMeta(new File("G:\\Pictures\\Photos\\Régi képek\\Szelektálás\\!Válogatós\\Gabus\\20101121 Düsseldorf\\Modern\\VID_20101120_120509.3gp"), ZoneId.systemDefault());
+*/
     }
 
     public static Meta readFileMeta(File file, ZoneId defaultTZ) {
@@ -92,6 +96,7 @@ public class ExifReadWriteIMR {
         String make = null;
         String title = null;
         String keyword = null;
+        Integer sequence = null;
         try {
             tags = readMeta(inputStream, name);
         } catch (ImageProcessingException | IOException ex) {

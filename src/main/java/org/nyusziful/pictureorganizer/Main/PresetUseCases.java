@@ -16,6 +16,7 @@ import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.DriveService;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWriteET;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWriteIMR;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
@@ -49,7 +50,7 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-        readDBExif2();
+//        readDBExif2();
 /*
         read();
         addOrigFilename();
@@ -79,6 +80,7 @@ public class PresetUseCases {
 //        updateFolder(Paths.get("e:\\Képek\\PreImportTest\\Run"), true,null, ZoneId.systemDefault());
     }
 
+/*
     private static void readDBExif2() {
         MediaFile mediaFile = MediafileService.getInstance().getMediaFile(Paths.get("G:\\Pictures\\Photos\\Régi képek\\Original\\Idozona\\2016-03-25 - 2016-04-17 Japán\\Európa\\20160324_060559_GT-I9195I-20160324_060559.jpg"), false);
         if (mediaFile instanceof JPGMediaFile) {
@@ -90,6 +92,7 @@ public class PresetUseCases {
 //            MediafileService.getInstance().saveMediaFile(mediaFile);
         }
     }
+*/
 
     private static void readDBExif() {
 /*
@@ -844,4 +847,110 @@ public class PresetUseCases {
         }
         return str;
     }
+
+    private static void readFileMeta() {
+        String filename = null;
+
+        ArrayList<String> filenames = new ArrayList<>();
+        //TODO handle it!
+        int chunkSize = 100;//At least 2, exiftool has a different output format for single files
+        int done = 0;
+        ArrayList<Meta> results = new ArrayList<>();
+        while ( done < files.length) {
+            File dir = null;
+            ArrayList<String> fileList = new ArrayList<>();
+            for (int f = 0; (f < chunkSize) && (done + f < files.length); f++) {
+                if (dir == null) dir = files[done + f].getParentFile();
+                if (!dir.equals(files[done + f].getParentFile())) break;
+                fileList.add(files[done + f].getName());
+                done++;
+            }
+
+
+            if (filenames.size() == 1 && filenames.get(0).length() > 5) {
+                filename = dir + "\\" + filenames.get(0);
+            }
+            filenames.add(0, "-OriginalDocumentID");
+            filenames.add(0, "-DocumentID");
+            filenames.add(0, "-InstanceID");
+            filenames.add(0, "-DateTimeOriginal");
+            filenames.add(0, "-xmp:DateTimeOriginal");
+            filenames.add(0, "-Model");
+            filenames.add(0, "exiftool");
+            ArrayList<String> exifTool = ExifReadWriteET.exifTool(filenames.toArray(new String[0]), dir);
+            Iterator<String> iterator = exifTool.iterator();
+            int i = -1;
+            String model = null;
+            String note = "";
+            String iID = null;
+            String dID = null;
+            String odID = null;
+            String captureDate = null;
+            Boolean dateFormat = null;
+            String quality = null;
+            while (iterator.hasNext()) {
+                String line = iterator.next();
+                if (line.startsWith("========")) {
+                    if (i > -1) {
+                        Meta meta = createMeta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, quality);
+                        System.out.println(meta);
+                        results.add(meta);
+                    }
+                    i++;
+                    String fileTemp = line.substring(9).replaceAll("./", "").replaceAll("/", "\\");
+                    filename = dir + "\\" + fileTemp;
+                    model = null;
+                    captureDate = null;
+                    dID = null;
+                    odID = null;
+                    note = "";
+                    dateFormat = false;
+
+                    //End of exiftool output
+                } else if (line.contains("image files read")) {
+                    if (!line.contains(" 0 image files read")) {
+                    }
+                } else if (line.contains("files could not be read")) {
+
+                } else {
+                    String tagValue = "";
+                    if (line.length() > 34) tagValue = line.substring(34);
+                    switch (line.substring(0, 4)) {
+                        case "Date":
+                            if (captureDate == null)
+                                captureDate = tagValue;
+                            else {
+                                if (Math.abs(captureDate.length() - tagValue.length()) == 6) dateFormat = true;
+                                captureDate = tagValue;
+                            }
+                            break;
+                        case "Came":
+                            model = tagValue;
+                            break;
+                        case "Orig":
+                            odID = tagValue;
+                            break;
+                        case "Docu":
+                            dID = tagValue;
+                            break;
+                        case "Inst":
+                            iID = tagValue;
+                            break;
+                        case "Warn":
+                            note = line;
+                            break;
+                    }
+                }
+            }
+            if (filename != null) {
+                Meta meta = createMeta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, quality);
+                System.out.println(meta);
+                results.add(meta);
+//            results.add(new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
+            }
+        }
+        return results;
+    }
+
+
 }

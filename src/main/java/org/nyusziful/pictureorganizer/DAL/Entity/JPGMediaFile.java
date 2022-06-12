@@ -18,7 +18,7 @@ import static javax.xml.bind.DatatypeConverter.parseHexBinary;
 
 @Entity
 @DiscriminatorValue("JPG")
-public class JPGMediaFile extends MediaFile {
+public class JPGMediaFile extends MediaFileInstance {
     private Boolean exifbackup;
     private boolean standalone = true;
 
@@ -93,6 +93,7 @@ public class JPGMediaFile extends MediaFile {
         return jpgMediaFile;
     }
 
+/*
     public void readDBExif() {
         byte[] jpgHeader =  parseHexBinary("ffd8");//ffe000124A46494600010200000100010000");
         byte[] exif = getExif();
@@ -120,6 +121,7 @@ public class JPGMediaFile extends MediaFile {
         } catch (Exception e) {
             e.printStackTrace();
         }
+*/
 /*
         try {
             Metadata md = JpegMetadataReader.readMetadata(stream);
@@ -129,8 +131,10 @@ public class JPGMediaFile extends MediaFile {
         } catch (IOException e) {
             e.printStackTrace();
         }
-*/
+*//*
+
         setMeta(ExifService.readMeta(stream, getFilename(), getDateStored().getZone() == null ? ZoneId.systemDefault() : getDateStored().getZone()));
     }
+*/
 
 }
