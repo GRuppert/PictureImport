@@ -1,5 +1,17 @@
 ALTER TABLE media_file RENAME media_file_old;
 
+CREATE TABLE media_file  (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  original_filename VARCHAR(200) NULL DEFAULT NULL,
+  main_id INT UNSIGNED NULL
+) select
+mfo.original_filename, mfo.title_in_filename, mfv.filetype, mfv.standalone, mfv.id as original_version_id 
+	FROM media_file_version mfv LEFT JOIN media_file_instance mfi ON mfi.media_file_id = mfv.id LEFT JOIN media_file_old mfo ON mfi.media_file_old_id = mfo.id
+    GROUP BY mfo.original_filename, mfv.filetype, mfv.standalone, mfv.id;
+
+
+
+
 CREATE TABLE media_file_version  (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   commit VARCHAR(45) NULL DEFAULT NULL,
@@ -66,3 +78,6 @@ UPDATE media_file_old mf SET mf.orientation = (SELECT * FROM (SELECT DISTINCT(mf
 UPDATE media_file_old mf SET mf.rating = (SELECT * FROM (SELECT DISTINCT(mf1.rating) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.rating IS NOT NULL) as t) WHERE mf.rating IS NULL;
 UPDATE media_file_old mf SET mf.exifbackup = (SELECT * FROM (SELECT DISTINCT(mf1.exifbackup) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.exifbackup IS NOT NULL) as t) WHERE mf.exifbackup IS NULL;
 UPDATE media_file_old mf SET mf.title = (SELECT * FROM (SELECT DISTINCT(mf1.title) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.title IS NOT NULL) as t) WHERE mf.title IS NULL;
+
+-- 20160915_204519(0).jpg	2b17887adb8a3c118b0ac98ffa86377d	20885	JPG	20265
+-- 20160915_204519.jpg	573eeb16ccd2bfef59e8c003660831f1	20886	JPG	20266
