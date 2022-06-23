@@ -1,3 +1,16 @@
+SELECT * FROM media_file_instance mfi LEFT JOIN media_file_old mfo ON mfo.id = mfi.media_file_old_id LEFT JOIN folder f ON f.id = mfi.folder_id WHERE mfo.image_id = 128614;
+
+UPDATE media_file_old mf SET
+mf.title_in_filename =  '20061023',
+ mf.original_filename = 'IMAG0001.JPG'
+ WHERE mf.image_id = 57165;
+
+UPDATE media_file_old mf SET
+ mf.original_filename = 'IMAG0018.JPG'
+ WHERE mf.image_id = 57174;
+
+SET SQL_SAFE_UPDATES = 0;
+
 SELECT mfo.original_filename, mfv.filetype, mfv.standalone, mfv.id as original_version 
 	FROM media_file_version mfv LEFT JOIN media_file_instance mfi ON mfi.media_file_id = mfv.id LEFT JOIN media_file_old mfo ON mfi.media_file_old_id = mfo.id
     WHERE mfv.id = 19671
@@ -8,17 +21,10 @@ SELECT orig.original_filename, count(*) FROM (
 SELECT mfo.original_filename, mfv.filetype, mfv.standalone, mfv.id as original_version 
 	FROM media_file_version mfv LEFT JOIN media_file_instance mfi ON mfi.media_file_id = mfv.id LEFT JOIN media_file_old mfo ON mfi.media_file_old_id = mfo.id
     GROUP BY mfo.original_filename, mfv.filetype, mfv.standalone, mfv.id) as orig
+    WHERE orig.original_filename LIKE "%.JPG"
     group by orig.original_filename HAVING count(*)>1
     ;
-    /** why no jpg? */
 
-SET SQL_SAFE_UPDATES = 0;
-
-UPDATE media_file_old SET original_filename = '' WHERE original_filename = '';
-UPDATE media_file_old SET original_filename = '' WHERE original_filename = '';
-UPDATE media_file_old SET original_filename = '' WHERE original_filename = '';
-UPDATE media_file_old SET original_filename = '' WHERE original_filename = '';
-UPDATE media_file_old SET original_filename = '' WHERE original_filename = '';
 UPDATE media_file_old SET original_filename = '' WHERE original_filename = '';
    
 SELECT mfo.original_filename, mfo.filehash, mfo.image_id, mfv.filetype, mfv.standalone, mfv.id as original_version 
@@ -53,6 +59,7 @@ SELECT count(*) FROM (
 		group by orig.image_id HAVING count(*)>1
     ) duplicates;    
     
+## EZT NéZD    
 SELECT mf.original_filename, mf.image_id, mf.shotnumber 
 			FROM media_file_old mf 
 WHERE mf.image_id in (SELECT orig2.image_id FROM (	SELECT orig.image_id, orig.shotnumber FROM (
@@ -65,9 +72,7 @@ WHERE mf.image_id in (SELECT orig2.image_id FROM (	SELECT orig.image_id, orig.sh
 		) as orig2
 )
  GROUP BY mf.original_filename, mf.image_id 
- ORDER BY 2,1;
- 
- 
+ ORDER BY 2,1; 
  
  SELECT mfo.original_filename, REGEXP_REPLACE(mfo.original_filename, " ?\\(1\\)",'')
 	FROM media_file_old mfo WHERE mfo.original_filename LIKE "%(1)%";
@@ -134,8 +139,6 @@ UPDATE media_file_old mf SET mf.original_filename = (SELECT * FROM (SELECT disti
 WHERE mf.image_id IN (SELECT * FROM (
 SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename = SUBSTRING((SELECT distinct(mf.original_filename) FROM media_file_old mf WHERE mf.image_id = mfo.image_id AND mf.original_filename LIKE '\_DSC%'), 2)) AS hidit
 );
-
-## RENDBEN 
 
 SELECT count(distinct(image_id)) FROM media_file_old mfo WHERE mfo.original_filename LIKE '\_DSC%';
 SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename = SUBSTRING((SELECT distinct(mf.original_filename) FROM media_file_old mf WHERE mf.image_id = mfo.image_id AND mf.original_filename LIKE '\_DSC%'), 2);
@@ -210,5 +213,110 @@ ORDER BY 1 DESC, 2
 
 SELECT f.*, mfi.filename FROM media_file_instance mfi LEFT JOIN media_file_old mfo ON mfo.id = mfi.media_file_old_id LEFT JOIN folder f ON mfi.folder_id = f.id WHERE mfo.filehash = '3fe70d21bf598e554def089045ef170c' GROUP BY mfi.filename;
 
-SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE 1 < (SELECT distinct(mf.original_filename) FROM media_file_old mf WHERE mf.image_id > 3 AND mf.original_filename LIKE '%.gif');
 SELECT mf.original_filename, mf.image_id FROM media_file_old mf WHERE mf.image_id > 3 AND mf.original_filename LIKE '%.gif' GROUP BY mf.original_filename, mf.image_id;
+
+SELECT mfo.image_id, mfo.original_filename FROM media_file_old mfo WHERE mfo.original_filename LIKE 'IMG_%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf.original_filename)) FROM media_file_old mf WHERE mf.image_id = mfo.image_id)
+GROUP BY mfo.image_id, mfo.original_filename;
+
+
+SELECT mf2.image_id, mf2.original_filename FROM media_file_old mf2 WHERE mf2.image_id IN (
+SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE '%-WA%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf.original_filename)) FROM media_file_old mf WHERE mf.image_id = mfo.image_id)
+)
+GROUP BY mf2.image_id, mf2.original_filename
+ORDER BY 2
+;
+
+UPDATE media_file_old mf SET
+mf.original_filename = (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id ORDER BY mf2.original_filename LIMIT 1) AS hidit2 )
+ WHERE mf.original_filename LIKE '%-WA%' AND mf.image_id > 3 AND 1 < (SELECT * FROM (SELECT count(distinct(mfo.original_filename)) FROM media_file_old mfo WHERE mf.image_id = mfo.image_id) AS hidit);
+
+
+SELECT mf2.image_id, mf2.original_filename FROM media_file_old mf2 WHERE mf2.image_id IN (
+SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE '%_iOS.jpg' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf.original_filename)) FROM media_file_old mf WHERE mf.image_id = mfo.image_id)
+)
+GROUP BY mf2.image_id, mf2.original_filename
+ORDER BY 1, 2
+;
+
+UPDATE media_file_old mf SET
+mf.original_filename = (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE '%_iOS.jpg' ) AS hidit2 )
+ WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE '%_iOS.jpg' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit);
+
+SELECT mf2.image_id, mf2.original_filename FROM media_file_old mf2 WHERE mf2.image_id IN (
+SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'IMG_%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf.original_filename)) FROM media_file_old mf WHERE mf.image_id = mfo.image_id)
+)
+GROUP BY mf2.image_id, mf2.original_filename
+;
+
+
+UPDATE media_file_old mf SET
+mf.title_in_filename =  TRIM('.JPG' FROM (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE 'IMG\_%' ) AS hidit3 )),
+ mf.original_filename = (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE 'IMG\_%' ) AS hidit2 )
+ WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'IMG\_%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit);
+
+
+UPDATE media_file_old mf SET
+mf.title_in_filename =  TRIM('.JPG' FROM (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE 'SV%' ) AS hidit3 )),
+ mf.original_filename = (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE 'SV%' ) AS hidit2 )
+ WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'SV%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit);
+
+SELECT
+TRIM('.JPG' FROM (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE 'SV%' ) AS hidit3 )) as a,
+ (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE 'SV%' ) AS hidit2 ) as b
+ FROM media_file_old mf WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'SV%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit)
+ group by a, b;
+ 
+ 
+ UPDATE media_file_old mf SET
+ mf.original_filename = (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE '%NA.JPG' ) AS hidit2 )
+ WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE '%NA.JPG' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit);
+
+SELECT
+ (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE '%NA.JPG' ) AS hidit2 ) as a,
+ (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE '%NA.JPG' ) AS hidit2 ) as b
+ FROM media_file_old mf WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE '%NA.JPG' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit)
+ group by a, b;
+
+SELECT
+ mfo.original_filename,
+ CONCAT(TRIM('NA.JPG' FROM mfo.original_filename), '.JPG')
+ FROM media_file_old mfo WHERE mfo.original_filename LIKE '%NA.JPG'
+ GROUP BY mfo.original_filename;
+
+UPDATE media_file_old mfo SET mfo.original_filename = CONCAT(TRIM('NA.JPG' FROM mfo.original_filename), '.JPG') WHERE mfo.original_filename LIKE '%NA.JPG';
+
+SELECT
+ mfo.original_filename,
+ mfo.image_id
+ FROM media_file_old mfo WHERE mfo.original_filename LIKE '% másolata%'
+ GROUP BY mfo.original_filename;
+ 
+ UPDATE media_file_old mf SET
+mf.title_in_filename =  TRIM('.JPG' FROM (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE 'sv%' ) AS hidit3 )),
+ mf.original_filename = (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE 'sv%' ) AS hidit2 )
+ WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'sv%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit);
+
+ SELECT
+## TRIM('.JPG' FROM (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE 'sv%' ) AS hidit3 )) as a,
+## (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE 'sv%' ) AS hidit2 ) as b
+mf.image_id as a,
+mf.original_filename as b
+ FROM media_file_old mf WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'WP\_2%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit)
+ group by a, b;
+
+  UPDATE media_file_old mf SET
+mf.title_in_filename =  TRIM('.jpg' FROM (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE 'WP\_2%' ) AS hidit3 )),
+ mf.original_filename = (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE 'WP\_2%' ) AS hidit2 )
+ WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'WP\_2%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit);
+
+SELECT
+ TRIM('.JPG' FROM (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename NOT LIKE 'DSCF%' ) AS hidit3 )) as a,
+ (SELECT * FROM (SELECT distinct(mf2.original_filename) FROM media_file_old mf2 WHERE mf.image_id = mf2.image_id AND mf2.original_filename LIKE 'DSCF%' ) AS hidit2 ) as b
+ FROM media_file_old mf WHERE mf.image_id IN (SELECT * FROM (SELECT distinct(mfo.image_id) FROM media_file_old mfo WHERE mfo.original_filename LIKE 'DSCF%' AND mfo.image_id > 3 AND 1 < (SELECT count(distinct(mf3.original_filename)) FROM media_file_old mf3 WHERE mf3.image_id = mfo.image_id)) AS hidit)
+ group by a, b;
+ 
+SELECT
+ mfo.original_filename,
+ mfo.image_id
+ FROM media_file_old mfo WHERE mfo.original_filename LIKE 'Bivaly%'
+ GROUP BY mfo.original_filename;
