@@ -1,44 +1,27 @@
 package org.nyusziful.pictureorganizer.Main;
 
-import com.drew.imaging.ImageProcessingException;
-import com.drew.imaging.jpeg.JpegMetadataReader;
-import com.drew.imaging.jpeg.JpegProcessingException;
-import com.drew.metadata.Metadata;
-import javafx.application.Platform;
-import org.apache.commons.io.FilenameUtils;
-import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAO;
-import org.nyusziful.pictureorganizer.DAL.DAO.ImageDAOImplHib;
-import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
-import org.nyusziful.pictureorganizer.DAL.Entity.*;
-import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
-import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.Service.DriveService;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWriteET;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifReadWriteIMR;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
-import org.nyusziful.pictureorganizer.Service.FolderService;
-import org.nyusziful.pictureorganizer.Service.ImageService;
 import org.nyusziful.pictureorganizer.Service.MediafileService;
 import org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
-import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 import javax.swing.*;
+import javax.xml.bind.DatatypeConverter;
 import java.awt.*;
 import java.io.*;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.time.ZoneId;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.List;
-import java.util.stream.Stream;
 
-import static javax.xml.bind.DatatypeConverter.parseHexBinary;
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getFullHash;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
@@ -50,10 +33,9 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-//        readDBExif2();
+        ReadSequence();
+//        addOrigFilename();
 /*
-        read();
-        addOrigFilename();
         repairMP4();
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_1@13-5_9-01(+0200)(Sat)-9d4a49eac2a2f1881ec75b8ec7cc3303-ae3af2ee22193e0d8d39ae3df3c6a441-WP_20150711_15_59_03_Pro__highres.jpg"));
         ExifService.originalJPG(new File("e:\\Work\\Testfiles\\jpgOrig\\comp\\1\\V5_K2015-07-1_2@05-1_9-31(+0200)(Sun)-a2612d542f9e0349e6247811e0e973c5-b182d0b5f660f245d4ec3fe9973246ea-DSC08954.JPG "));
@@ -140,7 +122,6 @@ public class PresetUseCases {
         empty.forEach(MediaFile::updateVersion);
         MediafileService.getInstance().saveMediaFiles(empty, true);
         MediafileService.getInstance().close();
- */
     }
 
     private static void migrationV4() {
@@ -837,7 +818,7 @@ public class PresetUseCases {
             }
             File[] content = dir.listFiles(new FilenameFilter() {
                 public boolean accept(File dir, String name) {
-                    return supportedMediaFileType(name);
+                    return supportedImageFileType(name);
                 }});
             for(int i = 0; i < content.length; i++) {
                 ImageDTO image = getHash(content[i]);
@@ -848,109 +829,64 @@ public class PresetUseCases {
         return str;
     }
 
-    private static void readFileMeta() {
-        String filename = null;
-
-        ArrayList<String> filenames = new ArrayList<>();
-        //TODO handle it!
-        int chunkSize = 100;//At least 2, exiftool has a different output format for single files
-        int done = 0;
-        ArrayList<Meta> results = new ArrayList<>();
-        while ( done < files.length) {
-            File dir = null;
-            ArrayList<String> fileList = new ArrayList<>();
-            for (int f = 0; (f < chunkSize) && (done + f < files.length); f++) {
-                if (dir == null) dir = files[done + f].getParentFile();
-                if (!dir.equals(files[done + f].getParentFile())) break;
-                fileList.add(files[done + f].getName());
-                done++;
-            }
-
-
-            if (filenames.size() == 1 && filenames.get(0).length() > 5) {
-                filename = dir + "\\" + filenames.get(0);
-            }
-            filenames.add(0, "-OriginalDocumentID");
-            filenames.add(0, "-DocumentID");
-            filenames.add(0, "-InstanceID");
-            filenames.add(0, "-DateTimeOriginal");
-            filenames.add(0, "-xmp:DateTimeOriginal");
-            filenames.add(0, "-Model");
-            filenames.add(0, "exiftool");
-            ArrayList<String> exifTool = ExifReadWriteET.exifTool(filenames.toArray(new String[0]), dir);
-            Iterator<String> iterator = exifTool.iterator();
-            int i = -1;
-            String model = null;
-            String note = "";
-            String iID = null;
-            String dID = null;
-            String odID = null;
-            String captureDate = null;
-            Boolean dateFormat = null;
-            String quality = null;
-            while (iterator.hasNext()) {
-                String line = iterator.next();
-                if (line.startsWith("========")) {
-                    if (i > -1) {
-                        Meta meta = createMeta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, quality);
-                        System.out.println(meta);
-                        results.add(meta);
-                    }
-                    i++;
-                    String fileTemp = line.substring(9).replaceAll("./", "").replaceAll("/", "\\");
-                    filename = dir + "\\" + fileTemp;
-                    model = null;
-                    captureDate = null;
-                    dID = null;
-                    odID = null;
-                    note = "";
-                    dateFormat = false;
-
-                    //End of exiftool output
-                } else if (line.contains("image files read")) {
-                    if (!line.contains(" 0 image files read")) {
-                    }
-                } else if (line.contains("files could not be read")) {
-
-                } else {
-                    String tagValue = "";
-                    if (line.length() > 34) tagValue = line.substring(34);
-                    switch (line.substring(0, 4)) {
-                        case "Date":
-                            if (captureDate == null)
-                                captureDate = tagValue;
-                            else {
-                                if (Math.abs(captureDate.length() - tagValue.length()) == 6) dateFormat = true;
-                                captureDate = tagValue;
+    private static void ReadSequence() {
+        File dir = new File("T:\\G\\Pictures\\Photos");
+//        File dir = new File("t:\\G\\Pictures\\Photos\\V5\\Dupla\\KépekÚj\\2015-07-25 - 2015-07-25 Strasburg\\");
+        HashMap<String, Integer> sequences = new HashMap<>();
+        int[] iarr = {0};
+        long startTime = System.currentTimeMillis();
+        try {
+            Files.walk(dir.toPath())
+                    .filter(Files::isRegularFile)
+                    .filter(StaticTools::supportedImageFileType)
+                    .forEach(f -> {
+                        iarr[0]++;
+                        if (iarr[0]%500 == 0) System.out.println(iarr[0] + " iteration in " + (System.currentTimeMillis()-startTime)/60000 + " min");
+                        MessageDigest md = null;
+                        try {
+                            md = MessageDigest.getInstance("MD5");
+                            md.update(Files.readAllBytes(f));
+                            byte[] digest = md.digest();
+                            String myChecksum = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                            Integer sequence = sequences.get(myChecksum);
+                            if (sequence != null && sequence > 0) return;
+                            ArrayList<String> result = ExifService.getExif(new String[]{"-SequenceNumber"}, f.toFile());
+                            Integer shotNumber = -1;
+                            if (result.size() == 1) {
+                                String s = result.get(0);
+                                String[] split = s.split(":");
+                                if (split.length == 2 && split[1].length()>0) {
+                                    try {
+                                        shotNumber = Integer.parseInt(split[1].trim());
+                                    } catch (NumberFormatException ex) {
+                                        shotNumber = 0;
+                                    }
+                                }
                             }
-                            break;
-                        case "Came":
-                            model = tagValue;
-                            break;
-                        case "Orig":
-                            odID = tagValue;
-                            break;
-                        case "Docu":
-                            dID = tagValue;
-                            break;
-                        case "Inst":
-                            iID = tagValue;
-                            break;
-                        case "Warn":
-                            note = line;
-                            break;
-                    }
-                }
-            }
-            if (filename != null) {
-                Meta meta = createMeta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, note, quality);
-                System.out.println(meta);
-                results.add(meta);
-//            results.add(new Meta(filename, getZonedTimeFromStr(captureDate), dateFormat, model, note, dID, odID));
-            }
+                            sequences.put(myChecksum, shotNumber);
+                        } catch (NoSuchAlgorithmException e) {
+                        } catch (IOException e) {
+                        }
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-        return results;
-    }
+/*
+            ArrayList<String> resutl = ExifService.getExif(new String[]{"-SequenceNumber"}, new File("t:\\G\\Pictures\\Photos\\V5\\Dupla\\KépekÚj\\2015-07-25 - 2015-07-25 Strasburg\\V5_K2015-07-2_5@12-3_2-49(+0200)(Sat)-9177e64514ec8ffd9deb8ff3d3fa0c5b-9e38b415d46f913693442b15012ab931-DSC09457.JPG"));
+        ArrayList<String> resul = ExifService.getExif(new String[]{"-SequenceNumber"}, new File("t:\\G\\Pictures\\Photos\\V5\\Dupla\\KépekÚj\\2015-07-25 - 2015-07-25 Strasburg\\V5_K2015-07-2_5@12-3_0-37(+0200)(Sat)-ce949a393e41e85dcafcf6c51478ff5d-638c5cd53e0da1b408acf5f159f0494c-DSC09450.JPG"));
+        ArrayList<String> result = ExifService.getExif(new String[]{"-SequenceNumber"}, new File("t:\\G\\Pictures\\Photos\\V4\\Gabus\\2004-05-15 - 2004-05-16 Borgáta\\K2004-05-1_5@18-1_8-50(+0200)(Sat)-dd20d8bc73e304eda5055a4b516ad408-dd20d8bc73e304eda5055a4b516ad408-117_1774.JPG"));
+*/
+        final File outFile = new File("e:\\sequence.csv");
+        try (PrintWriter pw = new PrintWriter(outFile)) {
+            StringBuilder sb = new StringBuilder();
+            for (String hash : sequences.keySet()) {
+                sb.append("UPDATE media_file_old SET shotnumber = ").append(sequences.get(hash)).append(" WHERE image_id = '").append(hash).append("';\n");
+            }
+            pw.write(sb.toString());
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
 
+    }
 
 }

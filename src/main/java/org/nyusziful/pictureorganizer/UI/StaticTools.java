@@ -98,7 +98,7 @@ public class StaticTools {
     }
     public static Boolean supportedFileType(String name) {
         if (supportedMetaFileType(name)) return true;
-        if (supportedMediaFileType(name)) return true;
+        if (supportedImageFileType(name)) return true;
         return false;
     }
     public static Boolean supportedMetaFileType(String name) {
@@ -109,7 +109,7 @@ public class StaticTools {
         return false;
 
     }
-    public static Boolean supportedMediaFileType(String name) {
+    public static Boolean supportedImageFileType(String name) {
         String ext = FilenameUtils.getExtension(name.toLowerCase());
         for (String extSupported : imageFiles) {
             if (ext.equals(extSupported)) return true;
