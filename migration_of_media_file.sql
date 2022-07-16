@@ -9,8 +9,17 @@ mfo.original_filename, mfo.title_in_filename, mfv.filetype, mfv.standalone, mfv.
 	FROM media_file_version mfv LEFT JOIN media_file_instance mfi ON mfi.media_file_id = mfv.id LEFT JOIN media_file_old mfo ON mfi.media_file_old_id = mfo.id
     GROUP BY mfo.original_filename, mfv.filetype, mfv.standalone, mfv.id;
 
+UPDATE media_file_version mfv SET media_file_id = (
+SELECT mf.id FROM media_image mi LEFT JOIN media_file mf on mf.image_id = mi.image_id WHERE mf.image_id IS NOT NULL AND mf.image_id > 3 AND mf.shotnumber IS NULL AND mi.media_file_version_id = mfv.id);
 
+UPDATE media_file_version mfv SET media_file_id = (
+SELECT distinct(mf.id) FROM media_file mf LEFT JOIN media_file_old mfo on mf.image_id = mfo.image_id AND mf.shotnumber = mfo.shotnumber WHERE mf.image_id IS NOT NULL AND mf.image_id > 3 AND mf.shotnumber IS NOT NULL AND mfo.filehash = mfv.filehash) WHERE media_file_id IS NULL;
 
+UPDATE media_file_version mfv SET media_file_id = (
+SELECT distinct(mf.id) FROM media_file mf WHERE mf.original_version_id = mfv.id) WHERE media_file_id IS NULL;
+
+UPDATE media_file_version mfv SET media_file_id = 256125 WHERE id = 375427;
+INSERT INTO media_image (media_file_version_id, image_id, meta_data_id) VALUES (375427, 375427, 81);
 
 CREATE TABLE media_file_version  (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
