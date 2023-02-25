@@ -109,6 +109,10 @@ public class StaticTools {
         return false;
 
     }
+    public static Boolean supportedImageFileType(Path path) {
+        return supportedImageFileType(path.toFile().getName());
+    }
+
     public static Boolean supportedImageFileType(String name) {
         String ext = FilenameUtils.getExtension(name.toLowerCase());
         for (String extSupported : imageFiles) {

@@ -139,7 +139,7 @@ public class PresetUseCases {
                 final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
                 renameMediaFile.write(TableViewMediaFile.WriteMethod.MOVE, false);
             }*/
-        }
+
 
 
     }
