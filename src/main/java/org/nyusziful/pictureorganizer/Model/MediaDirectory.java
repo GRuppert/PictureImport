@@ -1,14 +1,25 @@
 package org.nyusziful.pictureorganizer.Model;
 
+import javax.persistence.*;
 import java.io.File;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 import static java.lang.Integer.parseInt;
 
+@Entity
+@Table(name = "media_directory")
 public class MediaDirectory {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    protected int id = -1;
+
+    @Column(name = "from_date")
     private LocalDate firstDate = null;
+    @Column(name = "to_date")
     private LocalDate lastDate = null;
+    @Column(name = "title")
     private String label;
     public static DateTimeFormatter FolderFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");//2018-06-14
 

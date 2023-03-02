@@ -25,10 +25,7 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
     @JoinColumn(name="folder_id", referencedColumnName="id", nullable=false)
     private Folder folder;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="media_file_id", referencedColumnName="id", nullable=false)
-    private MediaFile mediaFile;
-
+    @Column(name = "filename")
     private String filename;
 
     @Column(name = "name_version")
@@ -36,9 +33,12 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
     @Column(name = "date_mod")
     private Timestamp dateMod;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="media_file_version_id", referencedColumnName="id", nullable=false)
+    private MediaFileVersion mediaFileVersion;
+
     @Transient
     protected Path filePath;
-
 
     private void loadPath() {
         if (folder != null && folder.getJavaPath() != null && filename != null) {
@@ -50,16 +50,11 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
         // this form used by Hibernate
     }
 
-    public MediaFileInstance(Folder folder, Path path, long size, Timestamp dateMod, Boolean original) {
-        moveFile(folder, path);
+    public MediaFileInstance(Folder folder, Path path, Timestamp dateMod, MediaFileVersion mediaFileVersion) {
+        updatePath(folder, path);
         this.dateMod = dateMod;
         this.dateMod.setNanos(0);
-    }
-
-    public MediaFileInstance(MediaFileInstance mediaFile) {
-        moveFile(mediaFile.getFolder(), mediaFile.getFilePath());
-        this.dateMod = mediaFile.getDateMod();
-        this.dateMod.setNanos(0);
+        this.mediaFileVersion = mediaFileVersion;
     }
 
     @Override
@@ -69,7 +64,7 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
         return mediaFile;
     }
 
-    public void moveFile(Folder folder, Path filePath) {
+    public void updatePath(Folder folder, Path filePath) {
         this.filePath = filePath;
         this.filename = filePath.getFileName().toString();
         updateVersion();
@@ -111,13 +106,11 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
         if (anObject instanceof MediaFileInstance) {
             MediaFileInstance anotherFile = (MediaFileInstance)anObject;
             if (id > -1) {
-                if (id == anotherFile.id) return true;
-                else return false;
+                return id == anotherFile.id;
             }
-            if ((this.filename != null && this.filename.equals(anotherFile.filename)) &&
-                (this.folder != null && this.folder.equals(anotherFile.folder)) &&
-                (this.dateMod != null && this.dateMod.toInstant().toEpochMilli() == anotherFile.dateMod.toInstant().toEpochMilli())
-            ) return true;
+            return (this.filename != null && this.filename.equals(anotherFile.filename)) &&
+                    (this.folder != null && this.folder.equals(anotherFile.folder)) &&
+                    (this.dateMod != null && this.dateMod.toInstant().toEpochMilli() == anotherFile.dateMod.toInstant().toEpochMilli());
         }
         return false;
     }
@@ -165,11 +158,11 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
         this.nameVersion = nameVersion;
     }
 
-    public MediaFile getMediaFile() {
-        return mediaFile;
+    public MediaFileVersion getMediaFileVersion() {
+        return mediaFileVersion;
     }
 
-    public void setMediaFile(MediaFile mediaFile) {
-        this.mediaFile = mediaFile;
+    public void setMediaFileVersion(MediaFileVersion mediaFileVersion) {
+        this.mediaFileVersion = mediaFileVersion;
     }
 }

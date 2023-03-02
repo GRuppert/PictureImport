@@ -1,132 +1,47 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.Model.MediaDirectory;
 
 import javax.persistence.*;
-import java.sql.Timestamp;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Objects;
 
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@Table(name = "media_file_instance")
-@DiscriminatorColumn(name = "type")
+@Table(name = "media_file")
+@DiscriminatorColumn(name = "file_type")
 @DiscriminatorValue("DEF")
-public class MediaFile extends TrackingEntity implements Cloneable {
+public class MediaFile extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
     protected int id = -1;
 
-    @Column(name = "filehash")
-    private String filehash;
-
-    @Column(name = "commit")
-    private String commit;
-
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="previous_id", referencedColumnName="id", nullable=false)
-    private MediaFile previous;
+    @JoinColumn(name="main_id", referencedColumnName="id", nullable=true)
+    private MediaFile mainMediaFile;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="main_id", referencedColumnName="id", nullable=false)
-    private MediaFile main;
+    @Column(name = "shotnumber")
+    private int shotnumber;
 
-    private Long size;
-
-    //????
     @Column(name = "original_filename")
     private String originalFilename;
 
-/*
-    @ManyToMany(
-            fetch = FetchType.LAZY,
-            cascade = {CascadeType.REFRESH})
-*/
+    @OneToOne
+    @JoinColumn(name= "original_version_id", referencedColumnName="id")
+    private MediaFileVersion originalVersion;
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name="image_id", referencedColumnName="id")
-    private Image image;
-
-
-    @Column(name = "date_stored")
-    private String dateStoredString;
-
-    @Column(name = "date_stored_local")
-    private Timestamp dateStoredLocal;
-
-    @Column(name = "date_stored_utc")
-    private Timestamp dateStoredUTC;
-
-    @Column(name = "date_stored_tz")
-    private String dateStoredTZString;
-
-    @Column(name = "invalid")
-    private Boolean invalid;
-    @Transient
-    private ZonedDateTime dateStored;
-
-    @Transient
-    private Boolean original;
-
-    private void stringToDate() {
-//        if (dateStoredString != null)
-//            dateStored = ZonedDateTime.parse(dateStoredString, XmpDateFormatTZ);
-        String prefix = "";
-        if (dateStoredTZString.startsWith("+") || dateStoredTZString.startsWith("-"))
-            prefix = "UTC";
-        if (dateStoredLocal != null && dateStoredTZString != null)
-            dateStored = dateStoredLocal.toLocalDateTime().atZone(ZoneId.of(prefix + dateStoredTZString));
-    }
-
-    private void loadOriginal() {
-        if (image != null && image.getOriginalFileHash() != null) {
-            original = filehash.equals(image.getOriginalFileHash());
-        }
-    }
+    @ManyToOne
+    @JoinColumn(name= "media_directory_id", referencedColumnName="id")
+    private MediaDirectory mediaDirectory;
 
     public MediaFile() {
         // this form used by Hibernate
     }
 
-    public MediaFile(String filehash, long size, Boolean original) {
-        this.filehash = filehash;
-        this.size = size;
-        this.size = size;
-        this.original = original;
-    }
-
-    public MediaFile(MediaFile mediaFile) {
-        this.size = mediaFile.getSize();
-        this.original = mediaFile.isOriginal();
-    }
-
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        MediaFile mediaFile = (MediaFile)super.clone();
-        mediaFile.id = -1;
-        return mediaFile;
-    }
-
-    public String getFilehash() {
-        return filehash;
-    }
-
-    public void setFilehash(String filehash) {
-        this.filehash = filehash;
-        if (image != null && image.getOriginalFileHash() != null) {
-            original = filehash.equals(image.getOriginalFileHash());
-        }
-    }
-
-    public long getSize() {
-        return size;
-    }
-
-    public void setSize(long size) {
-        this.size = size;
+    public MediaFile(MediaFileVersion originalVersion, String originalFilename, Integer shotnumber) {
+        this.originalVersion = originalVersion;
+        this.originalFilename = originalFilename;
+        this.shotnumber = shotnumber;
     }
 
     @Override
@@ -137,68 +52,36 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         if (anObject instanceof MediaFile) {
             MediaFile anotherFile = (MediaFile)anObject;
             if (id > -1) {
-                if (id == anotherFile.id) return true;
-                else return false;
+                return id == anotherFile.id;
             }
-            if (
-                (this.image != null && this.image.equals(anotherFile.image)) &&
-                (this.filehash != null && this.filehash.equals(anotherFile.filehash)) &&
-                this.size == anotherFile.size
-            ) return true;
+            return (this.originalVersion != null && this.originalVersion.equals(anotherFile.originalVersion));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(filehash);
+        return Objects.hash(originalVersion);
     }
 
     public int getId() {
         return id;
     }
 
-    public Image getImage() {
-        return image;
+    public MediaFile getMainMediaFile() {
+        return mainMediaFile;
     }
 
-    public void setImage(Image image) {
-        setImage(image, false);
+    public void setMainMediaFile(MediaFile mainMediaFile) {
+        this.mainMediaFile = mainMediaFile;
     }
 
-    public void setImage(Image image, boolean cross) {
-        this.image = image;
+    public int getShotnumber() {
+        return shotnumber;
     }
 
-    private boolean sameAsFormer(Image newImage) {
-        return image==null? newImage == null : image.equals(newImage);
-    }
-
-    public Boolean isOriginal() {
-        if (original == null) loadOriginal();
-        return original;
-    }
-
-    public void setOriginal(Boolean original) {
-        this.original = original;
-    }
-
-    public ZonedDateTime getDateStored() {
-        if (dateStored == null) stringToDate();
-        return dateStored;
-    }
-
-    public void setDateStored(ZonedDateTime dateCorrected) {
-        this.dateStored = dateCorrected;
-        if (dateStored != null) {
-            dateStoredLocal = Timestamp.valueOf(dateStored.toLocalDateTime());
-            dateStoredUTC = Timestamp.valueOf(dateStored.withZoneSameInstant(ZoneOffset.UTC).toLocalDateTime());
-            dateStoredTZString = dateStored.getZone().getId();
-        } else {
-            dateStoredLocal = null;
-            dateStoredUTC = null;
-            dateStoredTZString = null;
-        }
+    public void setShotnumber(int shotnumber) {
+        this.shotnumber = shotnumber;
     }
 
     public String getOriginalFilename() {
@@ -209,7 +92,19 @@ public class MediaFile extends TrackingEntity implements Cloneable {
         this.originalFilename = originalFilename;
     }
 
-    public void setMeta(Meta meta) {
-        setDateStored(meta.date);
+    public MediaFileVersion getOriginalVersion() {
+        return originalVersion;
+    }
+
+    public void setOriginalVersion(MediaFileVersion originalVersion) {
+        this.originalVersion = originalVersion;
+    }
+
+    public MediaDirectory getMediaDirectory() {
+        return mediaDirectory;
+    }
+
+    public void setMediaDirectory(MediaDirectory mediaDirectory) {
+        this.mediaDirectory = mediaDirectory;
     }
 }

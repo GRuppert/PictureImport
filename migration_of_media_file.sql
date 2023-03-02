@@ -4,9 +4,9 @@ CREATE TABLE media_file  (
   id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
   main_id INT UNSIGNED NULL
 ) select
-mfo.original_filename, mfo.title_in_filename, mfv.filetype, mfv.standalone, mfv.id as original_version_id 
+mfo.original_filename, mfo.title_in_filename, mfv.file_type, mfv.standalone, mfv.id as original_version_id 
 	FROM media_file_version mfv LEFT JOIN media_file_instance mfi ON mfi.media_file_id = mfv.id LEFT JOIN media_file_old mfo ON mfi.media_file_old_id = mfo.id
-    GROUP BY mfo.original_filename, mfv.filetype, mfv.standalone, mfv.id;
+    GROUP BY mfo.original_filename, mfv.file_type, mfv.standalone, mfv.id;
 
 
 
@@ -16,15 +16,16 @@ CREATE TABLE media_file_version  (
   commit VARCHAR(45) NULL DEFAULT NULL,
   invalid TINYINT UNSIGNED,
   parent_id INT UNSIGNED NULL,
-  media_file_id INT UNSIGNED NULL  
+  media_file_id INT UNSIGNED NULL,  
+  exifbackup BIT(1) NULL
 ) select
-filehash, type as filetype, parent_id, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz
+filehash, type as file_type, parent_id, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz
 FROM media_file_old 
 GROUP BY
 filehash, type, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz;
 
 ALTER TABLE `pictureorganizer`.`media_file_version` 
-ADD UNIQUE INDEX `filehash_unique` (`filehash` ASC, `filetype` ASC) VISIBLE;
+ADD UNIQUE INDEX `filehash_unique` (`filehash` ASC, `file_type` ASC) VISIBLE;
 ALTER TABLE `pictureorganizer`.`media_file_version` 
 ADD INDEX `filehash_idx` (`filehash` ASC) VISIBLE;
 ALTER TABLE `pictureorganizer`.`media_file_version` 
@@ -45,7 +46,7 @@ CREATE TABLE media_image (
 ) SELECT
 mf.id as media_file_id, mfo.image_id, mm.id as meta_data_id, mfo.exifbackup
 FROM media_file_old mfo
-LEFT JOIN media_file_version mf ON mfo.filehash = mf.filehash AND mfo.type = mf.filetype
+LEFT JOIN media_file_version mf ON mfo.filehash = mf.filehash AND mfo.type = mf.file_type
 LEFT JOIN meta_data mm ON  mfo.duration = mm.duration
  AND mfo.latitude <=> mm.latitude
  AND mfo.longitude <=> mm.longitude
