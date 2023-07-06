@@ -265,14 +265,14 @@ public class FileNameFactory {
         return dateS;
     }// "K2016-11-0_3@07-5_0-24(+0100)(Thu)-"
 
-    public static String getFileName(String ver, String pictureSet, String originalName, ZonedDateTime date, String iID, String dID, String original) throws IllegalArgumentException {
+    public static String getFileName(String ver, String pictureSet, String originalName, ZonedDateTime date, String iID, String dID, String version) throws IllegalArgumentException {
         if (hasValue(originalName) && hasValue(dID) && hasValue(pictureSet) && date != null) {
             switch (ver) {
                 case "5":
                     return "V" + ver + "_" + pictureSet + dateFormat(date) + iID + "-" + dID + "-" + originalName;
 
                 case "6":
-                    return "V" + ver + "_" + pictureSet + dateFormat(date) + dID + "-" + original + "-" + originalName;
+                    return "V" + ver + "_" + pictureSet + dateFormat(date) + dID + "-" + version + "-" + originalName;
             }
         }
         throw new IllegalArgumentException("Not enough information");

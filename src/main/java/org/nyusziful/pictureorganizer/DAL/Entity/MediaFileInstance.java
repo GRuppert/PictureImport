@@ -15,6 +15,8 @@ import java.util.Objects;
     name = "media_file_instance",
     uniqueConstraints = {@UniqueConstraint(columnNames = {"folder_id", "filename"})}
 )
+@DiscriminatorColumn(name = "file_type")
+@DiscriminatorValue("DEF")
 public class MediaFileInstance extends TrackingEntity implements Cloneable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +34,10 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
     private int nameVersion;
     @Column(name = "date_mod")
     private Timestamp dateMod;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="media_file_id", referencedColumnName="id", nullable=false)
+    private MediaFile mediaFile;
 
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name="media_file_version_id", referencedColumnName="id", nullable=false)
@@ -54,13 +60,19 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
         updatePath(folder, path);
         this.dateMod = dateMod;
         this.dateMod.setNanos(0);
-        this.mediaFileVersion = mediaFileVersion;
+        setMediaFileVersion(mediaFileVersion);
     }
 
     @Override
     public Object clone() throws CloneNotSupportedException {
         MediaFileInstance mediaFile = (MediaFileInstance)super.clone();
         mediaFile.id = -1;
+        mediaFile.folder = folder;
+        mediaFile.filename = filename;
+        mediaFile.nameVersion = nameVersion;
+        mediaFile.dateMod = dateMod;
+        setMediaFileVersion(mediaFileVersion);
+        mediaFile.filePath = filePath;
         return mediaFile;
     }
 
@@ -164,5 +176,9 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
 
     public void setMediaFileVersion(MediaFileVersion mediaFileVersion) {
         this.mediaFileVersion = mediaFileVersion;
+        this.mediaFile = mediaFileVersion.getMediaFile();
+    }
+
+    public void addImage(Image image) {
     }
 }

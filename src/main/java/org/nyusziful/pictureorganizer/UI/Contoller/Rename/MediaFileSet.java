@@ -6,8 +6,8 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
 import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.RenameTableViewMediaFileInstance;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV
 
 public class MediaFileSet {
 //    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
-    private final ObservableList<TableViewMediaFile> dataModel = FXCollections.observableArrayList();
+    private final ObservableList<TableViewMediaFileInstance> dataModel = FXCollections.observableArrayList();
     SimpleObjectProperty<LocalDate> firstDate;
     SimpleObjectProperty<LocalDate> lastDate;
     SimpleStringProperty folderName;
@@ -32,21 +32,21 @@ public class MediaFileSet {
         lastDate = new SimpleObjectProperty(null);
     }
 
-    private void fillData(Collection<? extends TableViewMediaFile> files) {
+    private void fillData(Collection<? extends TableViewMediaFileInstance> files) {
 //        this.files = files;
         dataModel.removeAll(dataModel);
         dataModel.addAll(files);
     }
 
-    public void addData(Collection<? extends TableViewMediaFile> files) {
+    public void addData(Collection<? extends TableViewMediaFileInstance> files) {
         dataModel.addAll(files);
     }
 
-    public void addData(TableViewMediaFile file) {
+    public void addData(TableViewMediaFileInstance file) {
         dataModel.add(file);
     }
 
-    public ObservableList<TableViewMediaFile> getDataModel() {
+    public ObservableList<TableViewMediaFileInstance> getDataModel() {
         return dataModel;
     }
 
@@ -70,23 +70,23 @@ public class MediaFileSet {
     }
 
     public void updatePaths(String replacePath) {
-        getDataModel().stream().forEach(file -> {if (file.getProcessing()) ((RenameMediaFile)file).setTargetDirectory(replacePath + "\\" + folderName.getValue());});
+        getDataModel().stream().forEach(file -> {if (file.getProcessing()) ((RenameTableViewMediaFileInstance)file).setTargetDirectory(replacePath + "\\" + folderName.getValue());});
     }
 
-    public Task<Collection<TableViewMediaFile>> applyChanges(TableViewMediaFile.WriteMethod copyOrMove, boolean overwrite) {
-        Task<Collection<TableViewMediaFile>> task = new Task<Collection<TableViewMediaFile>>() {
-            ArrayList<TableViewMediaFile> tableViewMediaFile = new ArrayList();
+    public Task<Collection<TableViewMediaFileInstance>> applyChanges(TableViewMediaFileInstance.WriteMethod copyOrMove, boolean overwrite) {
+        Task<Collection<TableViewMediaFileInstance>> task = new Task<Collection<TableViewMediaFileInstance>>() {
+            ArrayList<TableViewMediaFileInstance> tableViewMediaFile = new ArrayList();
 
             @Override
-            public Collection<TableViewMediaFile> call() {
+            public Collection<TableViewMediaFileInstance> call() {
                 int iterations = 0;
                 int size = MediaFileSet.this.getDataModel().size();
-                Iterator<? extends TableViewMediaFile> iter = MediaFileSet.this.getDataModel().iterator();
+                Iterator<? extends TableViewMediaFileInstance> iter = MediaFileSet.this.getDataModel().iterator();
                 while (iter.hasNext()) {
                     if (isCancelled()) {
                         return tableViewMediaFile;
                     }
-                    TableViewMediaFile actFile = iter.next();
+                    TableViewMediaFileInstance actFile = iter.next();
                     if (actFile.write(copyOrMove, overwrite)) {
                         tableViewMediaFile.add(actFile);
                     }
@@ -145,9 +145,9 @@ public class MediaFileSet {
     }
 
     public void resetDates() {
-        for (TableViewMediaFile tableViewMediaFile : getDataModel()) {
-            if (tableViewMediaFile instanceof RenameMediaFile) {
-                final Meta v = getV(((RenameMediaFile) tableViewMediaFile).getNewName());
+        for (TableViewMediaFileInstance tableViewMediaFile : getDataModel()) {
+            if (tableViewMediaFile instanceof RenameTableViewMediaFileInstance) {
+                final Meta v = getV(((RenameTableViewMediaFileInstance) tableViewMediaFile).getNewName());
                 if (v != null && v.date != null) {
                     final LocalDate localDateFromFile = v.date.toLocalDate();
                     if (firstDate.getValue() == null || firstDate.getValue().isAfter(localDateFromFile)) setFirstDate(localDateFromFile);

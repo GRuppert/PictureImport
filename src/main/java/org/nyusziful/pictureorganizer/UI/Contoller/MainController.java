@@ -1,7 +1,6 @@
 package org.nyusziful.pictureorganizer.UI.Contoller;
 
 import javafx.application.Platform;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ListChangeListener;
 import javafx.collections.transformation.SortedList;
 import javafx.concurrent.WorkerStateEvent;
@@ -13,24 +12,23 @@ import javafx.scene.control.Label;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
 import org.nyusziful.pictureorganizer.Service.Comparison.Listing;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
-import org.nyusziful.pictureorganizer.Service.MediafileService;
-import org.nyusziful.pictureorganizer.UI.Contoller.Rename.DirectoryViewController;
+import org.nyusziful.pictureorganizer.Service.MediaFileInstanceService;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileSet;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaFileTableViewController;
 import org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController;
 import org.nyusziful.pictureorganizer.UI.DirectoryElement;
 import org.nyusziful.pictureorganizer.UI.Model.MetaProp;
-import org.nyusziful.pictureorganizer.UI.Model.RenameMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.RenameTableViewMediaFileInstance;
 import org.nyusziful.pictureorganizer.UI.Model.RenamingTask;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 import org.nyusziful.pictureorganizer.UI.Progress;
-import org.nyusziful.pictureorganizer.Model.MediaDirectory;
+import org.nyusziful.pictureorganizer.Model.MediaDirectoryInstance;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 
-import static org.nyusziful.pictureorganizer.Service.MediafileService.getMediafileDTO;
+import static org.nyusziful.pictureorganizer.Service.MediaFileInstanceService.getMediafileDTO;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
@@ -97,10 +95,10 @@ public class MainController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        group.getToggles().stream().forEach(toggle -> toggle.setSelected(TableViewMediaFile.WriteMethod.valueOf((String) toggle.getUserData()).equals(commonProperties.getCopyOrMove())));
+        group.getToggles().stream().forEach(toggle -> toggle.setSelected(TableViewMediaFileInstance.WriteMethod.valueOf((String) toggle.getUserData()).equals(commonProperties.getCopyOrMove())));
         group.selectedToggleProperty().addListener((ObservableValue<? extends Toggle> ov, Toggle old_toggle, Toggle new_toggle) -> {
             if (group.getSelectedToggle() != null) {
-                commonProperties.setCopyOrMove(TableViewMediaFile.WriteMethod.valueOf((String) group.getSelectedToggle().getUserData()));
+                commonProperties.setCopyOrMove(TableViewMediaFileInstance.WriteMethod.valueOf((String) group.getSelectedToggle().getUserData()));
             }
         });
 
@@ -120,22 +118,23 @@ public class MainController implements Initializable {
 
         BorderPane summaryPane = null;
         VBox folderList = null;
+        VBox mediaDirectoryList = null;
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(
-                    "/fxml/summary.fxml"));
-            summaryPane = (BorderPane) loader.load();
+            summaryPane = new FXMLLoader(getClass().getResource("/fxml/summary.fxml")).load();
 
+/*
             FXMLLoader loader2 = new FXMLLoader(getClass().getResource(
                     "/fxml/folderList.fxml"));
-            folderList = (VBox) loader2.load();
+            folderList = loader2.load();
             DirectoryViewController dvContoller = loader2.getController();
             mediaFileSet.folderNameProperty().bind(dvContoller.getFolderName());
+*/
+            mediaDirectoryList = new FXMLLoader(getClass().getResource("/fxml/mediaDirectoryList.fxml")).load();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         mainPane.setCenter(summaryPane);
-        mainPane.setRight(folderList);
+        mainPane.setRight(mediaDirectoryList);
         progressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) beep();});
     }
 
@@ -298,7 +297,7 @@ public class MainController implements Initializable {
     }
 
     private void createMetaTable(Collection<Meta> newData) {
-        TableView<? extends TableViewMediaFile> tableView = null;
+        TableView<? extends TableViewMediaFileInstance> tableView = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
                     "/fxml/meta2TableView.fxml"));
@@ -321,7 +320,7 @@ public class MainController implements Initializable {
         mediaFileSet.reset();
         try {
             FXMLLoader loaderTable = new FXMLLoader(getClass().getResource("/fxml/mediaFileTableView.fxml"));
-            final TableView<? extends TableViewMediaFile> table = (TableView) loaderTable.load();
+            final TableView<? extends TableViewMediaFileInstance> table = (TableView) loaderTable.load();
 
             table.setOnMousePressed(new EventHandler<MouseEvent>() {
                 @Override
@@ -343,9 +342,9 @@ public class MainController implements Initializable {
             TablePanelController ctrl = loader.getController();
             ctrl.setMediaFileSet(mediaFileSet);
             ctrl.setTableView(ctrlTable.getTableView());
-            mediaFileSet.getDataModel().addListener(new ListChangeListener<TableViewMediaFile>() {
+            mediaFileSet.getDataModel().addListener(new ListChangeListener<TableViewMediaFileInstance>() {
                 @Override
-                public void onChanged(Change<? extends TableViewMediaFile> c) {
+                public void onChanged(Change<? extends TableViewMediaFileInstance> c) {
                     if (mediaFileSet.getDataModel().size() == 0) {
                         resetAction();
                     }
@@ -393,7 +392,7 @@ public class MainController implements Initializable {
 
     //TODO reads dir:
     //Input processed mediafiles Output dated directory+old filename
-    private Collection<RenameMediaFile> sortToDateDirectories(Collection<File> directories) {
+    private Collection<RenameTableViewMediaFileInstance> sortToDateDirectories(Collection<File> directories) {
         Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
                     public boolean accept(File dir, String name) {
                         name = name.toLowerCase();
@@ -401,7 +400,7 @@ public class MainController implements Initializable {
                     }});
         ArrayList<File> fileList = new ArrayList<>();
         directoryElements.stream().forEach((directoryElement) -> {fileList.add(directoryElement.file);});
-        ArrayList<RenameMediaFile> files = new ArrayList<>();
+        ArrayList<RenameTableViewMediaFileInstance> files = new ArrayList<>();
         Path target = null;
         ZonedDateTime previousFileDate = ZonedDateTime.now();
 
@@ -411,9 +410,9 @@ public class MainController implements Initializable {
                 previousFileDate = fileDate;
                 File[] dirs = commonProperties.getToDir().toFile().listFiles((File dir, String name) -> dir.isDirectory());
                 for (int j = 0; j < dirs.length; j++) {
-                    MediaDirectory mediaDirectory = null;
+                    MediaDirectoryInstance mediaDirectory = null;
                     try {
-                        mediaDirectory = new MediaDirectory(dirs[j]);
+                        mediaDirectory = new MediaDirectoryInstance(dirs[j]);
                     } catch (IllegalArgumentException e) {
                         continue;
                     }
@@ -423,7 +422,7 @@ public class MainController implements Initializable {
                     }
                 }
             }
-            files.add(new RenameMediaFile(getMediafileDTO(file), file.getName(), "", target.toString()));
+            files.add(new RenameTableViewMediaFileInstance(getMediafileDTO(file), file.getName(), "", target.toString()));
 //            System.out.println(file.toString() + " -> " + target);
         }
         return files;
@@ -440,8 +439,7 @@ public class MainController implements Initializable {
 
         @Override
         public Boolean call() {
-            MediafileService mediafileService = MediafileService.getInstance();
-            return mediafileService.syncFolder(source, target, this);
+            return MediaFileInstanceService.getInstance().syncFolder(source, target, this);
         }
 
     }
@@ -460,28 +458,21 @@ public class MainController implements Initializable {
 
         @Override
         public Integer call() {
-            Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, new FilenameFilter() {
-                public boolean accept(File dir, String name) {
-                    return supportedFileType(name);
-                }});
+            Collection<DirectoryElement> directoryElements = getDirectoryElementsNonRecursive(directories, (dir, name) -> supportedFileType(name));
             processedFiles = 0;
             numberOfFiles = directoryElements.size();
             updateProgress(0, numberOfFiles);
-            MediafileService mediafileService = MediafileService.getInstance();
+            MediaFileInstanceService mediaFileInstanceService = MediaFileInstanceService.getInstance();
             String notes = "";
             for (File directory : directories) {
-                final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), original, false, commonProperties.getZone(), notes, this);
-                Set<RenameMediaFile> renameMediaFiles = new HashSet<>();
-                for (MediafileDTO mediafileDTO : mediaFiles) {
-                    RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", notes, commonProperties.getToDir().toString() + (original ? "" : "\\" + directory.getName()));
-                    renameMediaFiles.add(renameMediaFile);
-                    Platform.runLater(new Runnable() {
-                        @Override public void run() {
-                            mediaFileSet.addData(renameMediaFile);
-                        }
-                    });
+                final Set<MediafileInstanceDTO> mediaFileInstances = mediaFileInstanceService.readMediaFilesFromFolder(directory.toPath(), original, false, commonProperties.getZone(), notes, this);
+                Set<RenameTableViewMediaFileInstance> renameMediaFileInstances = new HashSet<>();
+                for (MediafileInstanceDTO mediafileDTO : mediaFileInstances) {
+                    RenameTableViewMediaFileInstance renameMediaFile = new RenameTableViewMediaFileInstance(mediafileDTO, "", notes, commonProperties.getToDir().toString() + (original ? "" : "\\" + directory.getName()));
+                    renameMediaFileInstances.add(renameMediaFile);
+                    Platform.runLater(() -> mediaFileSet.addData(renameMediaFile));
                 }
-                if (rename) createNewName(renameMediaFiles);
+                if (rename) createNewName(renameMediaFileInstances);
             }
             Platform.runLater(new Runnable() {
                 @Override public void run() {
@@ -493,7 +484,7 @@ public class MainController implements Initializable {
 
         public void increaseProgress() {
             processedFiles++;
-            updateProgress((double)processedFiles, (double)numberOfFiles);
+            updateProgress(processedFiles, (double)numberOfFiles);
         }
     }
 
@@ -505,14 +496,14 @@ public class MainController implements Initializable {
 
         @Override
         protected Integer call() throws Exception {
-            MediafileService mediafileService = MediafileService.getInstance();
-            Set<MediafileDTO> mediaFiles = new HashSet<>();
+            MediaFileInstanceService mediaFileInstanceService = MediaFileInstanceService.getInstance();
+            Set<MediafileInstanceDTO> mediaFiles = new HashSet<>();
             for (File directory : directories) {
-                mediaFiles.addAll(mediafileService.reOrganizeFilesInSubFolders(directory.toPath(), this));
+                mediaFiles.addAll(mediaFileInstanceService.reOrganizeFilesInSubFolders(directory.toPath(), this));
             }
-            Set<RenameMediaFile> renameMediaFiles = new HashSet<>();
-            for (MediafileDTO mediafileDTO : mediaFiles) {
-                RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", commonProperties.getToDir().toString());
+            Set<RenameTableViewMediaFileInstance> renameMediaFiles = new HashSet<>();
+            for (MediafileInstanceDTO mediafileDTO : mediaFiles) {
+                RenameTableViewMediaFileInstance renameMediaFile = new RenameTableViewMediaFileInstance(mediafileDTO, "", "", commonProperties.getToDir().toString());
                 renameMediaFiles.add(renameMediaFile);
                 Platform.runLater(new Runnable() {
                     @Override public void run() {

@@ -9,12 +9,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-import org.nyusziful.pictureorganizer.Model.MediaDirectory;
+import org.nyusziful.pictureorganizer.Model.MediaDirectoryInstance;
 
 import java.io.File;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 
@@ -79,9 +77,9 @@ public class mediaDirectoryTest {
      */
     @Test
     public void testMediaDirectory() {
-        MediaDirectory result = null;
+        MediaDirectoryInstance result = null;
         try {
-            result = new MediaDirectory(new File(filename));
+            result = new MediaDirectoryInstance(new File(filename));
         } catch (IllegalArgumentException e) {
         }
         if (valid) {

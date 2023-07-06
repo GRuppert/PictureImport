@@ -6,7 +6,7 @@ import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.util.prefs.Preferences;
 
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile.WriteMethod;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance.WriteMethod;
 
 public class CommonProperties {
     private static CommonProperties instance;

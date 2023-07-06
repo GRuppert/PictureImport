@@ -4,13 +4,13 @@ package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
-import org.nyusziful.pictureorganizer.Model.MediaDirectory;
+import org.nyusziful.pictureorganizer.Model.MediaDirectoryInstance;
 
 import java.io.File;
 import java.util.Comparator;
 
 public class MediaDirectorySet {
-    private final ObservableList<MediaDirectory> dataModel = FXCollections.observableArrayList();
+    protected final ObservableList<MediaDirectoryInstance> dataModel = FXCollections.observableArrayList();
 
     public MediaDirectorySet() {
         readDirectory();
@@ -21,14 +21,14 @@ public class MediaDirectorySet {
         final File[] files = CommonProperties.getInstance().getToDir().toFile().listFiles(File::isDirectory);
         for (File file : files) {
             try {
-                dataModel.add(new MediaDirectory(file));
+                dataModel.add(new MediaDirectoryInstance(file));
             } catch (IllegalArgumentException ex) {
 
             }
         }
-        dataModel.sort(new Comparator<MediaDirectory>() {
+        dataModel.sort(new Comparator<MediaDirectoryInstance>() {
             @Override
-            public int compare(MediaDirectory o1, MediaDirectory o2) {
+            public int compare(MediaDirectoryInstance o1, MediaDirectoryInstance o2) {
                 if (o1.getLastDate().isBefore(o2.getFirstDate())) {
                     return -1;
                 } else {
@@ -47,7 +47,7 @@ public class MediaDirectorySet {
         dataModel.clear();
     }
 
-    public ObservableList<MediaDirectory> getDataModel() {
+    public ObservableList<MediaDirectoryInstance> getDataModel() {
         return dataModel;
     }
 

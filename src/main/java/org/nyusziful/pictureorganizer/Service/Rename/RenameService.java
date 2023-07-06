@@ -1,12 +1,12 @@
 package org.nyusziful.pictureorganizer.Service.Rename;
 
 import org.nyusziful.pictureorganizer.DAL.Entity.Image;
-import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileInstance;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileVersion;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
-import org.nyusziful.pictureorganizer.Service.MediafileService;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.Service.MediaFileService;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,7 +24,7 @@ public class RenameService {
     private static String version = "6";
     private ZoneId zone;
     private String pictureSet;
-    private MediafileService mediafileService;
+    private MediaFileService mediafileService;
     private boolean forceRewrite = false;
 
 /*    private File file;
@@ -54,11 +54,11 @@ public class RenameService {
         this.zone = zone;
         this.pictureSet = pictureSet;
         this.version = version;
-        mediafileService = MediafileService.getInstance();
+        mediafileService = MediaFileService.getInstance();
     }
 
 
-    public static boolean write(Path path, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
+    public static boolean write(Path path, Path newPath, TableViewMediaFileInstance.WriteMethod writeMethod, boolean overwrite) {
         if (Files.exists(newPath) && !overwrite) return false;
         try {
             if (!path.toString().toLowerCase().endsWith(newPath.toString().toLowerCase().substring(newPath.toString().length()-4))) return false;
@@ -145,8 +145,8 @@ public class RenameService {
     }*/
 
     public static String getName(MediaFileInstance mediaFileInstance, String nameVersion, String version) {
-        MediaFile mediaFile = mediaFileInstance.getMediaFile();
-        final Image actFileImage = mediaFile.getImage();
+        MediaFileVersion mediaFileVersion = mediaFileInstance.getMediaFileVersion();
+        final Image actFileImage = mediaFileVersion.getMedia().stream().findFirst().get().getImage();
         String desiredFileName = null;
         String oldFilename;
         if (hasValue(actFileImage.getOriginalFilename())) {
@@ -164,8 +164,8 @@ public class RenameService {
                     nameVersion,
                     CommonProperties.getInstance().getPictureSet(),
                     oldFilename,
-                    actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFile.getDateStored(),
-                    mediaFile.getFilehash(),
+                    mediaFileVersion.getDateStored(),
+                    mediaFileVersion.getFilehash(),
                     actFileImage.getHash(),
                     version
             );
@@ -179,13 +179,13 @@ public class RenameService {
                     v.dID == null ||
                             EMPTYHASH.equals(v.dID) ||
                             v.date == null ||
-                            v.date.compareTo(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFile.getDateStored()) != 0
+                            v.date.compareTo(actFileImage.getActualDate() != null ? actFileImage.getActualDate() : mediaFileVersion.getDateStored()) != 0
             ) return null;
         }
         return desiredFileName;
     }
 
-    public TableViewMediaFile fileToTableViewMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
+    public TableViewMediaFileInstance fileToTableViewMediaFile(File fileIn, ZoneId zone, String pictureSet, String targetDirectory, boolean forceRewrite) {
         throw new UnsupportedOperationException("Not implemented");
 /*        final RenameMediaFile renameMediaFile = new RenameMediaFile();
         this.file = fileIn;

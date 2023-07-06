@@ -1,6 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import org.nyusziful.pictureorganizer.Model.MediaDirectory;
+import org.nyusziful.pictureorganizer.Model.MediaDirectoryInstance;
 
 import javax.persistence.*;
 import java.util.Objects;
@@ -21,7 +21,7 @@ public class MediaFile extends TrackingEntity {
     private MediaFile mainMediaFile;
 
     @Column(name = "shotnumber")
-    private int shotnumber;
+    private Integer shotnumber;
 
     @Column(name = "original_filename")
     private String originalFilename;
@@ -76,11 +76,11 @@ public class MediaFile extends TrackingEntity {
         this.mainMediaFile = mainMediaFile;
     }
 
-    public int getShotnumber() {
+    public Integer getShotnumber() {
         return shotnumber;
     }
 
-    public void setShotnumber(int shotnumber) {
+    public void setShotnumber(Integer shotnumber) {
         this.shotnumber = shotnumber;
     }
 

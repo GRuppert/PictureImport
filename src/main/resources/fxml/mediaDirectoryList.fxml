@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="1600" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.DirectoryViewController">
+<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="1600" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaDirectoryViewController">
     <ListView fx:id="directoryList"/>
     <HBox>
         <DatePicker fx:id="firstDatePicker"/>

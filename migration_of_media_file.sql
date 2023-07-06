@@ -81,3 +81,33 @@ UPDATE media_file_old mf SET mf.title = (SELECT * FROM (SELECT DISTINCT(mf1.titl
 
 -- 20160915_204519(0).jpg	2b17887adb8a3c118b0ac98ffa86377d	20885	JPG	20265
 -- 20160915_204519.jpg	573eeb16ccd2bfef59e8c003660831f1	20886	JPG	20266
+
+ALTER TABLE `pictureorganizer`.`media_file`
+    ADD COLUMN `credate` DATETIME NULL AFTER `media_directory_id`,
+ADD COLUMN `creator` VARCHAR(255) NULL AFTER `credate`,
+ADD COLUMN `upddate` DATETIME NULL AFTER `creator`,
+ADD COLUMN `updater` VARCHAR(255) NULL AFTER `upddate`;
+
+ALTER TABLE `pictureorganizer`.`media_file_instance`
+    ADD COLUMN `credate` DATETIME NULL AFTER `media_file_version_id`,
+ADD COLUMN `creator` VARCHAR(255) NULL AFTER `credate`,
+ADD COLUMN `upddate` DATETIME NULL AFTER `creator`,
+ADD COLUMN `updater` VARCHAR(255) NULL AFTER `upddate`;
+
+ALTER TABLE `pictureorganizer`.`media_file_instance`
+    ADD COLUMN `file_type` VARCHAR(5) NULL AFTER `media_file_version_id`;
+UPDATE media_file_instance mfi SET mfi.file_type = (SELECT mfv.file_type FROM media_file_version mfv WHERE mfv.id = mfi.media_file_version_id);
+
+ALTER TABLE `pictureorganizer`.`media_file_instance`
+    ADD COLUMN `media_file_id` INT NULL AFTER `media_file_version_id`;
+UPDATE media_file_instance mfi SET mfi.media_file_id = (SELECT mfv.media_file_id FROM media_file_version mfv WHERE mfv.id = mfi.media_file_version_id);
+
+ALTER TABLE `pictureorganizer`.`media_file_instance` 
+ADD INDEX `media_file_instance_fk_media_file_idx` (`media_file_id` ASC) VISIBLE;
+;
+ALTER TABLE `pictureorganizer`.`media_file_instance` 
+ADD CONSTRAINT `media_file_instance_fk_media_file`
+  FOREIGN KEY (`media_file_id`)
+  REFERENCES `pictureorganizer`.`media_file` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;

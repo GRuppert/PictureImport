@@ -9,7 +9,7 @@ import javafx.scene.control.*;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.UI.DirectoryElement;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 import java.io.IOException;
@@ -109,8 +109,8 @@ public class ComparePanelController implements Initializable {
         listSingle.setItems(single);
     }
 
-    private TableView<? extends TableViewMediaFile> createDuplicateTable(ObservableList<Duplicate> input) {
-        TableView<? extends TableViewMediaFile> tableView = null;
+    private TableView<? extends TableViewMediaFileInstance> createDuplicateTable(ObservableList<Duplicate> input) {
+        TableView<? extends TableViewMediaFileInstance> tableView = null;
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource(
                     "/fxml/mediaFileTableView.fxml"));

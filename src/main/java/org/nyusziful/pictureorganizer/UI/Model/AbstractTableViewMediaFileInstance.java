@@ -2,18 +2,17 @@ package org.nyusziful.pictureorganizer.UI.Model;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
 
-public abstract class AbstractTableViewMediaFile implements TableViewMediaFile {
+public abstract class AbstractTableViewMediaFileInstance implements TableViewMediaFileInstance {
     protected SimpleBooleanProperty processing;
     protected SimpleStringProperty currentName;
     protected SimpleStringProperty note;
     protected SimpleBooleanProperty xmpMissing;
-    private MediafileDTO mediafileDTO;
+    private MediafileInstanceDTO mediafileDTO;
 
 
-    public AbstractTableViewMediaFile(MediafileDTO mediafileDTO, String note) {
+    public AbstractTableViewMediaFileInstance(MediafileInstanceDTO mediafileDTO, String note) {
         this.processing = new SimpleBooleanProperty(true);
         this.currentName = new SimpleStringProperty(mediafileDTO.filename);
         this.note = new SimpleStringProperty(note);
@@ -38,7 +37,7 @@ public abstract class AbstractTableViewMediaFile implements TableViewMediaFile {
     public final void setNote(String fName) {note.set(fName);}
     public SimpleStringProperty noteProperty() {return note;}
 
-    public MediafileDTO getMediafileDTO() {
+    public MediafileInstanceDTO getMediafileDTO() {
         return mediafileDTO;
     }
     // </editor-fold>

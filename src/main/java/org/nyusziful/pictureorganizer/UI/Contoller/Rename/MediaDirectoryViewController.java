@@ -7,7 +7,6 @@ import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.scene.control.TextField;
 import javafx.util.Callback;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
@@ -23,12 +22,12 @@ import java.util.ResourceBundle;
 
 import static org.nyusziful.pictureorganizer.Model.MediaDirectoryInstance.FolderFormat;
 
-public class DirectoryViewController implements Initializable {
+public class MediaDirectoryViewController implements Initializable {
     @FXML
     private ListView<MediaDirectoryInstance> directoryList;
 
     @FXML
-    private javafx.scene.control.Label targetFolderName;
+    private Label targetFolderName;
 
     @FXML
     private TextField eventNameField;
@@ -43,18 +42,18 @@ public class DirectoryViewController implements Initializable {
     private SimpleObjectProperty<LocalDate> firstDate;
     private SimpleObjectProperty<LocalDate> lastDate;
 
-    private MediaDirectorySet mediaDirectorySet;
+    private MediaDirectoryDBSet mediaDirectoryDBSet;
 
     private FolderService folderService;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
-        mediaDirectorySet = new MediaDirectorySet();
+        mediaDirectoryDBSet = new MediaDirectoryDBSet();
         folderService = new FolderService();
         folderName = new SimpleStringProperty("");
         firstDate = new SimpleObjectProperty(null);
         lastDate = new SimpleObjectProperty(null);
-        directoryList.setItems(mediaDirectorySet.getDataModel());
+        directoryList.setItems(mediaDirectoryDBSet.getDataModel());
         directoryList.setCellFactory(param -> new ListCell<MediaDirectoryInstance>() {
             @Override
             protected void updateItem(MediaDirectoryInstance item, boolean empty) {
@@ -122,7 +121,7 @@ public class DirectoryViewController implements Initializable {
 
     @FXML
     private void handleRefreshButtonAction() {
-        mediaDirectorySet.readDirectory();
+        mediaDirectoryDBSet.readDirectory();
     }
 
     @FXML
@@ -145,7 +144,7 @@ public class DirectoryViewController implements Initializable {
                 return;
             }
         }
-        mediaDirectorySet.readDirectory();
+        mediaDirectoryDBSet.readDirectory();
     }
 
     public SimpleStringProperty getFolderName() {

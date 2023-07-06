@@ -1,17 +1,16 @@
 package org.nyusziful.pictureorganizer.UI.Model;
 
 import javafx.beans.property.SimpleStringProperty;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
-import org.nyusziful.pictureorganizer.Service.MediafileService;
+import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
+import org.nyusziful.pictureorganizer.Service.MediaFileInstanceService;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class RenameMediaFile extends AbstractTableViewMediaFile {
+public class RenameTableViewMediaFileInstance extends AbstractTableViewMediaFileInstance {
     protected SimpleStringProperty newName;
     private SimpleStringProperty targetDirectory;
 
-    public RenameMediaFile(MediafileDTO mediafileDTO, String newName, String note, String targetDirectory) {
+    public RenameTableViewMediaFileInstance(MediafileInstanceDTO mediafileDTO, String newName, String note, String targetDirectory) {
         super(mediafileDTO, note);
         this.newName = new SimpleStringProperty(newName);
         this.targetDirectory = new SimpleStringProperty(targetDirectory);
@@ -23,8 +22,8 @@ public class RenameMediaFile extends AbstractTableViewMediaFile {
 
     public boolean write(WriteMethod writeMethod, boolean overwrite) {
         if (processing.get()) {
-            MediafileService mediafileService = MediafileService.getInstance();
-            return mediafileService.renameMediaFile(getMediafileDTO(), Paths.get(targetDirectory.getValue() + "\\" + newName.get()), writeMethod, overwrite);
+            MediaFileInstanceService mediafileInstanceService = MediaFileInstanceService.getInstance();
+            return mediafileInstanceService.renameMediaFileInstance(getMediafileDTO(), Paths.get(targetDirectory.getValue() + "\\" + newName.get()), writeMethod, overwrite);
         }
         return false;
     }

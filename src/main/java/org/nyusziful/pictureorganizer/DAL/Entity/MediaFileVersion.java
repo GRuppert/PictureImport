@@ -29,6 +29,10 @@ public class MediaFileVersion extends TrackingEntity {
     @JoinColumn(name="parent_id", referencedColumnName="id", nullable=true)
     private MediaFileVersion parent;
 
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name="media_file_id", referencedColumnName="id", nullable=true)
+    private MediaFile mediaFile;
+
     @Column(name = "size")
     private Long size;
 
@@ -178,5 +182,27 @@ public class MediaFileVersion extends TrackingEntity {
 
     public Set<Media> getMedia() {
         return media;
+    }
+
+    public int getVersionNumber() {
+        if (getParent() == null) return 0;
+        else return getParent().getVersionNumber() + 1;
+    }
+
+    public MediaFile getMediaFile() {
+        return mediaFile;
+    }
+
+    public void setMediaFile(MediaFile mediaFile) {
+        this.mediaFile = mediaFile;
+    }
+
+    @Override
+    public String toString() {
+        return "MediaFileVersion{" +
+                "id=" + id +
+                ", parent=" + parent +
+                ", invalid=" + invalid +
+                '}';
     }
 }

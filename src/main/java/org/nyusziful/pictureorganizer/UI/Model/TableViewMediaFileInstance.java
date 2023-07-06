@@ -2,9 +2,9 @@ package org.nyusziful.pictureorganizer.UI.Model;
 
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleStringProperty;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
 
-public interface TableViewMediaFile {
+public interface TableViewMediaFileInstance {
     public enum WriteMethod {
         MOVE, COPY
     }
@@ -29,7 +29,7 @@ public interface TableViewMediaFile {
     public void setNote(String fName);
     public SimpleStringProperty noteProperty();
 
-    public MediafileDTO getMediafileDTO();
+    public MediafileInstanceDTO getMediafileDTO();
 
     public boolean write(WriteMethod writeMethod, boolean overwrite);
 }

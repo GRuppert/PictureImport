@@ -1,15 +1,13 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 
-import org.hibernate.annotations.CacheConcurrencyStrategy;
+import org.nyusziful.pictureorganizer.DAL.DAO.HasID;
 
 import javax.persistence.*;
 
 @Entity
 @Table(name = "drive")
-@Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_ONLY)
-public class Drive {
+public class Drive implements HasID {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false, nullable = false)

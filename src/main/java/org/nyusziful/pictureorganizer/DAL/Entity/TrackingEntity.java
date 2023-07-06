@@ -1,5 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
+import org.nyusziful.pictureorganizer.DAL.DAO.HasID;
+
 import javax.persistence.*;
 import java.sql.Timestamp;
 

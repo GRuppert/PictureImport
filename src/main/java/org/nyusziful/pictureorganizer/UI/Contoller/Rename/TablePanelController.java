@@ -1,19 +1,13 @@
 package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
 
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
-import javafx.util.Callback;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 
 import java.net.URL;
-import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.ResourceBundle;
 
@@ -31,7 +25,7 @@ public class TablePanelController implements Initializable {
 
     private MediaFileSet mediaFileSet;
 
-    private TableView<? extends TableViewMediaFile> tableView;
+    private TableView<? extends TableViewMediaFileInstance> tableView;
 
     public TablePanelController() {
     }
@@ -50,7 +44,7 @@ public class TablePanelController implements Initializable {
 
     @FXML
     private void handleSelectedButtonAction() {
-        for (TableViewMediaFile f : tableView.getSelectionModel().getSelectedItems()) {
+        for (TableViewMediaFileInstance f : tableView.getSelectionModel().getSelectedItems()) {
             f.setProcessing(!f.getProcessing());
         }
     }
@@ -74,7 +68,7 @@ public class TablePanelController implements Initializable {
     private void handleGoButtonAction() {
         btnGo.setDisable(true);
         tableProgressIndicator.setVisible(true);
-        Task<Collection<TableViewMediaFile>> collectionTask = mediaFileSet.applyChanges(CommonProperties.getInstance().getCopyOrMove(), CommonProperties.getInstance().isOverwrite());
+        Task<Collection<TableViewMediaFileInstance>> collectionTask = mediaFileSet.applyChanges(CommonProperties.getInstance().getCopyOrMove(), CommonProperties.getInstance().isOverwrite());
         tableProgressIndicator.progressProperty().bind(collectionTask.progressProperty());
         new Thread(collectionTask).start();
         btnGo.setDisable(false);
@@ -94,7 +88,7 @@ public class TablePanelController implements Initializable {
     }
 
 
-    public void setTableView(TableView<? extends TableViewMediaFile> tableView) {
+    public void setTableView(TableView<? extends TableViewMediaFileInstance> tableView) {
         this.tableView = tableView;
     }
 

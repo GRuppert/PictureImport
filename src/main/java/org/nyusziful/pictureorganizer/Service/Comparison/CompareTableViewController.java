@@ -17,7 +17,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import javafx.util.Callback;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -26,7 +26,7 @@ public class CompareTableViewController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableColumn<TableViewMediaFile, Boolean > processingCol;
+    private TableColumn<TableViewMediaFileInstance, Boolean > processingCol;
 
     @FXML
     private TableColumn buttonCol;
@@ -62,7 +62,7 @@ public class CompareTableViewController implements Initializable {
                                     Scene scene = new Scene(pane);
                                     Stage stage = new Stage();
                                     stage.setScene(scene);
-                                    TableView<? extends TableViewMediaFile> table = new TableView();
+                                    TableView<? extends TableViewMediaFileInstance> table = new TableView();
                                     table.setEditable(false);
 
                                     TableColumn nameCol = new TableColumn("Field");

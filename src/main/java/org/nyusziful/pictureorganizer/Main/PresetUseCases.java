@@ -1,14 +1,12 @@
 package org.nyusziful.pictureorganizer.Main;
 
-import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
-import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAOImplHib;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
+import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
-import org.nyusziful.pictureorganizer.Service.MediafileService;
-import org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory;
+import org.nyusziful.pictureorganizer.Service.MediaFileInstanceService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 import javax.swing.*;
@@ -159,12 +157,12 @@ public class PresetUseCases {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        MediafileService mediafileService = MediafileService.getInstance();
+        MediaFileInstanceService mediafileInstanceService = MediaFileInstanceService.getInstance();
         boolean skip = false;
         for (File directory : directories) {
 //            if ("H:\\Képek\\Photos\\Új\\Frankfurt\\5100\\PRIVATE\\M4ROOT\\CLIP".equals(directory.toPath().toString())) skip = false;
             if (skip) continue;
-            final Set<MediafileDTO> mediaFiles = mediafileService.readMediaFilesFromFolder(directory.toPath(), null, true, CommonProperties.getInstance().getZone(), "", null);
+            final Set<MediafileInstanceDTO> mediaFiles = mediafileInstanceService.readMediaFilesFromFolder(directory.toPath(), null, true, CommonProperties.getInstance().getZone(), "", null);
 /*            for (MediafileDTO mediafileDTO : mediaFiles) {
                 RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", toDir+directory.getName());
                 final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");
@@ -533,7 +531,7 @@ public class PresetUseCases {
 
     private static void recover()  {
         Path path = Paths.get("E:\\Képek");
-        MediafileDAOImplHib dao = new MediafileDAOImplHib();
+        MediaFileInstanceDAOImplHib dao = new MediaFileInstanceDAOImplHib();
         try {
             Files.walkFileTree (path, new SimpleFileVisitor<Path>() {
                 @Override public FileVisitResult
@@ -544,7 +542,7 @@ public class PresetUseCases {
                         if (mediaFile.size()==1) {
                             String oldFilename = mediaFile.get(0);
                             if (oldFilename.matches("D.C[0-9]{5}\\.ARW"))
-                                RenameService.write(filePath, Paths.get(filePath.getParent() + "\\" + oldFilename), TableViewMediaFile.WriteMethod.MOVE, false);
+                                RenameService.write(filePath, Paths.get(filePath.getParent() + "\\" + oldFilename), TableViewMediaFileInstance.WriteMethod.MOVE, false);
                         } else {
                             System.out.println("More filenames");
                         }

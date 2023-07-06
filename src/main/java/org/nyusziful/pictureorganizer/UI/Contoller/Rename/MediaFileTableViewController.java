@@ -6,7 +6,7 @@ import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.cell.CheckBoxTableCell;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 
 import java.net.URL;
 import java.util.ResourceBundle;
@@ -15,13 +15,13 @@ public class MediaFileTableViewController implements Initializable {
 
     // <editor-fold defaultstate="collapsed" desc="FXML variables">
     @FXML
-    private TableView<TableViewMediaFile> tableView;
+    private TableView<TableViewMediaFileInstance> tableView;
 
     @FXML
-    private TableColumn<TableViewMediaFile, Boolean > processingCol;
+    private TableColumn<TableViewMediaFileInstance, Boolean > processingCol;
 
     @FXML
-    private TableColumn<TableViewMediaFile, Boolean > xmpCol;
+    private TableColumn<TableViewMediaFileInstance, Boolean > xmpCol;
     // </editor-fold>
 
     private MediaFileSet mediaFileSet;
@@ -42,7 +42,7 @@ public class MediaFileTableViewController implements Initializable {
     }
 
 
-    public TableView<TableViewMediaFile> getTableView() {
+    public TableView<TableViewMediaFileInstance> getTableView() {
         return tableView;
     }
 }

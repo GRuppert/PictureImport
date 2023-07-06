@@ -1,101 +1,76 @@
 package org.nyusziful.pictureorganizer.Service;
 
-import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAO;
-import org.nyusziful.pictureorganizer.DAL.DAO.MediafileDAOImplHib;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAO;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
-import org.nyusziful.pictureorganizer.DTO.ImageDTO;
-import org.nyusziful.pictureorganizer.DTO.MediafileDTO;
-import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Contoller.MainController;
-import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFile;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 import org.nyusziful.pictureorganizer.UI.ProgressLeakingTask;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Boolean.TRUE;
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
-import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
-public class MediafileService {
-    private MediafileDAO mediafileDAO;
-    private DriveService driveService;
-    private FolderService folderService;
-    private ImageService imageService;
-    private static MediafileService instance;
+public class MediaFileInstanceService {
+    private final MediaFileInstanceDAO mediaFileInstanceDAO;
+    private final DriveService driveService;
+    private final FolderService folderService;
+    private final ImageService imageService;
+    private static MediaFileInstanceService instance;
 
-    private MediafileService() {
+    private MediaFileInstanceService() {
         driveService = new DriveService();
         folderService = new FolderService();
         imageService = new ImageService();
-        mediafileDAO = new MediafileDAOImplHib();
+        mediaFileInstanceDAO = new MediaFileInstanceDAOImplHib();
     }
 
-    public static MediafileService getInstance() {
+    public static MediaFileInstanceService getInstance() {
         if (instance == null) {
-            instance = new MediafileService();
+            instance = new MediaFileInstanceService();
         }
         return instance;
     }
 
-/*    public List<MediaFile> getMediafiles() {
-        List<MediaFile> getMediafiles = mediafileDAO.getAll();
-        return getMediafiles;
-    }*/
-
-    /*
-        public MediafileDTO getMediafile(String name) {
-            openConnection();
-            MediafileDTO getMediafile = mediafileDAO.getByName(name);
-            closeConnection();
-            return getMediafile;
-        }
-    */
-    public MediaFile getMediafile(Drive drive, Path path, boolean withImega) {
-        return mediafileDAO.getByFile(drive, path, withImega);
+    public MediaFileInstance getMediaFileInstance(Drive drive, Path path, boolean withImage) {
+        return mediaFileInstanceDAO.getByFile(drive, path, withImage);
     }
 
-    public MediaFile getMediaFile(Path path, boolean withImage) {
+    public MediaFileInstance getMediaFileInstance(Path path, boolean withImage) {
         Drive localDrive = driveService.getLocalDrive(path);
-        return getMediafile(localDrive, path, withImage);
+        return getMediaFileInstance(localDrive, path, withImage);
     }
 
-    public MediaFile getMediaFile(MediafileDTO mediafileDTO, boolean withImega) {
+    public MediaFileInstance getMediaFileInstance(MediafileInstanceDTO mediafileDTO, boolean withImage) {
         Path path = Paths.get(mediafileDTO.abolutePath);
-        final MediaFile mediaFile = getMediaFile(path, withImega);
-        mediaFile.setOriginal(mediafileDTO.isOriginal);
-        return mediaFile;
+        return getMediaFileInstance(path, withImage);
     }
 
-    public MediafileDTO getMediafileDTO(MediaFile mediafile) {
-        MediafileDTO mediafileDTO = new MediafileDTO();
-        if (mediafile != null) {
-            if (mediafile.getImage() != null) mediafileDTO.fileHash = mediafile.getImage().getHash();
-            mediafileDTO.abolutePath = mediafile.getFilePath().toString();
-            mediafileDTO.filename = mediafile.getFilename();
-            mediafileDTO.dateMod = mediafile.getDateMod();
-            mediafileDTO.fileHash = mediafile.getFilehash();
-            mediafileDTO.size = mediafile.getSize();
-            mediafileDTO.isOriginal = TRUE.equals(mediafile.isOriginal());
+    public MediafileInstanceDTO getMediafileDTO(MediaFileInstance mediaFileInstance) {
+        MediafileInstanceDTO mediafileDTO = new MediafileInstanceDTO();
+        if (mediaFileInstance != null) {
+            mediafileDTO.abolutePath = mediaFileInstance.getFilePath().toString();
+            mediafileDTO.filename = mediaFileInstance.getFilename();
+            mediafileDTO.dateMod = mediaFileInstance.getDateMod();
+            mediafileDTO.fileHash = mediaFileInstance.getMediaFileVersion().getFilehash();
+            mediafileDTO.size = mediaFileInstance.getMediaFileVersion().getSize();
+            mediafileDTO.isOriginal = TRUE.equals(mediaFileInstance.getMediaFileVersion().isOriginal());
         }
         return mediafileDTO;
     }
 
-    public static MediafileDTO getMediafileDTO(File file) {
-        MediafileDTO mediafileDTO = new MediafileDTO();
+    public static MediafileInstanceDTO getMediafileDTO(File file) {
+        MediafileInstanceDTO mediafileDTO = new MediafileInstanceDTO();
         if (file != null) {
             mediafileDTO.abolutePath = file.getAbsolutePath();
             mediafileDTO.filename = file.getName();
@@ -103,146 +78,78 @@ public class MediafileService {
         return mediafileDTO;
     }
 
-    public void saveMediaFile(MediaFile mediafile) {
-        saveMediaFile(mediafile, false);
+    public void saveMediaFileInstance(MediaFileInstance mediaFileInstance) {
+        saveMediaFileInstance(mediaFileInstance, false);
     }
 
-    private void saveMediaFile(MediaFile mediafile, boolean batch) {
-        saveMediaFiles(Collections.singleton(mediafile), batch);
+    private void saveMediaFileInstance(MediaFileInstance mediaFileInstance, boolean batch) {
+        saveMediaFiles(Collections.singleton(mediaFileInstance), batch);
     }
 
-    public void saveMediaFiles(Collection<? extends MediaFile> mediaFiles) {
-        saveMediaFiles(mediaFiles, false);
+    public void saveMediaFiles(Collection<? extends MediaFileInstance> mediaFileInstances) {
+        saveMediaFiles(mediaFileInstances, false);
     }
 
-    public void saveMediaFiles(Collection<? extends MediaFile> mediaFiles, boolean batch) {
-        for (MediaFile file : mediaFiles) {
+    public void saveMediaFiles(Collection<? extends MediaFileInstance> mediaFileInstances, boolean batch) {
+        for (MediaFileInstance file : mediaFileInstances) {
             if (file.getId() > -1)
-                mediafileDAO.merge(file, batch);
+                mediaFileInstanceDAO.merge(file, batch);
             else
-                mediafileDAO.persist(file, batch);
+                mediaFileInstanceDAO.persist(file, batch);
         }
     }
 
-    public void deleteMediaFiles(Collection<? extends MediaFile> mediaFiles) {
-        for (MediaFile file : mediaFiles) {
+    public void deleteMediaFiles(Collection<? extends MediaFileInstance> mediaFileInstances) {
+        for (MediaFileInstance file : mediaFileInstances) {
             if (file.getId() > -1)
-                mediafileDAO.delete(file);
+                mediaFileInstanceDAO.delete(file);
         }
     }
 
-    public void updateMediafile(MediaFile Mediafile) {
-        mediafileDAO.merge(Mediafile);
+    public void updateMediafile(MediaFileInstance Mediafile) {
+        mediaFileInstanceDAO.merge(Mediafile);
     }
 
     public static void main(String[] args) {
-        final MediafileService mediafileService = new MediafileService();
+        final MediaFileInstanceService mediafileService = new MediaFileInstanceService();
 //        mediafileService.syncFolder(Paths.get("g:\\Pictures\\Photos\\DBSaved\\"), Paths.get("h:\\Képek\\Photos\\Processed"));
     }
 
-    public List<MediaFile> getMediaFilesFromPath(Path path, boolean recursive) {
+    public List<MediaFileInstance> getMediaFilesInstancesFromPath(Path path, boolean recursive) {
         final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        return recursive ?  mediafileDAO.getByPathRec(localDrive, path, true): mediafileDAO.getByPath(localDrive, path, true);
-    }
-
-    public int getVersionNumber(Image image) {
-        return 0; //TODO implement properly
-/*
-        if (image == null) return -1;
-        if (image.getParent() == null) return 0;
-        return getVersionNumber(image.getParent()) + 1;
- */
+        return recursive ? mediaFileInstanceDAO.getByPathRec(localDrive, path, true): mediaFileInstanceDAO.getByPath(localDrive, path, true);
     }
 
     public void flush() {
-        mediafileDAO.flush();
+        mediaFileInstanceDAO.flush();
     }
 
     public void close() {
-        mediafileDAO.close();
+        mediaFileInstanceDAO.close();
     }
 
-    /**
-     * @param mediaFile
-     * @return true if data has been written into the image entity, which has to be persisted
-     * @throws Exception if the data in the "original" media file does not match what was already saved into the image
-     */
-    public boolean updateOriginalImage(MediaFile mediaFile) throws Exception {
-        final Image image = mediaFile.getImage();
-        final Meta metaOrig = getV(mediaFile.getFilename());
-        String origFileName = (metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : mediaFile.getFilename();
-        if (image.getOriginalFileHash() == null && image.getDateTaken() == null && image.getOriginalFilename() == null) {
-            image.setOriginalFileHash(mediaFile.getFilehash());
-            image.setDateTaken(mediaFile.getDateStored());
-            image.setOriginalFilename(origFileName);
-            mediaFile.setOriginal(true);
-            if (mediaFile instanceof JPGMediaFile)
-                image.setExif(((JPGMediaFile)mediaFile).getExif());
-            if (mediaFile instanceof VideoMediaFile)
-                image.setDuration(((VideoMediaFile)mediaFile).getDuration());
-            return true;
-        } else {
-            if (!origFileName.equals(image.getOriginalFilename()) || !mediaFile.getFilehash().equals(image.getOriginalFileHash()) || ((image.getDateTaken() == null || mediaFile.getDateStored().compareTo(image.getDateTaken()) != 0) && (image.getActualDate() == null || mediaFile.getDateStored().compareTo(image.getActualDate()) != 0 ))) {
-                throw new Exception("Mismatch");
-            }
-        }
-        return false;
-    }
-
-    public boolean updateBestimateImage(MediaFile mediaFile) throws Exception {
-/*        final Image image = mediaFile.getImage();
-        final Meta metaOrig = getV(mediaFile.getFilename());
-        String origFileName = (metaOrig != null && metaOrig.originalFilename != null) ? metaOrig.originalFilename : mediaFile.getFilename();
-        if (image.getOriginalFileHash() == null && image.getDateTaken() == null && image.getOriginalFilename() == null
-        && image.getBestimateFileHash() == null && image.getDateCorrected() == null && image.getBestimateFilename() == null) {
-            image.setBestimateFileHash(mediaFile.getFilehash());
-            image.setDateCorrected(mediaFile.getDateStored());
-            image.setBestimateFilename(origFileName);
-            return true;
-        } else {
-            if (!(origFileName.equals(image.getBestimateFilename()) || origFileName.equals(image.getOriginalFilename()))
-                    || !(mediaFile.getFilehash().equals(image.getOriginalFileHash()) || mediaFile.getFilehash().equals(image.getBestimateFileHash()))
-                    || ((image.getDateTaken() == null || mediaFile.getDateStored().compareTo(image.getDateTaken()) != 0) && (image.getActualDate() == null || mediaFile.getDateStored().compareTo(image.getActualDate()) != 0 ))) {
-                throw new Exception("Mismatch");
-            }
-        }*/
-        return false;
-    }
-
-    /*    public Set<MediaFile> readMediaFilesFromFolderRecursive(Path path, boolean original, boolean force, ZoneId zone, Set<MediaFile> filesFailing) {
-        ProgressDTO progress = new ProgressDTO();
-        progress.reset();
-        Set<MediaFile> mediaFiles = new HashSet<>();
-        for (Path subpath : FolderService.getMediaFoldersRec(path, progress)) {
-            mediaFiles.addAll(readMediaFilesFromFolder(subpath, original, force, zone, filesFailing, progress));
-        }
-        System.out.println("Failed Files:");
-        filesFailing.forEach(file -> System.out.println(file.getFilePath()));
-        return mediaFiles;
-    }
- */
-    public Boolean syncFolder(Path source, Path target, ProgressLeakingTask progress) {
-        final Drive targetDrive = driveService.getLocalDrive(target.toString().substring(0, 1));
+    public <V> Boolean syncFolder(Path source, Path target, ProgressLeakingTask<V> progress) {
+/*        final Drive targetDrive = driveService.getLocalDrive(target.toString().substring(0, 1));
         if (targetDrive == null) return false;
-        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(source, true);
+        List<MediaFileInstance> filesInFolderFromDB = getMediaFilesInstancesFromPath(source, true);
         int progressing = 0;
         progress.updateProgress(progressing, filesInFolderFromDB.size());
         inputLoop:
-        for (MediaFile sourceMediaFile : filesInFolderFromDB) {
+        for (MediaFileInstance sourceMediaFile : filesInFolderFromDB) {
             progress.updateProgress(progressing++, filesInFolderFromDB.size());
-            List<MediaFile> filesInTarget = mediafileDAO.getMediaFilesFromPathOfImage(sourceMediaFile.getImage(), targetDrive, target);
+            List<MediaFileInstance> filesInTarget = mediaFileInstanceDAO.getMediaFilesFromPathOfImage(sourceMediaFile.getImage(), targetDrive, target);
             if (filesInTarget.size() == 0) continue;
             final String subFolder = sourceMediaFile.getFilePath().toString().substring(source.toString().length());
-            HashMap<String, Set<MediaFile>> versions = new HashMap<>();
-            MediaFile atPlace = null;
+            HashMap<String, Set<MediaFileInstance>> versions = new HashMap<>();
+            MediaFileInstance atPlace = null;
             boolean atPlaceMatch = false;
-            for (MediaFile mediaFileToMove : filesInTarget) {
-                Set<MediaFile> mediaFiles = versions.get(mediaFileToMove.getFilehash());
+            for (MediaFileInstance mediaFileToMove : filesInTarget) {
+                Set<MediaFileInstance> mediaFiles = versions.get(mediaFileToMove.getFilehash());
                 if (mediaFiles == null) {
                     mediaFiles = new HashSet<>();
                 }
                 mediaFiles.add(mediaFileToMove);
-                for (MediaFile mediaFile : mediaFiles) {
+                for (MediaFileInstance mediaFile : mediaFiles) {
                     if (mediaFile.getFilePath().getParent().toString().equals(target.toString() + subFolder)) {
                         atPlace = mediaFile;
                         atPlaceMatch = mediaFile.getFilehash().equals(sourceMediaFile.getFilehash());
@@ -251,12 +158,12 @@ public class MediafileService {
                 }
                 versions.put(mediaFileToMove.getFilehash(), mediaFiles);
             }
-            Set<MediaFile> exactMatch = versions.get(sourceMediaFile.getFilehash());
+            Set<MediaFileInstance> exactMatch = versions.get(sourceMediaFile.getFilehash());
             boolean originalPlace = true;
             if (atPlace != null) {
                 if (atPlaceMatch || (exactMatch == null && versions.size() == 1)) {
                     originalPlace = false;
-                    Set<MediaFile> mediaFiles = versions.get(atPlace.getFilehash());
+                    Set<MediaFileInstance> mediaFiles = versions.get(atPlace.getFilehash());
                     mediaFiles.remove(atPlace);
                     versions.put(atPlace.getFilehash(), mediaFiles);
                 }
@@ -264,34 +171,33 @@ public class MediafileService {
             if (exactMatch != null) {
                 versions.remove(sourceMediaFile.getFilehash());
                 int j = 1;
-                for (Set<MediaFile> value : versions.values()) {
-                    for (MediaFile mediaFileToMove : value) {
+                for (Set<MediaFileInstance> value : versions.values()) {
+                    for (MediaFileInstance mediaFileToMove : value) {
                         renameMediaFile(mediaFileToMove, Paths.get(getFreeDir(target.toString()+"\\conflict\\", subFolder) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
                         j++;
                     }
                 }
-                for (MediaFile mediaFileToMove : exactMatch) {
+                for (MediaFileInstance mediaFileToMove : exactMatch) {
                     renameMediaFile(mediaFileToMove, Paths.get((originalPlace ? target.toString() : getFreeDir(target.toString()+"\\duplicate\\", subFolder)) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
                     originalPlace = false;
                 }
             } else if (versions.size() == 1) {
-                for (Set<MediaFile> value : versions.values()) {
-                    for (MediaFile mediaFileToMove : value) {
+                for (Set<MediaFileInstance> value : versions.values()) {
+                    for (MediaFileInstance mediaFileToMove : value) {
                         renameMediaFile(mediaFileToMove, Paths.get((originalPlace ? target.toString() : getFreeDir(target.toString()+"\\duplicate\\", subFolder)) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
                         originalPlace = false;
                     }
                 }
             } else {
-                for (Set<MediaFile> value : versions.values()) {
-                    for (MediaFile mediaFileToMove : value) {
+                for (Set<MediaFileInstance> value : versions.values()) {
+                    for (MediaFileInstance mediaFileToMove : value) {
                         renameMediaFile(mediaFileToMove, Paths.get(getFreeDir(target.toString()+"\\conflict\\", subFolder) + subFolder), TableViewMediaFile.WriteMethod.MOVE, false);
                     }
                 }
             }
-        }
+        }*/
         return true;
     }
-
     private String getFreeDir(String input, String subFolder) {
         int i  = 1;
         while (true) {
@@ -300,13 +206,11 @@ public class MediafileService {
         }
     }
 
-
-
-    public Set<MediafileDTO> reOrganizeFilesInSubFolders(Path path, ProgressLeakingTask progress) {
-        Set<MediafileDTO> result = new HashSet<>();
-        if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
-        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path, true);
-        HashMap<String, MediaFile> pathToMediaFile = new HashMap<>();
+    public Set<MediafileInstanceDTO> reOrganizeFilesInSubFolders(Path path, ProgressLeakingTask progress) {
+        Set<MediafileInstanceDTO> result = new HashSet<>();
+/*        if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
+        List<MediaFileInstance> filesInFolderFromDB = getMediaFilesInstancesFromPath(path, true);
+        HashMap<String, MediaFileInstance> pathToMediaFile = new HashMap<>();
         filesInFolderFromDB.forEach(f -> pathToMediaFile.put(f.getFilePath().toString().toLowerCase(), f));
         HashSet<Path> paths = new HashSet<>();
         try {
@@ -321,14 +225,14 @@ public class MediafileService {
         HashSet<File> unknownFiles = new HashSet<>();
         //remove exact matches
         for (Path path1 : paths) {
-             MediaFile found = null;
-/*            for (MediaFile mediaFile : filesInFolderFromDB) {
+             MediaFileInstance found = null;
+/*            for (MediaFileInstance mediaFile : filesInFolderFromDB) {
                 if (mediaFile.getFilePath().equals(path1)) {
                     found = mediaFile;
                     break;
                 }
             }
-*/
+* /
             found = pathToMediaFile.get(path1.toString().toLowerCase());
             if (found != null) {
                 filesInFolderFromDB.remove(found);
@@ -340,23 +244,23 @@ public class MediafileService {
             progress.updateProgress(progressing, paths.size() + unknownFiles.size());
         }
         //pick the first matching
-        Set<MediaFile> toSave = new HashSet<>();
+        Set<MediaFileInstance> toSave = new HashSet<>();
         for (File unknownFile : unknownFiles) {
             System.out.println(unknownFile);
             progressing++;
             progress.updateProgress(progressing, paths.size() + unknownFiles.size());
-            MediaFile mediaFile = null;
+            MediaFileInstance mediaFile = null;
             String fileName = unknownFile.getName().toLowerCase();
             BasicFileAttributes attrs = org.nyusziful.pictureorganizer.Service.Rename.StaticTools.getFileAttributes(unknownFile);
             final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
-            for (MediaFile potentialMediaFileFromList : filesInFolderFromDB) {
+            for (MediaFileInstance potentialMediaFileFromList : filesInFolderFromDB) {
                 if (fileName.equals(potentialMediaFileFromList.getFilename().toLowerCase()) && potentialMediaFileFromList.getSize() == attrs.size() && potentialMediaFileFromList.getDateMod().toInstant().toEpochMilli() == dateMod.toInstant().toEpochMilli()) {
                     mediaFile = potentialMediaFileFromList;
                     break;
                 }
             }
             if (mediaFile == null) {
-                result.add(getMediafileDTO(readMediaFile(unknownFile)));
+                result.add(getMediafileDTO(readMediaFileInstance(unknownFile)));
             } else {
                 mediaFile.updateFolder(folderService.getFolder(unknownFile.getParentFile().toPath()));
                 toSave.add(mediaFile);
@@ -364,46 +268,43 @@ public class MediafileService {
             }
         }
         saveMediaFiles(toSave);
-        deleteMediaFiles(filesInFolderFromDB);
+        deleteMediaFiles(filesInFolderFromDB);*/
         return result;
     }
 
-    public Set<MediafileDTO> readMediaFilesFromFolder(Path path, Boolean original, boolean force, ZoneId zone, String notes, MainController.ReadTask progress) {
+    public Set<MediafileInstanceDTO> readMediaFilesFromFolder(Path path, Boolean original, boolean force, ZoneId zone, String notes, MainController.ReadTask progress) {
         long start = System.nanoTime();
-        Set<MediaFile> mediaFiles = new HashSet<>();
-        Set<MediafileDTO> result = new HashSet<>();
+        Set<MediaFileInstance> mediaFiles = new HashSet<>();
+        Set<MediafileInstanceDTO> result = new HashSet<>();
         long getDrive = System.nanoTime();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
         if (drive == null) return result;
         long getFolder = System.nanoTime();
         Folder folder = folderService.getFolder(path);
         long getFiles = System.nanoTime();
-        List<MediaFile> filesInFolderFromDB = getMediaFilesFromPath(path, false);
+        List<MediaFileInstance> filesInFolderFromDB = getMediaFilesInstancesFromPath(path, false);
         long lists = System.nanoTime();
-        HashMap<String, MediaFile> fileSet = new HashMap<>();
-        for (MediaFile file : filesInFolderFromDB) {
+        HashMap<String, MediaFileInstance> fileSet = new HashMap<>();
+        for (MediaFileInstance file : filesInFolderFromDB) {
             fileSet.put(file.getFilePath().toString().toLowerCase(), file);
         }
-        final File[] files = path.toFile().listFiles();
         long readfiles = System.nanoTime();
-        for (int i = 0; i < files.length; i++) {
-            File file = files[i];
-            MediaFile mediaFile = readMediaFile(file, fileSet, folder, original, force, zone, notes);
+        for (File file : path.toFile().listFiles()) {
+            MediaFileInstance mediaFile = readMediaFileInstance(file, fileSet, folder, original, force, zone, notes);
             if (mediaFile != null) {
                 mediaFiles.add(mediaFile);
                 if (progress != null) progress.increaseProgress();
             }
         }
         long writeDB = System.nanoTime();
-        mediafileDAO.close();
+        mediaFileInstanceDAO.close();
         long removeFiles = System.nanoTime();
         filesInFolderFromDB.removeAll(mediaFiles);
         deleteMediaFiles(filesInFolderFromDB);
         long listupdate = System.nanoTime();
         mediaFiles.remove(null);
-        mediaFiles.forEach(mf -> {result.add(getMediafileDTO(mf));});
+        mediaFiles.forEach(mf -> result.add(getMediafileDTO(mf)));
         long end = System.nanoTime();
-/*
         System.out.println(
                 "Init  " + TimeUnit.NANOSECONDS.toMillis(getDrive - start)
                         + "\nDrive " + TimeUnit.NANOSECONDS.toMillis(getFolder - getDrive)
@@ -416,26 +317,25 @@ public class MediafileService {
                         + "\nWhole " + TimeUnit.NANOSECONDS.toMillis(end - start)
 
         );
-*/
         System.out.println(path + " done in " + TimeUnit.NANOSECONDS.toMillis(end - start));
         return result;
     }
 
-    public MediaFile readMediaFile(File file) {
-        MediaFile result = mediafileDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath(), false);
-        if (result == null) result = readMediaFile(file, null, folderService.getFolder(file.getParentFile().toPath()), null, false, CommonProperties.getInstance().getZone(), "");
-        mediafileDAO.close();
+    public MediaFileInstance readMediaFileInstance(File file) {
+        MediaFileInstance result = mediaFileInstanceDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath(), false);
+        if (result == null) result = readMediaFileInstance(file, null, folderService.getFolder(file.getParentFile().toPath()), null, false, CommonProperties.getInstance().getZone(), "");
+        mediaFileInstanceDAO.close();
         return result;
     }
 
-    private MediaFile readMediaFile(File file, HashMap<String, MediaFile> filesInFolderMap, Folder folder, Boolean original, boolean force, ZoneId zone, String notes) {
+    private MediaFileInstance readMediaFileInstance(File file, HashMap<String, MediaFileInstance> filesInFolderMap, Folder folder, Boolean original, boolean force, ZoneId zone, String notes) {
         if (filesInFolderMap == null) filesInFolderMap = new HashMap<>();
         if (notes == null) notes = "";
         Path filePath = file.toPath();
         BasicFileAttributes attrs = org.nyusziful.pictureorganizer.Service.Rename.StaticTools.getFileAttributes(file);
-        MediaFile actFile = null;
-        long strat = System.nanoTime();
-        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
+        MediaFileInstance actFile = null;
+        long start = System.nanoTime();
+/*        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
             Set<String> whatToSave = new HashSet<>();
             actFile = filesInFolderMap.get(filePath.toString().toLowerCase());
             assert folder != null;
@@ -452,7 +352,7 @@ public class MediafileService {
                 } else if (supportedVideoFileType(name)) {
                     actFile = new VideoMediaFile(folder, filePath, fileSize, dateMod, original);
                 } else {
-                    actFile = new MediaFile(folder, filePath, fileSize, dateMod, original);
+                    actFile = new MediaFileInstance(folder, filePath, fileSize, dateMod, original);
                 }
             }
             long hashStart = System.nanoTime();
@@ -510,11 +410,10 @@ public class MediafileService {
                 imageService.saveImage(actFile.getImage(), true);
             }
             if (whatToSave.contains("file")) {
-                saveMediaFile(actFile, true);
+                saveMediaFileInstance(actFile, true);
                 filesInFolderMap.put(actFile.getFilePath().toString().toLowerCase(), actFile);
             }
             long WriteToDBEnd = System.nanoTime();
-/*
             System.out.println(
                     "Init  " + TimeUnit.NANOSECONDS.toMillis(fileCreateStart - start)
                         + "\nMedia " + TimeUnit.NANOSECONDS.toMillis(hashStart - fileCreateStart)
@@ -526,48 +425,49 @@ public class MediafileService {
                 + "\nWhole " + TimeUnit.NANOSECONDS.toMillis(WriteToDBEnd - start)
 
             );
-*/
-        }
+        }*/
         return actFile;
     }
 
-
-    public String getMediaFileName(MediafileDTO mediafileDTO, String nameVersion) {
-        MediaFile mediaFile = getMediaFile(mediafileDTO, true);
-        if (mediaFile == null) return mediafileDTO.filename;
-        return RenameService.getName(mediaFile, nameVersion, Integer.toString(getVersionNumber(mediaFile.getImage())));
+    public String getMediaFileName(MediafileInstanceDTO mediafileInstanceDTO, String nameVersion) {
+        MediaFileInstance mediaFile = getMediaFileInstance(mediafileInstanceDTO, true);
+        if (mediaFile == null) return mediafileInstanceDTO.filename;
+        return RenameService.getName(mediaFile, nameVersion, Integer.toString(mediaFile.getMediaFileVersion().getVersionNumber()));
     }
 
-    public boolean renameMediaFile(MediafileDTO mediafileDTO, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
-        MediaFile mediaFile = getMediaFile(mediafileDTO, true);
-        return renameMediaFile(mediaFile, newPath, writeMethod, overwrite);
+    public boolean renameMediaFileInstance(MediafileInstanceDTO mediafileInstanceDTO, Path newPath, TableViewMediaFileInstance.WriteMethod writeMethod, boolean overwrite) {
+        MediaFileInstance mediaFileInstance = getMediaFileInstance(mediafileInstanceDTO, true);
+        return renameMediaFileInstance(mediaFileInstance, newPath, writeMethod, overwrite);
     }
 
-    public boolean renameMediaFile(MediaFile mediaFile, Path newPath, TableViewMediaFile.WriteMethod writeMethod, boolean overwrite) {
-        final boolean rename = RenameService.write(mediaFile.getFilePath(), newPath, writeMethod, overwrite);
+    public boolean renameMediaFileInstance(MediaFileInstance mediaFileInstance, Path newPath, TableViewMediaFileInstance.WriteMethod writeMethod, boolean overwrite) {
+        final boolean rename = RenameService.write(mediaFileInstance.getFilePath(), newPath, writeMethod, overwrite);
         if (overwrite || rename) {
             Folder folder = folderService.getFolder(newPath.getParent());
-            if (TableViewMediaFile.WriteMethod.COPY.equals(writeMethod)) {
+            if (TableViewMediaFileInstance.WriteMethod.COPY.equals(writeMethod)) {
                 try {
-                    mediaFile = (MediaFile) mediaFile.clone();
+                    mediaFileInstance = (MediaFileInstance) mediaFileInstance.clone();
                 } catch (CloneNotSupportedException e) {
                     e.printStackTrace();
                 }
-//                mediaFile = readMediaFile(newPath.toFile(), null, folder, mediaFile.isOriginal(), false, mediaFile.getDateStored().getZone(), null);
+//                mediaFileInstance = readMediaFile(newPath.toFile(), null, folder, mediaFileInstance.isOriginal(), false, mediaFileInstance.getDateStored().getZone(), null);
             }
-            mediaFile.moveFile(folder, newPath);
+            mediaFileInstance.updatePath(folder, newPath);
 
-            if (mediaFile instanceof JPGMediaFile && !((JPGMediaFile) mediaFile).isExifbackup()) {
-                ((JPGMediaFile) mediaFile).addExifbackup(TRUE.equals(mediaFile.isOriginal()));
-            }
-            if (mediaFile instanceof RAWMediaFileInstance && !((RAWMediaFileInstance) mediaFile).isXMPattached()) {
-                ((RAWMediaFileInstance) mediaFile).setXMPattached(createXmp(mediaFile.getFilePath().toFile()) != null);
+            if (mediaFileInstance instanceof RAWMediaFileInstance && !((RAWMediaFileInstance) mediaFileInstance).isXMPattached()) {
+                ((RAWMediaFileInstance) mediaFileInstance).setXMPattached(createXmp(mediaFileInstance.getFilePath().toFile()) != null);
             }
 
-            saveMediaFile(mediaFile);
+            saveMediaFileInstance(mediaFileInstance);
         }
 
         return rename;
     }
 
+    public List<MediaFileInstance> getMediaFilesInstancesOfVersion(MediaFileVersion mediaFileVersion) {
+        return mediaFileInstanceDAO.getByVersion(mediaFileVersion);
+    }
+    public List<MediaFileInstance> getMediaFilesInstancesByMediaFile(MediaFile mediaFile) {
+        return mediaFileInstanceDAO.getByMediaFile(mediaFile);
+    }
 }

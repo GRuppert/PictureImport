@@ -1,7 +1,5 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import org.hibernate.annotations.CacheConcurrencyStrategy;
-import org.hibernate.annotations.Fetch;
 import org.nyusziful.pictureorganizer.Service.DriveService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
@@ -15,8 +13,6 @@ import java.util.Collection;
     name = "folder",
     uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "path"})}
 )
-@Cacheable
-@org.hibernate.annotations.Cache(usage = CacheConcurrencyStrategy.READ_WRITE)
 public class Folder extends TrackingEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,7 +31,8 @@ public class Folder extends TrackingEntity {
     private Path javaPath;
 
     private void loadPath() {
-        javaPath = Paths.get(DriveService.getLocalLetter(drive) + ":" + FolderService.dataToWinPath(path));
+        String driveLocalLetter = DriveService.getLocalLetter(drive);
+        if (driveLocalLetter != null) javaPath = Paths.get(DriveService.getLocalLetter(drive) + ":" + FolderService.dataToWinPath(path));
     }
 
     public Folder() {
@@ -59,7 +56,9 @@ public class Folder extends TrackingEntity {
 
     @Override
     public String toString() {
-        return getJavaPath().toString();
+        final Path javaPathLocal = getJavaPath();
+        if (javaPathLocal != null) return javaPathLocal.toString();
+        else return drive.getDescription() + ":" + FolderService.dataToWinPath(path);
     }
 
     public void updatePath(Path path) {

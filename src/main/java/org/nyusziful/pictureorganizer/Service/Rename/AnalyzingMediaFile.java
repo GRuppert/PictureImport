@@ -1,28 +1,11 @@
 package org.nyusziful.pictureorganizer.Service.Rename;
 
 
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleStringProperty;
-import org.apache.commons.io.FilenameUtils;
-import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
-import org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash;
-import org.nyusziful.pictureorganizer.DTO.Meta;
-import org.nyusziful.pictureorganizer.UI.Model.AbstractTableViewMediaFile;
-
 import java.io.File;
-import java.io.FilenameFilter;
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
-import java.util.Iterator;
-
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.*;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 /**
  *

@@ -1,6 +1,5 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
-import org.nyusziful.pictureorganizer.DAL.HibConnection;
 import org.nyusziful.pictureorganizer.DAL.JPAConnection;
 
 import javax.persistence.EntityManager;
@@ -131,6 +130,21 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
         }
         return (T) result;
     }
+
+/*    @Override
+    public T save(T item) {
+        return save(item, false);
+    }
+
+    @Override
+    public T save(T item, boolean batch) {
+        if (item.getId() > -1)
+            return merge(item, batch);
+        else
+            persist(item, batch);
+            return item;
+        }
+    }*/
 
     @Override
     public void delete(final T item){
