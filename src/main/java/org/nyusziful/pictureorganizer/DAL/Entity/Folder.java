@@ -3,7 +3,7 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 import org.nyusziful.pictureorganizer.Service.DriveService;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
@@ -66,5 +66,9 @@ public class Folder extends TrackingEntity {
         this.path = FolderService.winToDataPath(path);
         this.name = path.getFileName() == null ? "" : path.getFileName().toString();
 
+    }
+
+    public int getId() {
+        return id;
     }
 }

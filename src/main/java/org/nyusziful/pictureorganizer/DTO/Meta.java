@@ -31,11 +31,12 @@ public class Meta {
     public String title;
     public String keyword;
     public String make;
+    public Integer shotnumber;
 
     public Meta() {
     }
 
-    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, Integer orientation, String make, Integer rating/*, long duration*/) {
+    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, Integer orientation, String make, Integer rating, Long duration, Integer shotnumber) {
         this.nameVersion = nameVersion;
         this.originalFilename = originalFilename;
         this.date = date;
@@ -50,6 +51,7 @@ public class Meta {
         this.orientation = orientation;
         this.make = make;
         this.rating = rating;
+        this.shotnumber = shotnumber;
     }
 
     @Override
@@ -86,6 +88,8 @@ public class Meta {
             .append(keyword)
             .append(" ")
             .append(make)
+            .append(" ")
+            .append(shotnumber)
             ;
         return sb.toString();
     }

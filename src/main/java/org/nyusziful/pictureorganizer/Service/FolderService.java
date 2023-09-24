@@ -27,7 +27,6 @@ public class FolderService {
         folderDAO = new FolderDAOImplHib();
     }
 
-
     public static String winToDataPath(String path) {
         return path.replaceAll("\\\\", "/");
     }
@@ -98,4 +97,7 @@ public class FolderService {
     }
 
 
+    public Folder getFolder(Integer folderId) {
+        return folderDAO.getById(folderId);
+    }
 }

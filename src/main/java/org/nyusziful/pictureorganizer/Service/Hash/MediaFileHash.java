@@ -72,7 +72,7 @@ public class MediaFileHash {
      * @return the Hash of the media data in the file for known file types
      */
     public static ImageDTO getHash(File file) {
-        MessageDigest md5Digest = null;
+        MessageDigest md5Digest;
         ImageDTO imageDTO = new ImageDTO();
         try {
             md5Digest = MessageDigest.getInstance("MD5");

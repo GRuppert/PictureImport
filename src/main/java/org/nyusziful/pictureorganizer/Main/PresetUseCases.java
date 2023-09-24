@@ -10,9 +10,9 @@ import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 
 import javax.swing.*;
-import javax.xml.bind.DatatypeConverter;
 import java.awt.*;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
@@ -845,7 +845,7 @@ public class PresetUseCases {
                             md = MessageDigest.getInstance("MD5");
                             md.update(Files.readAllBytes(f));
                             byte[] digest = md.digest();
-                            String myChecksum = DatatypeConverter.printHexBinary(digest).toUpperCase();
+                            String myChecksum = new String(digest, StandardCharsets.UTF_8);//DatatypeConverter.printHexBinary(digest).toUpperCase();
                             Integer sequence = sequences.get(myChecksum);
                             if (sequence != null && sequence > 0) return;
                             ArrayList<String> result = ExifService.getExif(new String[]{"-SequenceNumber"}, f.toFile());

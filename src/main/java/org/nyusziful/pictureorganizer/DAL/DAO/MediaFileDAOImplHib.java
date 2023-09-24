@@ -4,9 +4,9 @@ import org.nyusziful.pictureorganizer.DAL.Entity.MediaDirectory;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileInstance;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
 import java.util.List;
 
 public class MediaFileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements MediaFileDAO {

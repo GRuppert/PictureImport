@@ -3,8 +3,11 @@ package org.nyusziful.pictureorganizer.Service;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
+import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Contoller.MainController;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
@@ -14,12 +17,15 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static java.lang.Boolean.TRUE;
 import static org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService.createXmp;
+import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.getHash;
+import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class MediaFileInstanceService {
     private final MediaFileInstanceDAO mediaFileInstanceDAO;
@@ -323,53 +329,78 @@ public class MediaFileInstanceService {
 
     public MediaFileInstance readMediaFileInstance(File file) {
         MediaFileInstance result = mediaFileInstanceDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath(), false);
-        if (result == null) result = readMediaFileInstance(file, null, folderService.getFolder(file.getParentFile().toPath()), null, false, CommonProperties.getInstance().getZone(), "");
+        if (result == null) result = readMediaFileInstance(file, new HashMap<>(), folderService.getFolder(file.getParentFile().toPath()), null, false, CommonProperties.getInstance().getZone(), "");
         mediaFileInstanceDAO.close();
         return result;
     }
 
     private MediaFileInstance readMediaFileInstance(File file, HashMap<String, MediaFileInstance> filesInFolderMap, Folder folder, Boolean original, boolean force, ZoneId zone, String notes) {
-        if (filesInFolderMap == null) filesInFolderMap = new HashMap<>();
         if (notes == null) notes = "";
         Path filePath = file.toPath();
         BasicFileAttributes attrs = org.nyusziful.pictureorganizer.Service.Rename.StaticTools.getFileAttributes(file);
-        MediaFileInstance actFile = null;
+        MediaFileInstance actFileInstance = null;
         long start = System.nanoTime();
-/*        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
+        if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
             Set<String> whatToSave = new HashSet<>();
-            actFile = filesInFolderMap.get(filePath.toString().toLowerCase());
+            actFileInstance = filesInFolderMap.get(filePath.toString().toLowerCase());
             assert folder != null;
             final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
             dateMod.setNanos(0);
             final long fileSize = attrs.size();
-            long fileCreateStart = System.nanoTime();
-            if (actFile == null) {
-                final String name = filePath.getFileName().toString();
-                if (supportedRAWFileType(name)) {
-                    actFile = new RAWMediaFileInstance(folder, filePath, fileSize, dateMod, original);
-                } else if (supportedJPGFileType(name)) {
-                    actFile = new JPGMediaFile(folder, filePath, fileSize, dateMod, original);
-                } else if (supportedVideoFileType(name)) {
-                    actFile = new VideoMediaFile(folder, filePath, fileSize, dateMod, original);
-                } else {
-                    actFile = new MediaFileInstance(folder, filePath, fileSize, dateMod, original);
-                }
-            }
             long hashStart = System.nanoTime();
-            long hashFinishStart = hashStart;
+            long hashEnd = hashStart;
             long exifReadStart = hashStart;
             long exifReadEnd = hashStart;
-            if (force || actFile.getId() < 0 || actFile.getSize() != fileSize || actFile.getDateMod().compareTo(dateMod) != 0 || (actFile instanceof VideoMediaFile && !file.getName().endsWith(".MTS") && ((VideoMediaFile)actFile).getDuration() == 0)) {
+            long fileCreateEnd = hashStart;
+            if (force
+                    || actFileInstance == null
+                    || actFileInstance.getMediaFileVersion().getSize() != fileSize
+                    || actFileInstance.getDateMod().compareTo(dateMod) != 0
+//                    || (actFileInstance instanceof VideoMediaFileInstance && !file.getName().endsWith(".MTS") && ((VideoMediaFileVersion)actFileInstance.getMediaFileVersion().getMedia().)..getDuration() == 0))
+            ) {
+                whatToSave.add("instance");
                 System.out.println(file.toPath());
-                actFile.setDateMod(dateMod);
-                actFile.setSize(fileSize);
                 ImageDTO imageDTO = getHash(filePath.toFile());
-                hashFinishStart = System.nanoTime();
+                hashEnd = System.nanoTime();
+                Meta meta = ExifService.readMeta(filePath.toFile(), zone);
+                exifReadEnd = System.nanoTime();
+                if (actFileInstance == null) {
+                    final String name = filePath.getFileName().toString();
+                    MediaFileVersion mediafileVersion = MediaFileVersionService.getInstance().getMediafileVersion(imageDTO.fullhash); //if we have the exact same version
+                    MediaFile mediaFile = null;
+                    if (mediafileVersion == null) {
+                        whatToSave.add("version");
+                        for (MediaFileVersion actMediaFileVersion : MediaFileVersionService.getInstance().getMediafileVersionsByImageHash(imageDTO.hash)) {
+                            if (mediafileVersion.getMedia().size() == 1) {
+                                if (mediaFile == null) mediaFile = actMediaFileVersion.getMediaFile();
+                                else if (!mediaFile.equals(actMediaFileVersion)) {
+                                    //this shouldn't be
+                                }
+                            }
+                        }
+                    }
+                    if (supportedRAWFileType(name)) {
+                        if (mediafileVersion == null && mediaFile == null) mediaFile = new RAWMediaFile(null, meta.originalFilename, meta.shotnumber);
+                        if (mediaFile != null) mediafileVersion = new RAWMediaFileVersion(imageDTO.fullhash, null, fileSize, (RAWMediaFile)mediaFile, meta.date);
+                        actFileInstance = new RAWMediaFileInstance(folder, filePath, dateMod, (RAWMediaFileVersion)mediafileVersion);
+                    } else if (supportedJPGFileType(name)) {
+                        if (mediafileVersion == null && mediaFile == null) mediaFile = new JPGMediaFile(null, meta.originalFilename, meta.shotnumber, JPGMediaFile.setWithQuality(meta.quality), null);
+                        if (mediaFile != null) mediafileVersion = new JPGMediaFileVersion(imageDTO.fullhash, null, fileSize, (JPGMediaFile)mediaFile, meta.date);
+                        actFileInstance = new JPGMediaFileInstance(folder, filePath, dateMod, (JPGMediaFileVersion)mediafileVersion);
+                    } else if (supportedVideoFileType(name)) {
+                        if (mediafileVersion == null && mediaFile == null) mediaFile = new VideoMediaFile(null, meta.originalFilename, meta.shotnumber);
+                        if (mediaFile != null) mediafileVersion = new VideoMediaFileVersion(imageDTO.fullhash, null, fileSize, (VideoMediaFile)mediaFile, meta.date);
+                        actFileInstance = new VideoMediaFileInstance(folder, filePath, dateMod, (VideoMediaFileVersion)mediafileVersion);
+                    } else {
+                        if (mediafileVersion == null && mediaFile == null) mediaFile = new MediaFile(null, meta.originalFilename, meta.shotnumber);
+                        if (mediaFile != null) mediafileVersion = new MediaFileVersion(imageDTO.fullhash, null, fileSize, mediaFile, meta.date);
+                        actFileInstance = new MediaFileInstance(folder, filePath, dateMod, mediafileVersion);
+                    }
+                }
+                fileCreateEnd = System.nanoTime();
                 Image image;
                 image = imageService.getImage(imageDTO, true);
                 exifReadStart = System.nanoTime();
-                Meta meta = ExifService.readMeta(filePath.toFile(), zone);
-                exifReadEnd = System.nanoTime();
                 if (image == null) {
                     image = new Image(imageDTO.hash, imageDTO.type, meta.make, meta.model);
                     whatToSave.add("image");
@@ -377,56 +408,29 @@ public class MediaFileInstanceService {
                     if (image.getCamera_model() == null) image.setCamera_model(meta.model);
                     if (image.getCamera_make() == null) image.setCamera_make(meta.make);
                 }
-                actFile.setMeta(meta);
-                actFile.setImage(image);
-                actFile.setFilehash(imageDTO.fullhash);
-                actFile.setExif(imageDTO.exif);
-                whatToSave.add("file");
-            }
-            if (TRUE.equals(original)) {
-                if (!actFile.isOriginal()) {
-                    try {
-                        final boolean updated = updateOriginalImage(actFile);
-                        if (updated) {
-                            whatToSave.add("image");
-                        }
-                    } catch (Exception e) {
-                        notes += actFile + "\n";
-                    }
-                }
-            } else {
-                try {
-                    final boolean updated = updateBestimateImage(actFile);
-                    if (updated) {
-                        whatToSave.add("file");
-                        whatToSave.add("image");
-                    }
-                } catch (Exception e) {
-                    notes += actFile + "\n";
-                }
             }
             long WriteToDBStart = System.nanoTime();
-            if (whatToSave.contains("image")) {
-                imageService.saveImage(actFile.getImage(), true);
+            if (whatToSave.contains("version")) {
+                MediaFileVersionService.getInstance().saveMediaFileVersion(actFileInstance.getMediaFileVersion(),true);
             }
-            if (whatToSave.contains("file")) {
-                saveMediaFileInstance(actFile, true);
-                filesInFolderMap.put(actFile.getFilePath().toString().toLowerCase(), actFile);
+            if (whatToSave.contains("instance")) {
+                saveMediaFileInstance(actFileInstance);
+                filesInFolderMap.put(actFileInstance.getFilePath().toString().toLowerCase(), actFileInstance);
             }
             long WriteToDBEnd = System.nanoTime();
             System.out.println(
-                    "Init  " + TimeUnit.NANOSECONDS.toMillis(fileCreateStart - start)
-                        + "\nMedia " + TimeUnit.NANOSECONDS.toMillis(hashStart - fileCreateStart)
-                            + "\nHash  " + TimeUnit.NANOSECONDS.toMillis(hashFinishStart - hashStart)
-                                + "\nImage " + TimeUnit.NANOSECONDS.toMillis(exifReadStart - hashFinishStart)
+                    "Init  " + TimeUnit.NANOSECONDS.toMillis(hashStart - start)
+                        + "\nHash  " + TimeUnit.NANOSECONDS.toMillis(hashEnd - hashStart)
+                            + "\nMedia " + TimeUnit.NANOSECONDS.toMillis(fileCreateEnd - hashEnd)
+                                + "\nImage " + TimeUnit.NANOSECONDS.toMillis(exifReadStart - fileCreateEnd)
                                     + "\nExif  " + TimeUnit.NANOSECONDS.toMillis(exifReadEnd - exifReadStart)
                                         + "\nSet   " + TimeUnit.NANOSECONDS.toMillis(WriteToDBStart - exifReadEnd)
                                             + "\nDB w  " + TimeUnit.NANOSECONDS.toMillis(WriteToDBEnd - WriteToDBStart)
                 + "\nWhole " + TimeUnit.NANOSECONDS.toMillis(WriteToDBEnd - start)
 
             );
-        }*/
-        return actFile;
+        }
+        return actFileInstance;
     }
 
     public String getMediaFileName(MediafileInstanceDTO mediafileInstanceDTO, String nameVersion) {
@@ -464,7 +468,7 @@ public class MediaFileInstanceService {
         return rename;
     }
 
-    public List<MediaFileInstance> getMediaFilesInstancesOfVersion(MediaFileVersion mediaFileVersion) {
+    public List<MediaFileInstance> getMediaFilesInstancesByVersion(MediaFileVersion mediaFileVersion) {
         return mediaFileInstanceDAO.getByVersion(mediaFileVersion);
     }
     public List<MediaFileInstance> getMediaFilesInstancesByMediaFile(MediaFile mediaFile) {

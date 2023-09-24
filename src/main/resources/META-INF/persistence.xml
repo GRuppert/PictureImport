@@ -21,17 +21,17 @@
         <class>org.nyusziful.pictureorganizer.DAL.Entity.MetaData</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.Image</class>
         <properties>
-            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://192.168.178.10:3306/pictureorganizer?useUnicode=yes&amp;characterEncoding=UTF-8" />
-            <property name="javax.persistence.jdbc.user" value="nappali" />
-            <property name="javax.persistence.jdbc.password" value="nappali" />
 <!--
-            <property name="javax.persistence.jdbc.url" value="jdbc:mysql://127.0.0.1:3306/pictureorganizer?useUnicode=yes&amp;characterEncoding=UTF-8" />
-            <property name="javax.persistence.jdbc.user" value="picture" />
-            <property name="javax.persistence.jdbc.password" value="picture" />
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://192.168.178.10:3306/pictureorganizer?useUnicode=yes&amp;characterEncoding=UTF-8" />
+            <property name="jakarta.persistence.jdbc.user" value="nappali" />
+            <property name="jakarta.persistence.jdbc.password" value="nappali" />
 -->
-            <property name="javax.persistence.schema-generation.scripts.action" value="drop-and-create"/>
-            <property name="javax.persistence.schema-generation.scripts.create-target" value="./create.sql"/>
-            <property name="javax.persistence.schema-generation.scripts.drop-target" value="./drop.sql"/>
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://127.0.0.1:3306/pictureorganizer?useUnicode=yes&amp;characterEncoding=UTF-8" />
+            <property name="jakarta.persistence.jdbc.user" value="picture" />
+            <property name="jakarta.persistence.jdbc.password" value="picture" />
+            <property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create"/>
+            <property name="jakarta.persistence.schema-generation.scripts.create-target" value="./create.sql"/>
+            <property name="jakarta.persistence.schema-generation.scripts.drop-target" value="./drop.sql"/>
             <property name="mysql-picture.logging.level" value="FINE"/>
             <property name="connection.useUnicode" value="true"/>
             <property name="connection.characterEncoding" value="UTF-8"/>

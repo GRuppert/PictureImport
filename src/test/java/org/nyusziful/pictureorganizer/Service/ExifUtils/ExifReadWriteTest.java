@@ -41,9 +41,9 @@ public class ExifReadWriteTest {
 
     private static final TestData[] TESTS = new TestData[] {
             new TestData("V5_K2015-07-2_5@12-3_2-29(+0200)(Sat)-4f0f7fe2fabb83c399af967ccf860d88-47e0be579ef91106cdd6c818b2976ce2-DSC09459.ARW",
-                    new Meta(5,"", ZonedDateTime.of(2015, 07, 25, 14, 32, 29, 00, ZoneId.systemDefault()), true, "ILCE-5100", null, "47e0be579ef91106cdd6c818b2976ce2", "47e0be579ef91106cdd6c818b2976ce2", "", null, "RAW + JPEG", 1, "SONY", 0)),
+                    new Meta(5,"", ZonedDateTime.of(2015, 07, 25, 14, 32, 29, 00, ZoneId.systemDefault()), true, "ILCE-5100", null, "47e0be579ef91106cdd6c818b2976ce2", "47e0be579ef91106cdd6c818b2976ce2", "", null, "RAW + JPEG", 1, "SONY", 0, null, 1)),
             new TestData("WP_20140703_16_51_45_Raw__highres.dng",
-                    new Meta(0,"", ZonedDateTime.of(2014, 07, 03, 16, 51, 43, 00, ZoneId.systemDefault()), false, "Lumia 1020", null, null, null, null, null, null, 3, "Nokia", null))
+                    new Meta(0,"", ZonedDateTime.of(2014, 07, 03, 16, 51, 43, 00, ZoneId.systemDefault()), false, "Lumia 1020", null, null, null, null, null, null, 3, "Nokia", null, null, 1))
     };
     String filename;
     Meta expMeta;

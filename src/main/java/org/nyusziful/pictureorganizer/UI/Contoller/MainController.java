@@ -6,6 +6,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.concurrent.WorkerStateEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.Label;
@@ -116,11 +117,12 @@ public class MainController implements Initializable {
         from.setText(commonProperties.getFromDir().toString());
         to.setText(commonProperties.getToDir().toString());
 
-        BorderPane summaryPane = null;
-        VBox folderList = null;
+        TreeView summaryTree = null;
+        VBox rightBox = new VBox(2);
         VBox mediaDirectoryList = null;
         try {
-            summaryPane = new FXMLLoader(getClass().getResource("/fxml/summary.fxml")).load();
+            summaryTree = new FXMLLoader(getClass().getResource("/fxml/summary.fxml")).load();
+            summaryTree.setStyle("-fx-border-color: black");
 
 /*
             FXMLLoader loader2 = new FXMLLoader(getClass().getResource(
@@ -130,11 +132,13 @@ public class MainController implements Initializable {
             mediaFileSet.folderNameProperty().bind(dvContoller.getFolderName());
 */
             mediaDirectoryList = new FXMLLoader(getClass().getResource("/fxml/mediaDirectoryList.fxml")).load();
+            mediaDirectoryList.setStyle("-fx-border-color: black");
+            rightBox.getChildren().addAll(mediaDirectoryList, summaryTree);
+            rightBox.setPadding(new Insets(10));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        mainPane.setCenter(summaryPane);
-        mainPane.setRight(mediaDirectoryList);
+        mainPane.setRight(rightBox);
         progressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) beep();});
     }
 

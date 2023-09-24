@@ -26,7 +26,7 @@ public class MediaFileVersionService {
     public void saveMediaFileVersion(MediaFileVersion mediaFileVersion) {
         saveMediaFileVersion(mediaFileVersion, false);
     }
-    private void saveMediaFileVersion(MediaFileVersion mediaFileVersion, boolean batch) {
+    public void saveMediaFileVersion(MediaFileVersion mediaFileVersion, boolean batch) {
         saveMediaFileVersions(Collections.singleton(mediaFileVersion), batch);
     }
 
@@ -57,4 +57,11 @@ public class MediaFileVersionService {
         return mediaFileVersionDAO.getMediafileVersionsByMediaFile(mediaFile);
     }
 
+    public List<MediaFileVersion> getMediafileVersionsByImageHash(String hash) {
+        return mediaFileVersionDAO.getMediafileVersionsByImageHash(hash);
+    }
+
+    public List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion) {
+        return mediaFileVersionDAO.getMediafileVersionsByParent(mediaFileVersion);
+    }
 }

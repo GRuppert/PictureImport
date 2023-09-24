@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
+import org.nyusziful.pictureorganizer.DAL.Entity.Media;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileVersion;
 
@@ -10,4 +11,8 @@ public interface MediaFileVersionDAO extends CRUDDAO<MediaFileVersion> {
     MediaFileVersion getMediafileVersionByFileHash(String filehash, boolean batch);
     List<MediaFileVersion> getMediafileVersionsByMediaFile(MediaFile mediaFile);
     List<MediaFileVersion> getMediafileVersionsByMediaFile(MediaFile mediaFile, boolean batch);
+    List<MediaFileVersion> getMediafileVersionsByImageHash(String hash);
+    List<MediaFileVersion> getMediafileVersionsByImageHash(String hash, boolean batch);
+    List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion);
+    List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion, boolean batch);
 }

@@ -1,6 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "meta_data")

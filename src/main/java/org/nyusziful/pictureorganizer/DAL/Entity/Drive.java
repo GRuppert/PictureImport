@@ -3,11 +3,11 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.nyusziful.pictureorganizer.DAL.DAO.HasID;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "drive")
-public class Drive implements HasID {
+public class Drive {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false, nullable = false)
@@ -21,10 +21,6 @@ public class Drive implements HasID {
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getDescription() {

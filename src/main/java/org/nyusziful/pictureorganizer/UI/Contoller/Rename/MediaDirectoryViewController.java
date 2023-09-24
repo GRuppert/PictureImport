@@ -28,7 +28,6 @@ public class MediaDirectoryViewController implements Initializable {
 
     @FXML
     private Label targetFolderName;
-
     @FXML
     private TextField eventNameField;
 

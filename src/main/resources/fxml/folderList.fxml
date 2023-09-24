@@ -3,7 +3,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="1600" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.DirectoryViewController">
+<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="1000" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.DirectoryViewController">
     <ListView fx:id="directoryList"/>
     <HBox>
         <DatePicker fx:id="firstDatePicker"/>
@@ -12,6 +12,4 @@
         <Button fx:id="applyEventName" text="Apply" onAction="#handleApplyEventNameButtonAction"/>
     </HBox>
     <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefreshDir" />
-
-
 </VBox>

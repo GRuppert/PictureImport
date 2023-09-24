@@ -1,10 +1,18 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import java.time.ZonedDateTime;
 
 @Entity
 @DiscriminatorValue("RAW")
 public class RAWMediaFileVersion extends MediaFileVersion {
+    public RAWMediaFileVersion() {
+        // this form used by Hibernate
+    }
+
+    public RAWMediaFileVersion(String filehash, RAWMediaFileVersion parent, Long size, MediaFile mediaFile, ZonedDateTime dateStored) {
+        super(filehash, parent, size, mediaFile, dateStored);
+    }
 
 }

@@ -1,7 +1,8 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
+import java.time.ZonedDateTime;
 
 @Entity
 @DiscriminatorValue("JPG")
@@ -12,8 +13,8 @@ public class JPGMediaFileVersion extends MediaFileVersion {
         // this form used by Hibernate
     }
 
-    public JPGMediaFileVersion(String filehash, MediaFileVersion parent, Long size) {
-        super(filehash, parent, size);
+    public JPGMediaFileVersion(String filehash, JPGMediaFileVersion parent, Long size, JPGMediaFile mediaFile, ZonedDateTime dateStored) {
+        super(filehash, parent, size, mediaFile, dateStored);
     }
 
     public Boolean getExifbackup() {

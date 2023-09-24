@@ -1,7 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 
 @Entity
 @DiscriminatorValue("JPG")
@@ -11,7 +11,7 @@ public class JPGMediaFile extends MediaFile {
     public JPGMediaFile() {
     }
 
-    public JPGMediaFile(MediaFileVersion originalVersion, String originalFilename, Integer shotnumber, boolean standalone, MediaFile mainMediaFile) {
+    public JPGMediaFile(JPGMediaFileVersion originalVersion, String originalFilename, Integer shotnumber, boolean standalone, MediaFile mainMediaFile) {
         super(originalVersion, originalFilename, shotnumber);
         super.setMainMediaFile(mainMediaFile);
         setStandalone(standalone);

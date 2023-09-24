@@ -2,7 +2,7 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.nyusziful.pictureorganizer.Model.MediaDirectoryInstance;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.Objects;
 
 @Entity

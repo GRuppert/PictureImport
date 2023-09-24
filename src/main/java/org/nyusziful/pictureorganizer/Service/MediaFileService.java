@@ -109,7 +109,7 @@ public class MediaFileService {
         return false;
     }
 
-    public List<MediaFile> getgetMediaFileByMediaDirectory(MediaDirectory mediaDirectory) {
+    public List<MediaFile> getMediaFileByMediaDirectory(MediaDirectory mediaDirectory) {
         return mediafileDAO.getMediaFileByMediaDirectory(mediaDirectory);
     }
 }

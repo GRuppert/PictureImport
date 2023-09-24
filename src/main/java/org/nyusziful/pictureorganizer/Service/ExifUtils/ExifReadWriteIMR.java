@@ -81,7 +81,6 @@ public class ExifReadWriteIMR {
     public static Meta readFileMeta(InputStream inputStream, String name, ZoneId defaultTZ) {
         ArrayList<String[]> tags;
         String model = null;
-        String note = "";
         String iID = null;
         String dID = null;
         String odID = null;
@@ -96,11 +95,12 @@ public class ExifReadWriteIMR {
         String make = null;
         String title = null;
         String keyword = null;
-        Integer sequence = null;
+        Integer shotnumber = null;
         try {
             tags = readMeta(inputStream, name);
         } catch (ImageProcessingException | IOException ex) {
-            Meta meta = createMeta(name, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, ex.toString(), orig, quality, duration);
+            Meta meta = createMeta(name, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, orig, quality, duration);
+            meta.note = ex.toString();
             System.out.println(meta);
             return meta;
         }
@@ -210,6 +210,14 @@ public class ExifReadWriteIMR {
                     } catch (NumberFormatException nfe) {
                     }
                     break;
+                case "Sequence Number":
+                    if ("Single".equals(tag[1])) {shotnumber = 1;} else {
+                        try {
+                            shotnumber = Integer.parseInt(tag[1]);
+                        } catch (NumberFormatException nfe) {
+                        }
+                    }
+                    break;
             }
         }
         ZonedDateTime OrigDT = null;
@@ -219,17 +227,18 @@ public class ExifReadWriteIMR {
         } else if (wTZ != null) {
             OrigDT = wTZ;
         }
-        Meta meta = createMeta(name, OrigDT, dateFormat, model, iID, dID, odID, note, orig, quality, duration);
+        Meta meta = createMeta(name, OrigDT, dateFormat, model, iID, dID, odID, orig, quality, duration);
         meta.orientation = orientation;
         meta.title = title;
         meta.keyword = keyword;
         meta.rating = rating;
         meta.make = make;
+        meta.shotnumber = shotnumber;
         System.out.println(meta);
         return meta;
     }
 
-    private static Meta createMeta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, long duration) {
+    private static Meta createMeta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String orig, String quality, long duration) {
         Meta meta = new Meta();
         meta.originalFilename = originalFilename;
         meta.date = date;
@@ -238,7 +247,7 @@ public class ExifReadWriteIMR {
         meta.odID = odID;
         meta.dID = dID;
         meta.iID = iID;
-        meta.orig = meta.orig;
+        meta.orig = orig;
         meta.quality = quality;
         meta.duration = duration;
         return meta;

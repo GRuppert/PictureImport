@@ -4,7 +4,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Timestamp;

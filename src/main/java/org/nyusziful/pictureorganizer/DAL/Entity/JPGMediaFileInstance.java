@@ -2,8 +2,8 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.nyusziful.pictureorganizer.Service.Hash.JPGHash;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 
@@ -14,7 +14,7 @@ public class JPGMediaFileInstance extends MediaFileInstance {
         // this form used by Hibernate
     }
 
-    public JPGMediaFileInstance(Folder folder, Path path, Timestamp dateMod, MediaFileVersion mediaFileVersion) {
+    public JPGMediaFileInstance(Folder folder, Path path, Timestamp dateMod, JPGMediaFileVersion mediaFileVersion) {
         super(folder, path, dateMod, mediaFileVersion);
 /*        exifbackup = checkBackupExif();
 

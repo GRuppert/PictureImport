@@ -1,9 +1,12 @@
 package org.nyusziful.pictureorganizer.Service;
 
-import com.sun.javafx.scene.control.GlobalMenuAdapter;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediaGeneralDAO;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediaGeneralDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
+import org.nyusziful.pictureorganizer.DTO.DirectorySummaryDTO;
+import org.nyusziful.pictureorganizer.DTO.FolderSummaryDTO;
 
-import java.io.File;
+import java.util.Collection;
 
 public class MediaFileGeneralService {
     final MediaDirectoryService mds = MediaDirectoryService.getInstance();
@@ -11,9 +14,13 @@ public class MediaFileGeneralService {
     final MediaFileVersionService mfvs = MediaFileVersionService.getInstance();
     final MediaFileInstanceService mfis = MediaFileInstanceService.getInstance();
 
+    final MediaGeneralDAO mediaGeneralDAO;
+
     private static MediaFileGeneralService instance;
 
-    private MediaFileGeneralService() {}
+    private MediaFileGeneralService() {
+        mediaGeneralDAO = new MediaGeneralDAOImplHib();
+    }
 
     public static MediaFileGeneralService getInstance() {
         if (instance == null) {
@@ -24,7 +31,7 @@ public class MediaFileGeneralService {
 
     public void loadStatus(int mediaDirectoryId) {
         final MediaDirectory mediaDirectory = mds.getMediaDirectoryById(mediaDirectoryId);
-        for (MediaFile mediaFile : mfs.getgetMediaFileByMediaDirectory(mediaDirectory)) {
+        for (MediaFile mediaFile : mfs.getMediaFileByMediaDirectory(mediaDirectory)) {
             for (MediaFileInstance mediaFileInstance : mfis.getMediaFilesInstancesByMediaFile(mediaFile)) {
                 final Folder folder = mediaFileInstance.getFolder();
             }
@@ -32,7 +39,17 @@ public class MediaFileGeneralService {
 
     }
 
+    public Collection<DirectorySummaryDTO> loadDirectoryBackupStatus() {
+        return mediaGeneralDAO.loadDirectoryBackupStatus();
+    }
 
+    public Collection<DirectorySummaryDTO> loadDirectoryVersionStatus() {
+        return mediaGeneralDAO.loadDirectoryVersionStatus();
+    }
+
+    public Collection<FolderSummaryDTO> loadDirectoryVersionStatus(Integer[] mediaFileVersionIds) {
+        return mediaGeneralDAO.loadDirectoryVersionStatus(mediaFileVersionIds);
+    }
 
     public static void main(String[] args) {
         new MediaFileGeneralService().loadStatus(888);

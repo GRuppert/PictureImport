@@ -1,7 +1,7 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.DiscriminatorValue;
-import javax.persistence.Entity;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,7 +16,7 @@ public class RAWMediaFileInstance extends MediaFileInstance {
         // this form used by Hibernate
     }
 
-    public RAWMediaFileInstance(Folder folder, Path path, Timestamp dateMod, MediaFileVersion mediaFileVersion) {
+    public RAWMediaFileInstance(Folder folder, Path path, Timestamp dateMod, RAWMediaFileVersion mediaFileVersion) {
         super(folder, path, dateMod, mediaFileVersion);
         this.XMPattached = Files.exists(Paths.get(path.toString()+".xmp"));
     }

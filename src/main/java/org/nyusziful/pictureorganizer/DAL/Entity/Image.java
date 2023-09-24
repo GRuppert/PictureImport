@@ -2,7 +2,7 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.time.ZonedDateTime;
 import java.util.Collection;

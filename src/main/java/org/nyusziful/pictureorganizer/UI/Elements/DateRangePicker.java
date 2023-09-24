@@ -1,11 +1,11 @@
 package org.nyusziful.pictureorganizer.UI.Elements;
 
-import com.sun.javafx.scene.control.skin.DatePickerContent;
-import com.sun.javafx.scene.control.skin.DatePickerSkin;
+import com.sun.javafx.scene.control.DatePickerContent;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.DateCell;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.skin.DatePickerSkin;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;

@@ -1,7 +1,8 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.*;
-import java.io.File;
+import org.nyusziful.pictureorganizer.DAL.DAO.HasID;
+
+import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
@@ -9,7 +10,7 @@ import static java.lang.Integer.parseInt;
 
 @Entity
 @Table(name = "media_directory")
-public class MediaDirectory {
+public class MediaDirectory implements HasID {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", updatable = false, nullable = false)
@@ -29,6 +30,14 @@ public class MediaDirectory {
     @Override
     public String toString() {
         return firstDate + " - " + lastDate + (label.isEmpty() ? "" : " " + label);
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public LocalDate getFirstDate() {

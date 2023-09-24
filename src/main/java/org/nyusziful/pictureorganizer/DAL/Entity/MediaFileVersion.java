@@ -1,6 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -51,8 +51,7 @@ public class MediaFileVersion extends TrackingEntity {
     @Column(name = "invalid")
     private Boolean invalid;
 
-    @OneToMany(fetch = FetchType.LAZY, cascade = {CascadeType.REFRESH})
-    @JoinColumn(name="image_id", referencedColumnName="id")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "mediaFileVersion")
     private Set<Media> media;
 
     @Transient
@@ -72,10 +71,12 @@ public class MediaFileVersion extends TrackingEntity {
         // this form used by Hibernate
     }
 
-    public MediaFileVersion(String filehash, MediaFileVersion parent, Long size) {
+    public MediaFileVersion(String filehash, MediaFileVersion parent, Long size, MediaFile mediaFile, ZonedDateTime dateStored) {
         this.filehash = filehash;
         this.parent = parent;
         this.size = size;
+        this.mediaFile = mediaFile;
+        setDateStored(dateStored);
     }
 
     public String getFilehash() {
@@ -152,7 +153,7 @@ public class MediaFileVersion extends TrackingEntity {
         this.commit = commit;
     }
 
-    public Boolean getInvalid() {
+    public Boolean isInvalid() {
         return invalid;
     }
 

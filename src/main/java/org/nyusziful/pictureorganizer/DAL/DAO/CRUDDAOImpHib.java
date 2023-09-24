@@ -2,10 +2,10 @@ package org.nyusziful.pictureorganizer.DAL.DAO;
 
 import org.nyusziful.pictureorganizer.DAL.JPAConnection;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
 

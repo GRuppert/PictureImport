@@ -3,11 +3,11 @@ package org.nyusziful.pictureorganizer.DAL.DAO;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
 import org.nyusziful.pictureorganizer.Service.FolderService;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.NoResultException;
-import javax.persistence.TypedQuery;
-import javax.persistence.criteria.*;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.NoResultException;
+import jakarta.persistence.TypedQuery;
+import jakarta.persistence.criteria.*;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -139,7 +139,7 @@ public class MediaFileInstanceDAOImplHib extends CRUDDAOImpHib<MediaFileInstance
         long commit = query;
         long close = query;
         try{
-            TypedQuery<MediaFileInstance> typedQuery = entityManager.createQuery("SELECT i from MediaFileInstance i LEFT JOIN FETCH i.image WHERE i.folder.drive.id=:driveId and i.folder.path=:path", MediaFileInstance.class);
+            TypedQuery<MediaFileInstance> typedQuery = entityManager.createQuery("SELECT mfi from MediaFileInstance mfi LEFT JOIN FETCH mfi.mediaFileVersion mfv WHERE mfi.folder.drive.id=:driveId and mfi.folder.path=:path", MediaFileInstance.class);
             typedQuery.setParameter("driveId", drive.getId());
             typedQuery.setParameter("path", FolderService.winToDataPath(path));
             results = typedQuery.getResultList();

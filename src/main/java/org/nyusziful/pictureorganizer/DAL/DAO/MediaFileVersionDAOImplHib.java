@@ -1,11 +1,13 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
+import org.nyusziful.pictureorganizer.DAL.Entity.Image;
+import org.nyusziful.pictureorganizer.DAL.Entity.Media;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFile;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileVersion;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.persistence.TypedQuery;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.TypedQuery;
 import java.util.List;
 
 public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> implements MediaFileVersionDAO {
@@ -53,6 +55,73 @@ public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> 
         try{//LEFT JOIN FETCH i.mediaFiles
             TypedQuery<MediaFileVersion> typedQuery = entityManager.createQuery("SELECT mfv from MediaFileVersion mfv WHERE mfv.mediaFile=:mediaFile", MediaFileVersion.class);
             typedQuery.setParameter("mediaFile", mediaFile);
+            results = typedQuery.getResultList();
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+
+        }finally{
+            if(!batch){
+                entityManager.close();
+            }
+        }
+        if (!results.isEmpty())
+            return results;
+        else
+            return null;
+    }
+
+    @Override
+    public List<MediaFileVersion> getMediafileVersionsByImageHash(String hash) {
+        return getMediafileVersionsByImageHash(hash, false);
+    }
+
+    @Override
+    public List<MediaFileVersion> getMediafileVersionsByImageHash(String hash, boolean batch) {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        List<MediaFileVersion> results;
+        try{
+            TypedQuery<MediaFileVersion> typedQuery = entityManager.createQuery("SELECT DISTINCT mfv from MediaFileVersion mfv LEFT JOIN mfv.media m WHERE m.image.hash=:hash", MediaFileVersion.class);
+            typedQuery.setParameter("hash", hash);
+            results = typedQuery.getResultList();
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+
+        }finally{
+            if(!batch){
+                entityManager.close();
+            }
+        }
+        if (!results.isEmpty())
+            return results;
+        else
+            return null;
+    }
+
+    @Override
+    public List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion) {
+        return getMediafileVersionsByParent(mediaFileVersion, false);
+    }
+    @Override
+    public List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion, boolean batch) {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        List<MediaFileVersion> results;
+        try{
+            TypedQuery<MediaFileVersion> typedQuery = entityManager.createQuery("SELECT DISTINCT mfv from MediaFileVersion mfv WHERE mfv.parent=:parent", MediaFileVersion.class);
+            typedQuery.setParameter("parent", mediaFileVersion);
             results = typedQuery.getResultList();
             if (!batch) transaction.commit();
         }catch(RuntimeException e){
