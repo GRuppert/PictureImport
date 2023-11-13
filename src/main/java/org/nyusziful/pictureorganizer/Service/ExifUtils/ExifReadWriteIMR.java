@@ -105,12 +105,6 @@ public class ExifReadWriteIMR {
             return meta;
         }
 
-
-        for (String[] tag : tags) {
-            System.out.println(tag[0] + " : " + tag[1]);
-        }
-
-
         for (String[] tag : tags) {
 //                System.out.println(tag[0] + " : " + tag[1]);
             switch (tag[0]) {

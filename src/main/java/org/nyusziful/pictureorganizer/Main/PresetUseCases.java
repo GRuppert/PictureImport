@@ -31,7 +31,8 @@ public class PresetUseCases {
     private static long prevTime = System.nanoTime();
 
     public static void main(String[] args) {
-        ReadSequence();
+        read();
+//        ReadSequence();
 //        addOrigFilename();
 /*
         repairMP4();
@@ -147,8 +148,10 @@ public class PresetUseCases {
 //        File dir = new File("f:\\Pictures\\Photos");
 //        File dir = new File("G:\\Képek\\Photos");
 //        File dir = new File("G:\\Pictures\\Photos");
-        File dir = new File("D:\\Képek\\Babi");
+//        File dir = new File("D:\\Képek\\Babi");
 //        File dir = new File("D:\\Photos");
+        File dir = new File("E:\\Work\\Testfiles\\NewDBStructureRW");
+
         ArrayList<File> directories = new ArrayList<>();
         try {
             Files.walk(dir.toPath())
@@ -162,7 +165,7 @@ public class PresetUseCases {
         for (File directory : directories) {
 //            if ("H:\\Képek\\Photos\\Új\\Frankfurt\\5100\\PRIVATE\\M4ROOT\\CLIP".equals(directory.toPath().toString())) skip = false;
             if (skip) continue;
-            final Set<MediafileInstanceDTO> mediaFiles = mediafileInstanceService.readMediaFilesFromFolder(directory.toPath(), null, true, CommonProperties.getInstance().getZone(), "", null);
+            final Set<MediafileInstanceDTO> mediaFiles = mediafileInstanceService.readMediaFilesFromFolder(directory.toPath(), true, false, CommonProperties.getInstance().getZone(), "", null);
 /*            for (MediafileDTO mediafileDTO : mediaFiles) {
                 RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", toDir+directory.getName());
                 final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");

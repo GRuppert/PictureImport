@@ -104,10 +104,7 @@ public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> 
                 entityManager.close();
             }
         }
-        if (!results.isEmpty())
-            return results;
-        else
-            return null;
+        return results;
     }
 
     @Override

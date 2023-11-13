@@ -29,7 +29,7 @@ import org.nyusziful.pictureorganizer.UI.Progress;
 import org.nyusziful.pictureorganizer.Model.MediaDirectoryInstance;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 
-import static org.nyusziful.pictureorganizer.Service.MediaFileInstanceService.getMediafileDTO;
+import static org.nyusziful.pictureorganizer.Service.MediaFileInstanceService.getMediafileInstanceDTO;
 import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
@@ -426,7 +426,7 @@ public class MainController implements Initializable {
                     }
                 }
             }
-            files.add(new RenameTableViewMediaFileInstance(getMediafileDTO(file), file.getName(), "", target.toString()));
+            files.add(new RenameTableViewMediaFileInstance(getMediafileInstanceDTO(file), file.getName(), "", target.toString()));
 //            System.out.println(file.toString() + " -> " + target);
         }
         return files;

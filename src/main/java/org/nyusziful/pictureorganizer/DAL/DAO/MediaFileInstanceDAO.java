@@ -8,10 +8,8 @@ import java.util.List;
 public interface MediaFileInstanceDAO extends CRUDDAO<MediaFileInstance>{
     List<MediaFileInstance> getByDriveId(int id);
     List<MediaFileInstance> getByDriveId(int id, boolean batch);
-    List<MediaFileInstance> getByPath(Drive drive, Path path);
-    List<MediaFileInstance> getByPath(Drive drive, Path path, boolean batch);
-    List<MediaFileInstance> getByPathRec(Drive drive, Path path);
-    List<MediaFileInstance> getByPathRec(Drive drive, Path path, boolean batch);
+    List<MediaFileInstance> getByPath(Drive drive, Path path, boolean recursive);
+    List<MediaFileInstance> getByPath(Drive drive, Path path, boolean recursive, boolean batch);
     List<MediaFileInstance> getMediaFilesFromPathOfImage(Image image, Drive drive, Path target);
     List<MediaFileInstance> getMediaFilesFromPathOfImage(Image image, Drive drive, Path target, boolean batch);
     List<MediaFileInstance> getByVersion(MediaFileVersion mediaFileVersion);

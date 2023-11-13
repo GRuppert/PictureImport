@@ -123,12 +123,12 @@ public class MediaFileInstanceDAOImplHib extends CRUDDAOImpHib<MediaFileInstance
     }
 
     @Override
-    public List<MediaFileInstance> getByPath(Drive drive, Path path) {
-        return getByPath(drive, path, false);
+    public List<MediaFileInstance> getByPath(Drive drive, Path path, boolean recursive) {
+        return getByPath(drive, path, recursive, false);
     }
 
     @Override
-    public List<MediaFileInstance> getByPath(Drive drive, Path path, boolean batch) {
+    public List<MediaFileInstance> getByPath(Drive drive, Path path, boolean recursive, boolean batch) {
         long start = System.nanoTime();
         EntityManager entityManager = jpaConnection.getEntityManager();
         long entity = System.nanoTime();
@@ -139,9 +139,9 @@ public class MediaFileInstanceDAOImplHib extends CRUDDAOImpHib<MediaFileInstance
         long commit = query;
         long close = query;
         try{
-            TypedQuery<MediaFileInstance> typedQuery = entityManager.createQuery("SELECT mfi from MediaFileInstance mfi LEFT JOIN FETCH mfi.mediaFileVersion mfv WHERE mfi.folder.drive.id=:driveId and mfi.folder.path=:path", MediaFileInstance.class);
+            TypedQuery<MediaFileInstance> typedQuery = entityManager.createQuery("SELECT mfi from MediaFileInstance mfi LEFT JOIN FETCH mfi.mediaFileVersion mfv LEFT JOIN FETCH mfi.mediaFileVersion.mediaFile mf WHERE mfi.folder.drive.id=:driveId and mfi.folder.path=:path", MediaFileInstance.class);
             typedQuery.setParameter("driveId", drive.getId());
-            typedQuery.setParameter("path", FolderService.winToDataPath(path));
+            typedQuery.setParameter("path", FolderService.winToDataPath(path) + (recursive ? "%" : ""));
             results = typedQuery.getResultList();
             query = System.nanoTime();
             if (!batch) transaction.commit();
@@ -172,38 +172,6 @@ public class MediaFileInstanceDAOImplHib extends CRUDDAOImpHib<MediaFileInstance
 
         );
 */
-        return results;
-    }
-
-    @Override
-    public List<MediaFileInstance> getByPathRec(Drive drive, Path path) {
-        return getByPathRec(drive, path, false);
-    }
-
-    @Override
-    public List<MediaFileInstance> getByPathRec(Drive drive, Path path, boolean batch) {
-        EntityManager entityManager = jpaConnection.getEntityManager();
-        EntityTransaction transaction = entityManager.getTransaction();
-        List<MediaFileInstance> results;
-        try{
-            TypedQuery<MediaFileInstance> typedQuery = entityManager.createQuery("SELECT i from MediaFileInstance i WHERE i.folder.drive.id=:driveId and i.folder.path like :path", MediaFileInstance.class);
-            typedQuery.setParameter("driveId", drive.getId());
-            typedQuery.setParameter("path", FolderService.winToDataPath(path) + "%");
-            results = typedQuery.getResultList();
-            if (!batch) transaction.commit();
-        }catch(RuntimeException e){
-            try{
-                transaction.rollback();
-            }catch(RuntimeException rbe){
-//                log.error("Couldn’t roll back transaction", rbe);
-            }
-            throw e;
-
-        }finally{
-            if(entityManager!=null && !batch){
-                entityManager.close();
-            }
-        }
         return results;
     }
 

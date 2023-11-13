@@ -47,7 +47,7 @@ public class MediaFileGeneralService {
         return mediaGeneralDAO.loadDirectoryVersionStatus();
     }
 
-    public Collection<FolderSummaryDTO> loadDirectoryVersionStatus(Integer[] mediaFileVersionIds) {
+    public Collection<FolderSummaryDTO> loadDirectoryVersionStatus(Collection<Integer> mediaFileVersionIds) {
         return mediaGeneralDAO.loadDirectoryVersionStatus(mediaFileVersionIds);
     }
 

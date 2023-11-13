@@ -3,8 +3,11 @@ package org.nyusziful.pictureorganizer.Service;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileVersionDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileVersionDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.util.*;
+
+import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class MediaFileVersionService {
     private MediaFileVersionDAO mediaFileVersionDAO;
@@ -23,6 +26,17 @@ public class MediaFileVersionService {
         return instance;
     }
 
+    public MediaFileVersion createMediaFileVersion(String name, Meta meta, String fullhash, long fileSize, MediaFile mediaFile, MediaFileVersion parent) {
+        if (supportedRAWFileType(name)) {
+            return new RAWMediaFileVersion(fullhash, (RAWMediaFileVersion) parent, fileSize, (RAWMediaFile)mediaFile, meta.date);
+        } else if (supportedJPGFileType(name)) {
+            return new JPGMediaFileVersion(fullhash, (JPGMediaFileVersion) parent, fileSize, (JPGMediaFile)mediaFile, meta.date);
+        } else if (supportedVideoFileType(name)) {
+            return new VideoMediaFileVersion(fullhash, (VideoMediaFileVersion) parent, fileSize, (VideoMediaFile)mediaFile, meta.date);
+        } else {
+            return new MediaFileVersion(fullhash, parent, fileSize, mediaFile, meta.date);
+        }
+    }
     public void saveMediaFileVersion(MediaFileVersion mediaFileVersion) {
         saveMediaFileVersion(mediaFileVersion, false);
     }

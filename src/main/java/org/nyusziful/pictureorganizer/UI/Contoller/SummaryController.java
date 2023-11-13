@@ -5,6 +5,7 @@ import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import javafx.util.Callback;
 import org.nyusziful.pictureorganizer.DTO.DirectorySummaryDTO;
+import org.nyusziful.pictureorganizer.DTO.FileSummaryDTO;
 import org.nyusziful.pictureorganizer.DTO.FolderSummaryDTO;
 import org.nyusziful.pictureorganizer.DTO.SummaryDTO;
 import org.nyusziful.pictureorganizer.Service.MediaFileGeneralService;
@@ -60,7 +61,12 @@ public class SummaryController implements Initializable {
             root.getChildren().add(directorySummaryDTOTreeItem);
             if (directorySummaryDTO.getMediaDirectory() != null && directorySummaryDTO.getMediaDirectory().getId() == 27) {
                 for (FolderSummaryDTO loadDirectoryVersionStatus : MediaFileGeneralService.getInstance().loadDirectoryVersionStatus(directorySummaryDTO.getIds("Collision"))) {
-                    directorySummaryDTOTreeItem.getChildren().add(new TreeItem<>(loadDirectoryVersionStatus));
+                    TreeItem<SummaryDTO> folderSummaryDTOTreeItem = new TreeItem<>(loadDirectoryVersionStatus);
+                    directorySummaryDTOTreeItem.getChildren().add(folderSummaryDTOTreeItem);
+                    for (FileSummaryDTO fileSummaryDTO : loadDirectoryVersionStatus.getFilesSummaries()) {
+                        folderSummaryDTOTreeItem.getChildren().add(new TreeItem<>(fileSummaryDTO));
+                    }
+
                 }
                 directorySummaryDTOTreeItem.setExpanded(true);
             } else {

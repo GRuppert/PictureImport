@@ -102,3 +102,36 @@ SELECT mi.image_id FROM media_image mi LEFT JOIN image i ON i.id = mi.image_id W
 SELECT distinct(f.path) FROM media_image omi LEFT JOIN media_file_instance omfi ON omfi.media_file_id = omi.media_file_version_id LEFT JOIN folder f ON f.id = omfi.folder_id WHERE f.drive_id = 3 AND omi.image_id IN (
 SELECT mi.image_id FROM media_image mi LEFT JOIN image i ON i.id = mi.image_id WHERE image_id>3 AND i.type = 'jpg' GROUP BY image_id HAVING count(*) > 1
 );
+
+CREATE TABLE media_image_2 (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+) SELECT 
+mfv.id as media_file_version_id,
+mfv.file_type,
+mfo.image_id,
+mfo.exifbackup,
+mfo.duration,
+mfo.latitude,
+mfo.longitude,
+mfo.altitude,
+mfo.orientation,
+mfo.keyword,
+mfo.rating,
+mfo.title
+FROM media_file_old mfo
+LEFT JOIN media_file_version mfv ON mfo.filehash = mfv.filehash AND mfo.type = mfv.file_type
+GROUP BY mfv.id,
+mfv.file_type,
+mfo.image_id,
+mfo.exifbackup,
+mfo.duration,
+mfo.latitude,
+mfo.longitude,
+mfo.altitude,
+mfo.orientation,
+mfo.keyword,
+mfo.rating,
+mfo.title
+;
+
+SELECT count(*) FROM media_image;

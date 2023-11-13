@@ -35,7 +35,7 @@
             <property name="mysql-picture.logging.level" value="FINE"/>
             <property name="connection.useUnicode" value="true"/>
             <property name="connection.characterEncoding" value="UTF-8"/>
-            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQL8Dialect"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
 
         </properties>
     </persistence-unit>

@@ -8,5 +8,5 @@ import java.util.Collection;
 public interface MediaGeneralDAO {
     public Collection<DirectorySummaryDTO> loadDirectoryBackupStatus();
     public Collection<DirectorySummaryDTO> loadDirectoryVersionStatus();
-    public Collection<FolderSummaryDTO> loadDirectoryVersionStatus(Integer[] mediaFileVersionIds);
+    public Collection<FolderSummaryDTO> loadDirectoryVersionStatus(Collection<Integer> mediaFileVersionIds);
 }

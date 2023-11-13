@@ -3,8 +3,11 @@ package org.nyusziful.pictureorganizer.Service;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.util.*;
+
+import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class MediaFileService {
     private MediaFileDAO mediafileDAO;
@@ -21,6 +24,17 @@ public class MediaFileService {
         return instance;
     }
 
+    public MediaFile createMediaFile(String name, Meta meta) {
+        if (supportedRAWFileType(name)) {
+            return new RAWMediaFile(null, meta.originalFilename, meta.shotnumber);
+        } else if (supportedJPGFileType(name)) {
+            return new JPGMediaFile(null, meta.originalFilename, meta.shotnumber, JPGMediaFile.setWithQuality(meta.quality), null);
+        } else if (supportedVideoFileType(name)) {
+            return new VideoMediaFile(null, meta.originalFilename, meta.shotnumber);
+        } else {
+            return new MediaFile(null, meta.originalFilename, meta.shotnumber);
+        }
+    }
     public List<MediaFile> getMediafiles() {
         return mediafileDAO.getAll();
     }
@@ -28,7 +42,7 @@ public class MediaFileService {
         saveMediaFile(mediafile, false);
     }
 
-    private void saveMediaFile(MediaFile mediafile, boolean batch) {
+    public void saveMediaFile(MediaFile mediafile, boolean batch) {
         saveMediaFiles(Collections.singleton(mediafile), batch);
     }
 
@@ -112,4 +126,5 @@ public class MediaFileService {
     public List<MediaFile> getMediaFileByMediaDirectory(MediaDirectory mediaDirectory) {
         return mediafileDAO.getMediaFileByMediaDirectory(mediaDirectory);
     }
+
 }

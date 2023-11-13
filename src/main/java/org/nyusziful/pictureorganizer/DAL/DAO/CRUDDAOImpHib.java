@@ -1,5 +1,6 @@
 package org.nyusziful.pictureorganizer.DAL.DAO;
 
+import jakarta.persistence.criteria.CriteriaBuilder;
 import org.nyusziful.pictureorganizer.DAL.JPAConnection;
 
 import jakarta.persistence.EntityManager;
@@ -7,6 +8,7 @@ import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Root;
 import java.lang.reflect.ParameterizedType;
+import java.util.Collection;
 import java.util.List;
 
 public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
@@ -77,6 +79,39 @@ public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
         }
         return result;
     }
+
+    @Override
+    public List<T> getByIds(Collection<Integer> ids) { return getByIds(ids, false);
+    }
+    @Override
+    public List<T> getByIds(Collection<Integer> ids, boolean batch) {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        List<T> result = null;
+        try{
+            CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+            CriteriaQuery<T> criteria = cb.createQuery( entityBeanType );
+            Root<T> root = criteria.from( entityBeanType );
+            criteria.select(root);
+            criteria.where(root.get("id").in(ids));
+            result = entityManager.createQuery( criteria ).getResultList();
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+        return result;
+    }
+
+
 
     public void persist(final T item) {
         persist(item, false);

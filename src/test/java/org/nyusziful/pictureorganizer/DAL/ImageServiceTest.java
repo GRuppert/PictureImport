@@ -125,7 +125,7 @@ public class ImageServiceTest {
         imageService.saveImage(image2);
 
         mediafileInstanceService.saveMediaFileInstance(mediaFileInstance);
-        mediafileInstanceService.deleteMediaFiles(Collections.singletonList(mediaFileInstance));
+        mediafileInstanceService.deleteMediaFileInstances(Collections.singletonList(mediaFileInstance));
 
     }
 

@@ -2,19 +2,24 @@ package org.nyusziful.pictureorganizer.DTO;
 
 import org.jetbrains.annotations.NotNull;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
-import org.nyusziful.pictureorganizer.DAL.Entity.MediaDirectory;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDTO {
     private Folder folder;
-    private HashMap<Integer, Set<Integer>> idsMap = new HashMap<>();
-    private Set<Integer> mediaFiles;
-    public FolderSummaryDTO(Folder folder, Set<Integer> mediaFiles) {
+    private HashMap<Integer, FileSummaryDTO> idsMap = new HashMap<>();
+    private HashMap<Integer, String> mediaFilesIds;
+
+    private int[] version = new int[0];
+
+    public static final int MATCH = 0;
+    public static final int DISTINCT = -1;
+    public static final int MIX = 1;
+
+
+    public FolderSummaryDTO(Folder folder, HashMap<Integer, String> mediaFilesIds) {
         this.folder = folder;
-        this.mediaFiles = mediaFiles;
+        this.mediaFilesIds = mediaFilesIds;
     }
 
     public Folder getFolder() {
@@ -29,21 +34,64 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
     }
 
     public void put(Integer mediaFileId, Integer mediaFileVersionId) {
-        Set<Integer> ids = idsMap.get(mediaFileId);
-        if (ids == null) {
-            ids = new HashSet<>();
-            idsMap.put(mediaFileId, ids);
+        FileSummaryDTO fileSummaryDTO = idsMap.get(mediaFileId);
+        if (fileSummaryDTO == null) {
+            fileSummaryDTO = new FileSummaryDTO(mediaFileId);
+            idsMap.put(mediaFileId, fileSummaryDTO);
         }
-        ids.add(mediaFileVersionId);
+        fileSummaryDTO.add(mediaFileVersionId);
+    }
+
+
+    public Collection<FileSummaryDTO> getFilesSummaries() {
+        return idsMap.values();
     }
 
     public String getSummaryText() {
         StringBuilder sb = new StringBuilder();
-        sb.append(folder).append(" ");
-        sb.append(idsMap.keySet().containsAll(mediaFiles) ? "FULL" : (idsMap.keySet().size() + "/" + mediaFiles.size()));
-        for (Integer name : idsMap.keySet()) {
-            sb.append("(").append(name).append(":").append(idsMap.get(name).size()).append(")");
+        sb.append(idsMap.keySet().containsAll(mediaFilesIds.keySet()) ? "FULL" : (idsMap.keySet().size() + "/" + mediaFilesIds.size()));
+        sb.append(" V");
+        for (int i : version) {
+            sb.append(i).append("-");
         }
+        sb.deleteCharAt(sb.length() - 1);
+        sb.append(" ").append(folder);
         return sb.toString();
+    }
+
+    public int compareWith(FolderSummaryDTO other) {
+        return compareWith(getVersions(), other.getVersions());
+    }
+
+    public static int compareWith(Set<Integer> versions, Set<Integer> otherVersions) {
+        if (versions.containsAll(otherVersions) && otherVersions.containsAll(versions)) return MATCH;
+        versions.retainAll(otherVersions);
+        return versions.size() == 0 ? DISTINCT : MIX;
+    }
+
+    public Set<Integer> getVersions() {
+        HashSet<Integer> mfvIds = new HashSet<>();
+        for (FileSummaryDTO value : idsMap.values()) {
+            mfvIds.addAll(value.getMediaFileVersionIds());
+        }
+        return mfvIds;
+    }
+
+    public void setVersion(ArrayList<Set<Integer>> mfvIdsList) {
+        ArrayList<Integer> versionList = new ArrayList<>();
+        for (int j = 0; j < mfvIdsList.size(); j++) {
+            Set<Integer> mfvIds = mfvIdsList.get(j);
+            int i = compareWith(getVersions(), mfvIds);
+            if (i == MATCH || i == MIX) versionList.add(j);
+        }
+        version = new int[versionList.size()];
+        for (int j = 0; j < versionList.size(); j++) {
+            Integer i = versionList.get(j);
+            version[j] = i;
+        }
+        for (Integer i : idsMap.keySet()) {
+            idsMap.get(i).setName(mediaFilesIds.get(i));
+        }
+
     }
 }

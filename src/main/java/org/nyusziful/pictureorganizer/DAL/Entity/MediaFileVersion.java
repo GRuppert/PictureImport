@@ -5,6 +5,7 @@ import java.sql.Timestamp;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -76,6 +77,7 @@ public class MediaFileVersion extends TrackingEntity {
         this.parent = parent;
         this.size = size;
         this.mediaFile = mediaFile;
+        this.media = new HashSet<>();
         setDateStored(dateStored);
     }
 

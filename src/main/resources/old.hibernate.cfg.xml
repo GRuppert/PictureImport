@@ -19,9 +19,11 @@
         <property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</property>
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Drive"/>
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Folder"/>
-        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaFile"/>
-        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFileInstance"/>
-        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile"/>
         <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Image"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Media"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaDirectory"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaFile"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaFileInstance"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MetaData"/>
     </session-factory>
 </hibernate-configuration>

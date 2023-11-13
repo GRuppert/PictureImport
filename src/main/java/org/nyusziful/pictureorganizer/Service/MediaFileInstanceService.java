@@ -1,5 +1,9 @@
 package org.nyusziful.pictureorganizer.Service;
 
+import com.garmin.fit.Bool;
+import org.apache.commons.io.FilenameUtils;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediaDAO;
+import org.nyusziful.pictureorganizer.DAL.DAO.MediaDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
@@ -29,6 +33,7 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class MediaFileInstanceService {
     private final MediaFileInstanceDAO mediaFileInstanceDAO;
+    private final MediaDAO mediaDAO;
     private final DriveService driveService;
     private final FolderService folderService;
     private final ImageService imageService;
@@ -39,6 +44,7 @@ public class MediaFileInstanceService {
         folderService = new FolderService();
         imageService = new ImageService();
         mediaFileInstanceDAO = new MediaFileInstanceDAOImplHib();
+        mediaDAO = new MediaDAOImplHib();
     }
 
     public static MediaFileInstanceService getInstance() {
@@ -62,7 +68,7 @@ public class MediaFileInstanceService {
         return getMediaFileInstance(path, withImage);
     }
 
-    public MediafileInstanceDTO getMediafileDTO(MediaFileInstance mediaFileInstance) {
+    public MediafileInstanceDTO getMediafileInstanceDTO(MediaFileInstance mediaFileInstance) {
         MediafileInstanceDTO mediafileDTO = new MediafileInstanceDTO();
         if (mediaFileInstance != null) {
             mediafileDTO.abolutePath = mediaFileInstance.getFilePath().toString();
@@ -75,7 +81,7 @@ public class MediaFileInstanceService {
         return mediafileDTO;
     }
 
-    public static MediafileInstanceDTO getMediafileDTO(File file) {
+    public static MediafileInstanceDTO getMediafileInstanceDTO(File file) {
         MediafileInstanceDTO mediafileDTO = new MediafileInstanceDTO();
         if (file != null) {
             mediafileDTO.abolutePath = file.getAbsolutePath();
@@ -84,19 +90,31 @@ public class MediaFileInstanceService {
         return mediafileDTO;
     }
 
+    public MediaFileInstance createMediaFileInstance(String name, Folder folder, Path filePath, Timestamp dateMod, MediaFileVersion mediafileVersion) {
+        if (supportedRAWFileType(name)) {
+            return new RAWMediaFileInstance(folder, filePath, dateMod, (RAWMediaFileVersion)mediafileVersion);
+        } else if (supportedJPGFileType(name)) {
+            return new JPGMediaFileInstance(folder, filePath, dateMod, (JPGMediaFileVersion)mediafileVersion);
+        } else if (supportedVideoFileType(name)) {
+            return new VideoMediaFileInstance(folder, filePath, dateMod, (VideoMediaFileVersion)mediafileVersion);
+        } else {
+            return new MediaFileInstance(folder, filePath, dateMod, mediafileVersion);
+        }
+    }
+
     public void saveMediaFileInstance(MediaFileInstance mediaFileInstance) {
         saveMediaFileInstance(mediaFileInstance, false);
     }
 
     private void saveMediaFileInstance(MediaFileInstance mediaFileInstance, boolean batch) {
-        saveMediaFiles(Collections.singleton(mediaFileInstance), batch);
+        saveMediaFileInstances(Collections.singleton(mediaFileInstance), batch);
     }
 
-    public void saveMediaFiles(Collection<? extends MediaFileInstance> mediaFileInstances) {
-        saveMediaFiles(mediaFileInstances, false);
+    public void saveMediaFileInstances(Collection<? extends MediaFileInstance> mediaFileInstances) {
+        saveMediaFileInstances(mediaFileInstances, false);
     }
 
-    public void saveMediaFiles(Collection<? extends MediaFileInstance> mediaFileInstances, boolean batch) {
+    public void saveMediaFileInstances(Collection<? extends MediaFileInstance> mediaFileInstances, boolean batch) {
         for (MediaFileInstance file : mediaFileInstances) {
             if (file.getId() > -1)
                 mediaFileInstanceDAO.merge(file, batch);
@@ -105,14 +123,14 @@ public class MediaFileInstanceService {
         }
     }
 
-    public void deleteMediaFiles(Collection<? extends MediaFileInstance> mediaFileInstances) {
+    public void deleteMediaFileInstances(Collection<? extends MediaFileInstance> mediaFileInstances) {
         for (MediaFileInstance file : mediaFileInstances) {
             if (file.getId() > -1)
                 mediaFileInstanceDAO.delete(file);
         }
     }
 
-    public void updateMediafile(MediaFileInstance Mediafile) {
+    public void updateMediafileInstance(MediaFileInstance Mediafile) {
         mediaFileInstanceDAO.merge(Mediafile);
     }
 
@@ -123,7 +141,7 @@ public class MediaFileInstanceService {
 
     public List<MediaFileInstance> getMediaFilesInstancesFromPath(Path path, boolean recursive) {
         final Drive localDrive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        return recursive ? mediaFileInstanceDAO.getByPathRec(localDrive, path, true): mediaFileInstanceDAO.getByPath(localDrive, path, true);
+        return mediaFileInstanceDAO.getByPath(localDrive, path, recursive, true);
     }
 
     public void flush() {
@@ -280,7 +298,8 @@ public class MediaFileInstanceService {
 
     public Set<MediafileInstanceDTO> readMediaFilesFromFolder(Path path, Boolean original, boolean force, ZoneId zone, String notes, MainController.ReadTask progress) {
         long start = System.nanoTime();
-        Set<MediaFileInstance> mediaFiles = new HashSet<>();
+        HashMap<String, MediaFileInstance> mediaFileInstanceByFilename = new HashMap<>();
+        Set<MediaFileInstance> mainMediaFiles = new HashSet<>();
         Set<MediafileInstanceDTO> result = new HashSet<>();
         long getDrive = System.nanoTime();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
@@ -296,22 +315,34 @@ public class MediaFileInstanceService {
         }
         long readfiles = System.nanoTime();
         for (File file : path.toFile().listFiles()) {
-            MediaFileInstance mediaFile = readMediaFileInstance(file, fileSet, folder, original, force, zone, notes);
-            if (mediaFile != null) {
-                mediaFiles.add(mediaFile);
+            Boolean main = false;
+            MediaFileInstance mediaFileInstance = readMediaFileInstance(file, fileSet, folder, original, main, force, zone, notes);
+            if (main) mainMediaFiles.add(mediaFileInstance);
+            if (mediaFileInstance != null) {
+                mediaFileInstanceByFilename.put(file.getName(), mediaFileInstance);
                 if (progress != null) progress.increaseProgress();
             }
         }
         long writeDB = System.nanoTime();
         mediaFileInstanceDAO.close();
         long removeFiles = System.nanoTime();
-        filesInFolderFromDB.removeAll(mediaFiles);
-        deleteMediaFiles(filesInFolderFromDB);
+        filesInFolderFromDB.removeAll(mediaFileInstanceByFilename.values());
+        deleteMediaFileInstances(filesInFolderFromDB);
         long listupdate = System.nanoTime();
-        mediaFiles.remove(null);
-        mediaFiles.forEach(mf -> result.add(getMediafileDTO(mf)));
+        mediaFileInstanceByFilename.remove(null);
+        if (original) mainMediaFiles.forEach(JPGmediaFileInstance -> {
+            String filename = JPGmediaFileInstance.getFilename();
+            String ext = FilenameUtils.getExtension(filename.toLowerCase());
+            filename = filename.replaceFirst(ext+"$", "ARW");
+            MediaFileInstance RAWmediaFileInstance = mediaFileInstanceByFilename.get(filename);
+            if (RAWmediaFileInstance != null && !JPGmediaFileInstance.getMediaFileVersion().getMediaFile().getMainMediaFile().equals(RAWmediaFileInstance.getMediaFileVersion().getMediaFile())) {
+                JPGmediaFileInstance.getMediaFileVersion().getMediaFile().setMainMediaFile(RAWmediaFileInstance.getMediaFileVersion().getMediaFile());
+                saveMediaFileInstance(JPGmediaFileInstance);
+            }
+        });
+        mediaFileInstanceByFilename.values().forEach(mf -> result.add(getMediafileInstanceDTO(mf)));
         long end = System.nanoTime();
-        System.out.println(
+        if (false) System.out.println(
                 "Init  " + TimeUnit.NANOSECONDS.toMillis(getDrive - start)
                         + "\nDrive " + TimeUnit.NANOSECONDS.toMillis(getFolder - getDrive)
                         + "\nFolde " + TimeUnit.NANOSECONDS.toMillis(getFiles - getFolder)
@@ -329,108 +360,123 @@ public class MediaFileInstanceService {
 
     public MediaFileInstance readMediaFileInstance(File file) {
         MediaFileInstance result = mediaFileInstanceDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath(), false);
-        if (result == null) result = readMediaFileInstance(file, new HashMap<>(), folderService.getFolder(file.getParentFile().toPath()), null, false, CommonProperties.getInstance().getZone(), "");
+        if (result == null) result = readMediaFileInstance(file, new HashMap<>(), folderService.getFolder(file.getParentFile().toPath()), null, null, false, CommonProperties.getInstance().getZone(), "");
         mediaFileInstanceDAO.close();
         return result;
     }
 
-    private MediaFileInstance readMediaFileInstance(File file, HashMap<String, MediaFileInstance> filesInFolderMap, Folder folder, Boolean original, boolean force, ZoneId zone, String notes) {
+    private MediaFileInstance readMediaFileInstance(File file, HashMap<String, MediaFileInstance> filesInFolderMap, Folder folder, Boolean original, Boolean main, boolean force, ZoneId zone, String notes) {
         if (notes == null) notes = "";
         Path filePath = file.toPath();
         BasicFileAttributes attrs = org.nyusziful.pictureorganizer.Service.Rename.StaticTools.getFileAttributes(file);
-        MediaFileInstance actFileInstance = null;
+        MediaFileInstance mediaFileInstance = null;
         long start = System.nanoTime();
         if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
             Set<String> whatToSave = new HashSet<>();
-            actFileInstance = filesInFolderMap.get(filePath.toString().toLowerCase());
+            mediaFileInstance = filesInFolderMap.get(filePath.toString().toLowerCase());
+            boolean newInstance = mediaFileInstance == null;
             assert folder != null;
             final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
             dateMod.setNanos(0);
+            ArrayList<Long> times = new ArrayList<>();
             final long fileSize = attrs.size();
-            long hashStart = System.nanoTime();
-            long hashEnd = hashStart;
-            long exifReadStart = hashStart;
-            long exifReadEnd = hashStart;
-            long fileCreateEnd = hashStart;
-            if (force
-                    || actFileInstance == null
-                    || actFileInstance.getMediaFileVersion().getSize() != fileSize
-                    || actFileInstance.getDateMod().compareTo(dateMod) != 0
-//                    || (actFileInstance instanceof VideoMediaFileInstance && !file.getName().endsWith(".MTS") && ((VideoMediaFileVersion)actFileInstance.getMediaFileVersion().getMedia().)..getDuration() == 0))
+            if (       force
+                    || newInstance
+                    || mediaFileInstance.getMediaFileVersion().getSize() != fileSize
+                    || mediaFileInstance.getDateMod().compareTo(dateMod) != 0
+//                    || (mediaFileInstance instanceof VideoMediaFileInstance && !file.getName().endsWith(".MTS") && ((VideoMediaFileVersion)mediaFileInstance.getMediaFileVersion().getMedia().)..getDuration() == 0))
             ) {
-                whatToSave.add("instance");
                 System.out.println(file.toPath());
                 ImageDTO imageDTO = getHash(filePath.toFile());
-                hashEnd = System.nanoTime();
+                times.add(System.nanoTime());
                 Meta meta = ExifService.readMeta(filePath.toFile(), zone);
-                exifReadEnd = System.nanoTime();
-                if (actFileInstance == null) {
-                    final String name = filePath.getFileName().toString();
-                    MediaFileVersion mediafileVersion = MediaFileVersionService.getInstance().getMediafileVersion(imageDTO.fullhash); //if we have the exact same version
-                    MediaFile mediaFile = null;
-                    if (mediafileVersion == null) {
-                        whatToSave.add("version");
-                        for (MediaFileVersion actMediaFileVersion : MediaFileVersionService.getInstance().getMediafileVersionsByImageHash(imageDTO.hash)) {
-                            if (mediafileVersion.getMedia().size() == 1) {
-                                if (mediaFile == null) mediaFile = actMediaFileVersion.getMediaFile();
-                                else if (!mediaFile.equals(actMediaFileVersion)) {
-                                    //this shouldn't be
-                                }
-                            }
-                        }
-                    }
-                    if (supportedRAWFileType(name)) {
-                        if (mediafileVersion == null && mediaFile == null) mediaFile = new RAWMediaFile(null, meta.originalFilename, meta.shotnumber);
-                        if (mediaFile != null) mediafileVersion = new RAWMediaFileVersion(imageDTO.fullhash, null, fileSize, (RAWMediaFile)mediaFile, meta.date);
-                        actFileInstance = new RAWMediaFileInstance(folder, filePath, dateMod, (RAWMediaFileVersion)mediafileVersion);
-                    } else if (supportedJPGFileType(name)) {
-                        if (mediafileVersion == null && mediaFile == null) mediaFile = new JPGMediaFile(null, meta.originalFilename, meta.shotnumber, JPGMediaFile.setWithQuality(meta.quality), null);
-                        if (mediaFile != null) mediafileVersion = new JPGMediaFileVersion(imageDTO.fullhash, null, fileSize, (JPGMediaFile)mediaFile, meta.date);
-                        actFileInstance = new JPGMediaFileInstance(folder, filePath, dateMod, (JPGMediaFileVersion)mediafileVersion);
-                    } else if (supportedVideoFileType(name)) {
-                        if (mediafileVersion == null && mediaFile == null) mediaFile = new VideoMediaFile(null, meta.originalFilename, meta.shotnumber);
-                        if (mediaFile != null) mediafileVersion = new VideoMediaFileVersion(imageDTO.fullhash, null, fileSize, (VideoMediaFile)mediaFile, meta.date);
-                        actFileInstance = new VideoMediaFileInstance(folder, filePath, dateMod, (VideoMediaFileVersion)mediafileVersion);
-                    } else {
-                        if (mediafileVersion == null && mediaFile == null) mediaFile = new MediaFile(null, meta.originalFilename, meta.shotnumber);
-                        if (mediaFile != null) mediafileVersion = new MediaFileVersion(imageDTO.fullhash, null, fileSize, mediaFile, meta.date);
-                        actFileInstance = new MediaFileInstance(folder, filePath, dateMod, mediafileVersion);
-                    }
-                }
-                fileCreateEnd = System.nanoTime();
+                times.add(System.nanoTime());
                 Image image;
                 image = imageService.getImage(imageDTO, true);
-                exifReadStart = System.nanoTime();
                 if (image == null) {
                     image = new Image(imageDTO.hash, imageDTO.type, meta.make, meta.model);
                     whatToSave.add("image");
+                } else if (image.getCamera_model() == null) {
+                    image.setCamera_model(meta.model);
+                    whatToSave.add("image");
+                } else if (image.getCamera_make() == null) {
+                    image.setCamera_make(meta.make);
+                    whatToSave.add("image");
+                }
+                times.add(System.nanoTime());
+                final String name = filePath.getFileName().toString();
+
+                MediaFile mediaFile = newInstance ? null : mediaFileInstance.getMediaFileVersion().getMediaFile();
+
+                MediaFileVersion mediafileVersion = MediaFileVersionService.getInstance().getMediafileVersion(imageDTO.fullhash);
+                if (mediafileVersion == null) {
+                    for (MediaFileVersion actMediaFileVersion : MediaFileVersionService.getInstance().getMediafileVersionsByImageHash(imageDTO.hash)) {
+                        if (actMediaFileVersion.getMedia().size() == 1) {
+                            if (mediaFile == null) mediaFile = actMediaFileVersion.getMediaFile();
+                            else if (!mediaFile.equals(actMediaFileVersion)) {
+                                //this shouldn't be
+                            }
+                        }
+                    }
+                    if (mediaFile == null) {
+                        mediaFile = MediaFileService.getInstance().createMediaFile(name, meta);
+                        whatToSave.add("mediaFile");
+                    }
+                    mediafileVersion = MediaFileVersionService.getInstance().createMediaFileVersion(name, meta, imageDTO.fullhash, fileSize, mediaFile, newInstance ? null : mediaFileInstance.getMediaFileVersion());
+                    mediafileVersion.getMedia().add(new Media(mediafileVersion, image, meta));
+                    whatToSave.add("version");
+                } else if (!newInstance) {
+                    if (!mediafileVersion.getMediaFile().equals(mediaFile)) notes += " New versions (id="+mediafileVersion.getId()+") MediaFile doesn't match with the old (id=" + mediaFileInstance.getMediaFileVersion().getId() + ") ones.";
+                }
+
+                if (newInstance) {
+                    mediaFileInstance = createMediaFileInstance(name, folder, filePath, dateMod, mediafileVersion);
+                    whatToSave.add("instance");
                 } else {
-                    if (image.getCamera_model() == null) image.setCamera_model(meta.model);
-                    if (image.getCamera_make() == null) image.setCamera_make(meta.make);
+                    if (!mediaFileInstance.getMediaFileVersion().equals(mediafileVersion)) {
+                        mediaFileInstance.setMediaFileVersion(mediafileVersion);
+                        whatToSave.add("instance");
+                    }
+                }
+                times.add(System.nanoTime());
+                if (original && mediaFileInstance instanceof JPGMediaFileInstance && ((JPGMediaFile)mediaFileInstance.getMediaFileVersion().getMediaFile()).isStandalone()) main = true;
+            }
+            if (original && !mediaFileInstance.getMediaFileVersion().equals(mediaFileInstance.getMediaFileVersion().getMediaFile().getOriginalVersion())) {
+                    mediaFileInstance.getMediaFileVersion().getMediaFile().setOriginalVersion(mediaFileInstance.getMediaFileVersion());
+                    whatToSave.add("mediaFile");
+            }
+
+
+            long WriteToDBStart = System.nanoTime();
+            if (whatToSave.contains("image")) {
+                for (Media media : mediaFileInstance.getMediaFileVersion().getMedia()) {
+                    imageService.saveImage(media.getImage(),true);
                 }
             }
-            long WriteToDBStart = System.nanoTime();
+            if (whatToSave.contains("mediaFile")) {
+                MediaFileService.getInstance().saveMediaFile(mediaFileInstance.getMediaFileVersion().getMediaFile(),true);
+            }
             if (whatToSave.contains("version")) {
-                MediaFileVersionService.getInstance().saveMediaFileVersion(actFileInstance.getMediaFileVersion(),true);
+                MediaFileVersionService.getInstance().saveMediaFileVersion(mediaFileInstance.getMediaFileVersion(),true);
+                for (Media media : mediaFileInstance.getMediaFileVersion().getMedia()) {
+                    mediaDAO.persist(media, true);
+                }
             }
             if (whatToSave.contains("instance")) {
-                saveMediaFileInstance(actFileInstance);
-                filesInFolderMap.put(actFileInstance.getFilePath().toString().toLowerCase(), actFileInstance);
+                saveMediaFileInstance(mediaFileInstance,true);
+                filesInFolderMap.put(mediaFileInstance.getFilePath().toString().toLowerCase(), mediaFileInstance);
             }
+            mediaDAO.flush();
             long WriteToDBEnd = System.nanoTime();
-            System.out.println(
-                    "Init  " + TimeUnit.NANOSECONDS.toMillis(hashStart - start)
-                        + "\nHash  " + TimeUnit.NANOSECONDS.toMillis(hashEnd - hashStart)
-                            + "\nMedia " + TimeUnit.NANOSECONDS.toMillis(fileCreateEnd - hashEnd)
-                                + "\nImage " + TimeUnit.NANOSECONDS.toMillis(exifReadStart - fileCreateEnd)
-                                    + "\nExif  " + TimeUnit.NANOSECONDS.toMillis(exifReadEnd - exifReadStart)
-                                        + "\nSet   " + TimeUnit.NANOSECONDS.toMillis(WriteToDBStart - exifReadEnd)
-                                            + "\nDB w  " + TimeUnit.NANOSECONDS.toMillis(WriteToDBEnd - WriteToDBStart)
-                + "\nWhole " + TimeUnit.NANOSECONDS.toMillis(WriteToDBEnd - start)
-
-            );
+            if (false) {
+                Long prevTime = null;
+                for (Long time : times) {
+                    if (prevTime != null) System.out.println(TimeUnit.NANOSECONDS.toMillis(time - prevTime));
+                    prevTime = time;
+                }
+            }
         }
-        return actFileInstance;
+        return mediaFileInstance;
     }
 
     public String getMediaFileName(MediafileInstanceDTO mediafileInstanceDTO, String nameVersion) {

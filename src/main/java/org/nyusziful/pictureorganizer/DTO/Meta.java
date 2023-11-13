@@ -33,6 +33,10 @@ public class Meta {
     public String make;
     public Integer shotnumber;
 
+    public String latitude;
+    public String longitude;
+    public String altitude;
+
     public Meta() {
     }
 

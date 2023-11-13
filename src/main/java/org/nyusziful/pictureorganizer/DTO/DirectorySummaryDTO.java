@@ -3,6 +3,7 @@ package org.nyusziful.pictureorganizer.DTO;
 import org.jetbrains.annotations.NotNull;
 import org.nyusziful.pictureorganizer.DAL.Entity.MediaDirectory;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,14 +37,14 @@ public class DirectorySummaryDTO implements Comparable<DirectorySummaryDTO>, Sum
 
     public String getSummaryText() {
         StringBuilder sb = new StringBuilder();
-        sb.append(mediaDirectory);
         for (String name : idsMap.keySet()) {
             sb.append("(").append(name).append(":").append(idsMap.get(name).size()).append(")");
         }
+        sb.append(mediaDirectory);
         return sb.toString();
     }
 
-    public Integer[] getIds(String name) {
-        return idsMap.get(name).toArray(new Integer[]{});
+    public Set<Integer> getIds(String name) {
+        return idsMap.get(name);
     }
 }

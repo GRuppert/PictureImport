@@ -2,6 +2,7 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
+import org.nyusziful.pictureorganizer.DTO.Meta;
 
 @Entity
 @DiscriminatorValue("JPG")
@@ -12,8 +13,8 @@ public class JPGMedia extends Media {
         // this form used by Hibernate
     }
 
-    public JPGMedia(MediaFileVersion mediaFileVersion, Image image, MetaData metaData, Boolean exifbackup) {
-        super(mediaFileVersion, image, metaData);
+    public JPGMedia(MediaFileVersion mediaFileVersion, Image image, Meta meta, Boolean exifbackup) {
+        super(mediaFileVersion, image, meta);
         this.exifbackup = exifbackup;
     }
 
