@@ -5,10 +5,15 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public class JPAConnection {
     private EntityManager entityManager;
     private EntityManagerFactory factory;
     private static JPAConnection instance;
+
+    private static boolean test = false;
 
     public static JPAConnection getInstance() {
         if (instance == null) {
@@ -18,7 +23,17 @@ public class JPAConnection {
     }
 
     private JPAConnection() {
-        factory = Persistence.createEntityManagerFactory( "mysql-picture" );
+        Map properties = new HashMap<>();
+        properties.put("jakarta.persistence.jdbc.url", "jdbc:mysql://127.0.0.1:3306/" + (isTest() ? "test" : "") + "pictureorganizer?useUnicode=yes&amp&characterEncoding=UTF-8");
+        factory = Persistence.createEntityManagerFactory( "mysql-picture", properties);
+    }
+
+    public static boolean isTest() {
+        return test;
+    }
+
+    public static void setTest(boolean test) {
+        JPAConnection.test = test;
     }
 
     public EntityManager getEntityManager() {

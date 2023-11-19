@@ -13,7 +13,6 @@ import java.util.Arrays;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.nyusziful.pictureorganizer.DAL.Entity.Image;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.UI.StaticTools;
 

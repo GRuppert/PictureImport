@@ -5,7 +5,7 @@ import org.nyusziful.pictureorganizer.DTO.Meta;
 
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-@Table(name = "media_image_2")
+@Table(name = "media_image")
 @DiscriminatorColumn(name = "file_type")
 @DiscriminatorValue("DEF")
 public class Media implements Cloneable {

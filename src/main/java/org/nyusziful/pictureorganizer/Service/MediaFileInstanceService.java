@@ -1,6 +1,5 @@
 package org.nyusziful.pictureorganizer.Service;
 
-import com.garmin.fit.Bool;
 import org.apache.commons.io.FilenameUtils;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaDAOImplHib;
