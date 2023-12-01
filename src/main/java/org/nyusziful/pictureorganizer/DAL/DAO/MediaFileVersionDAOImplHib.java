@@ -77,37 +77,6 @@ public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> 
     }
 
     @Override
-    public List<MediaFileVersion> getMediafileVersionsByImageHash(String hash) {
-        return getMediafileVersionsByImageHash(hash, false);
-    }
-
-    @Override
-    public List<MediaFileVersion> getMediafileVersionsByImageHash(String hash, boolean batch) {
-        EntityManager entityManager = jpaConnection.getEntityManager();
-        EntityTransaction transaction = entityManager.getTransaction();
-        List<MediaFileVersion> results;
-        try{
-            TypedQuery<MediaFileVersion> typedQuery = entityManager.createQuery("SELECT DISTINCT mfv from MediaFileVersion mfv LEFT JOIN mfv.media m WHERE m.image.hash=:hash", MediaFileVersion.class);
-            typedQuery.setParameter("hash", hash);
-            results = typedQuery.getResultList();
-            if (!batch) transaction.commit();
-        }catch(RuntimeException e){
-            try{
-                transaction.rollback();
-            }catch(RuntimeException rbe){
-//                log.error("Couldn’t roll back transaction", rbe);
-            }
-            throw e;
-
-        }finally{
-            if(!batch){
-                entityManager.close();
-            }
-        }
-        return results;
-    }
-
-    @Override
     public List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion) {
         return getMediafileVersionsByParent(mediaFileVersion, false);
     }

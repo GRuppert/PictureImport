@@ -71,4 +71,11 @@ public class DriveService {
         }
     }
 
+    public void addLocalDrive(String letter) {
+        Drive drive = new Drive();
+        drive.setDescription("TestDrive");
+        drive.setVolumeSN(getVolumeSN(letter));
+        drive.setBackup(true);
+        driveDAO.persist(drive);
+    }
 }

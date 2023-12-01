@@ -25,6 +25,6 @@ public class JPGMediaFile extends MediaFile {
     }
 
     public static boolean setWithQuality(String quality) {
-        return (quality != null && quality.equalsIgnoreCase("RAW + JPEG"));
+        return !(quality != null && quality.equalsIgnoreCase("RAW + JPEG"));
     }
 }

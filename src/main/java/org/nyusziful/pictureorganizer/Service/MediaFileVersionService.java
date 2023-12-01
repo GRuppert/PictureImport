@@ -71,10 +71,6 @@ public class MediaFileVersionService {
         return mediaFileVersionDAO.getMediafileVersionsByMediaFile(mediaFile);
     }
 
-    public List<MediaFileVersion> getMediafileVersionsByImageHash(String hash) {
-        return mediaFileVersionDAO.getMediafileVersionsByImageHash(hash);
-    }
-
     public List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion) {
         return mediaFileVersionDAO.getMediafileVersionsByParent(mediaFileVersion);
     }

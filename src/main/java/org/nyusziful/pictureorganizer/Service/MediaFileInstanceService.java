@@ -231,6 +231,7 @@ public class MediaFileInstanceService {
 
     public Set<MediafileInstanceDTO> reOrganizeFilesInSubFolders(Path path, ProgressLeakingTask progress) {
         Set<MediafileInstanceDTO> result = new HashSet<>();
+        //TODO this is missing
 /*        if (driveService.getLocalDrive(path.toString().substring(0, 1)) == null) return result;
         List<MediaFileInstance> filesInFolderFromDB = getMediaFilesInstancesFromPath(path, true);
         HashMap<String, MediaFileInstance> pathToMediaFile = new HashMap<>();
@@ -296,28 +297,33 @@ public class MediaFileInstanceService {
     }
 
     public Set<MediafileInstanceDTO> readMediaFilesFromFolder(Path path, Boolean original, boolean force, ZoneId zone, String notes, MainController.ReadTask progress) {
+        Set<MediafileInstanceDTO> result = new HashSet<>();
+        readMediaFilesFromFolderInternal(path, original, force, zone, notes, progress).forEach(mf -> result.add(getMediafileInstanceDTO(mf)));
+        return result;
+    }
+
+    public Collection<MediaFileInstance> readMediaFilesFromFolderInternal(Path path, Boolean original, boolean force, ZoneId zone, String notes, MainController.ReadTask progress) {
         long start = System.nanoTime();
         HashMap<String, MediaFileInstance> mediaFileInstanceByFilename = new HashMap<>();
-        Set<MediaFileInstance> mainMediaFiles = new HashSet<>();
-        Set<MediafileInstanceDTO> result = new HashSet<>();
+        Set<MediaFileInstance> sidecarJPGs = new HashSet<>();
         long getDrive = System.nanoTime();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        if (drive == null) return result;
+        if (drive == null) return new HashSet<>();
         long getFolder = System.nanoTime();
         Folder folder = folderService.getFolder(path);
         long getFiles = System.nanoTime();
         List<MediaFileInstance> filesInFolderFromDB = getMediaFilesInstancesFromPath(path, false);
         long lists = System.nanoTime();
-        HashMap<String, MediaFileInstance> fileSet = new HashMap<>();
+        HashMap<String, MediaFileInstance> filesInFolderFromDBByFilename = new HashMap<>();
         for (MediaFileInstance file : filesInFolderFromDB) {
-            fileSet.put(file.getFilePath().toString().toLowerCase(), file);
+            filesInFolderFromDBByFilename.put(file.getFilePath().toString().toLowerCase(), file);
         }
         long readfiles = System.nanoTime();
         for (File file : path.toFile().listFiles()) {
-            Boolean main = false;
-            MediaFileInstance mediaFileInstance = readMediaFileInstance(file, fileSet, folder, original, main, force, zone, notes);
-            if (main) mainMediaFiles.add(mediaFileInstance);
+            MediaFileInstance mediaFileInstance = readMediaFileInstance(file, filesInFolderFromDBByFilename, folder, original, force, zone, notes);
             if (mediaFileInstance != null) {
+                if (original && mediaFileInstance instanceof JPGMediaFileInstance && !((JPGMediaFile)mediaFileInstance.getMediaFileVersion().getMediaFile()).isStandalone())
+                    sidecarJPGs.add(mediaFileInstance);
                 mediaFileInstanceByFilename.put(file.getName(), mediaFileInstance);
                 if (progress != null) progress.increaseProgress();
             }
@@ -329,17 +335,16 @@ public class MediaFileInstanceService {
         deleteMediaFileInstances(filesInFolderFromDB);
         long listupdate = System.nanoTime();
         mediaFileInstanceByFilename.remove(null);
-        if (original) mainMediaFiles.forEach(JPGmediaFileInstance -> {
+        if (original) sidecarJPGs.forEach(JPGmediaFileInstance -> {
             String filename = JPGmediaFileInstance.getFilename();
-            String ext = FilenameUtils.getExtension(filename.toLowerCase());
+            String ext = FilenameUtils.getExtension(filename);
             filename = filename.replaceFirst(ext+"$", "ARW");
             MediaFileInstance RAWmediaFileInstance = mediaFileInstanceByFilename.get(filename);
-            if (RAWmediaFileInstance != null && !JPGmediaFileInstance.getMediaFileVersion().getMediaFile().getMainMediaFile().equals(RAWmediaFileInstance.getMediaFileVersion().getMediaFile())) {
+            if (RAWmediaFileInstance != null && !RAWmediaFileInstance.getMediaFileVersion().getMediaFile().equals(JPGmediaFileInstance.getMediaFileVersion().getMediaFile().getMainMediaFile())) {
                 JPGmediaFileInstance.getMediaFileVersion().getMediaFile().setMainMediaFile(RAWmediaFileInstance.getMediaFileVersion().getMediaFile());
                 saveMediaFileInstance(JPGmediaFileInstance);
             }
         });
-        mediaFileInstanceByFilename.values().forEach(mf -> result.add(getMediafileInstanceDTO(mf)));
         long end = System.nanoTime();
         if (false) System.out.println(
                 "Init  " + TimeUnit.NANOSECONDS.toMillis(getDrive - start)
@@ -354,17 +359,17 @@ public class MediaFileInstanceService {
 
         );
         System.out.println(path + " done in " + TimeUnit.NANOSECONDS.toMillis(end - start));
-        return result;
+        return mediaFileInstanceByFilename.values();
     }
 
     public MediaFileInstance readMediaFileInstance(File file) {
         MediaFileInstance result = mediaFileInstanceDAO.getByFile(driveService.getLocalDrive(file.toPath()), file.toPath(), false);
-        if (result == null) result = readMediaFileInstance(file, new HashMap<>(), folderService.getFolder(file.getParentFile().toPath()), null, null, false, CommonProperties.getInstance().getZone(), "");
+        if (result == null) result = readMediaFileInstance(file, new HashMap<>(), folderService.getFolder(file.getParentFile().toPath()), null, false, CommonProperties.getInstance().getZone(), "");
         mediaFileInstanceDAO.close();
         return result;
     }
 
-    private MediaFileInstance readMediaFileInstance(File file, HashMap<String, MediaFileInstance> filesInFolderMap, Folder folder, Boolean original, Boolean main, boolean force, ZoneId zone, String notes) {
+    private MediaFileInstance readMediaFileInstance(File file, HashMap<String, MediaFileInstance> filesInFolderByFilename, Folder folder, Boolean original, boolean force, ZoneId zone, String notes) {
         if (notes == null) notes = "";
         Path filePath = file.toPath();
         BasicFileAttributes attrs = org.nyusziful.pictureorganizer.Service.Rename.StaticTools.getFileAttributes(file);
@@ -372,7 +377,7 @@ public class MediaFileInstanceService {
         long start = System.nanoTime();
         if (!attrs.isDirectory() && attrs.isRegularFile() && supportedFileType(filePath.getFileName().toString())) {
             Set<String> whatToSave = new HashSet<>();
-            mediaFileInstance = filesInFolderMap.get(filePath.toString().toLowerCase());
+            mediaFileInstance = filesInFolderByFilename.get(filePath.toString().toLowerCase());
             boolean newInstance = mediaFileInstance == null;
             assert folder != null;
             final Timestamp dateMod = new Timestamp(attrs.lastModifiedTime().toMillis());
@@ -409,14 +414,7 @@ public class MediaFileInstanceService {
 
                 MediaFileVersion mediafileVersion = MediaFileVersionService.getInstance().getMediafileVersion(imageDTO.fullhash);
                 if (mediafileVersion == null) {
-                    for (MediaFileVersion actMediaFileVersion : MediaFileVersionService.getInstance().getMediafileVersionsByImageHash(imageDTO.hash)) {
-                        if (actMediaFileVersion.getMedia().size() == 1) {
-                            if (mediaFile == null) mediaFile = actMediaFileVersion.getMediaFile();
-                            else if (!mediaFile.equals(actMediaFileVersion)) {
-                                //this shouldn't be
-                            }
-                        }
-                    }
+                    mediaFile = MediaFileService.getInstance().getMediafileByImage(imageDTO.hash, imageDTO.type, meta.shotnumber);
                     if (mediaFile == null) {
                         mediaFile = MediaFileService.getInstance().createMediaFile(name, meta);
                         whatToSave.add("mediaFile");
@@ -438,7 +436,6 @@ public class MediaFileInstanceService {
                     }
                 }
                 times.add(System.nanoTime());
-                if (original && mediaFileInstance instanceof JPGMediaFileInstance && ((JPGMediaFile)mediaFileInstance.getMediaFileVersion().getMediaFile()).isStandalone()) main = true;
             }
             if (original && !mediaFileInstance.getMediaFileVersion().equals(mediaFileInstance.getMediaFileVersion().getMediaFile().getOriginalVersion())) {
                     mediaFileInstance.getMediaFileVersion().getMediaFile().setOriginalVersion(mediaFileInstance.getMediaFileVersion());
@@ -463,7 +460,7 @@ public class MediaFileInstanceService {
             }
             if (whatToSave.contains("instance")) {
                 saveMediaFileInstance(mediaFileInstance,true);
-                filesInFolderMap.put(mediaFileInstance.getFilePath().toString().toLowerCase(), mediaFileInstance);
+                filesInFolderByFilename.put(mediaFileInstance.getFilePath().toString().toLowerCase(), mediaFileInstance);
             }
             mediaDAO.flush();
             long WriteToDBEnd = System.nanoTime();

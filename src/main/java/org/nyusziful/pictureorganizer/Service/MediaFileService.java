@@ -127,4 +127,10 @@ public class MediaFileService {
         return mediafileDAO.getMediaFileByMediaDirectory(mediaDirectory);
     }
 
+    public MediaFile getMediafileByImage(String hash, String type, Integer shotnumber) {
+        return mediafileDAO.getMediafileByImage(hash, type, shotnumber);
+    }
+
+
+
 }
