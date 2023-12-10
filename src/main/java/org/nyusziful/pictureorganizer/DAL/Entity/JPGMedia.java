@@ -13,9 +13,9 @@ public class JPGMedia extends Media {
         // this form used by Hibernate
     }
 
-    public JPGMedia(MediaFileVersion mediaFileVersion, Image image, Meta meta, Boolean exifbackup) {
-        super(mediaFileVersion, image, meta);
-        this.exifbackup = exifbackup;
+    public JPGMedia(MediaFileVersion mediaFileVersion, Image image, Meta meta, MediaType media_type) {
+        super(mediaFileVersion, image, meta, media_type);
+        this.exifbackup = ((JPGMediaFileVersion)mediaFileVersion).getExifbackup();
     }
 
     public boolean isExifbackup() {

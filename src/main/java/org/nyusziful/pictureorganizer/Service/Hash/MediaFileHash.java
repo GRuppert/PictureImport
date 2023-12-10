@@ -23,6 +23,7 @@ import org.nyusziful.pictureorganizer.UI.StaticTools;
  */
 public class MediaFileHash {
     public static String EMPTYHASH = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
+    public static String UNKNOWN = "ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ";
     public enum Type {
         MP4 ("mp4", new String[] {"mp4", "3gp"}),
         JPG ("jpg", new String[] {"jpg", "jpeg"}),
@@ -106,7 +107,6 @@ public class MediaFileHash {
                 getDigest(type, fileContent, imageDTO);
             }  catch(Exception e) {
 //            errorOut("Hash", e);
-                return imageDTO;
             }
         }
         return imageDTO;
@@ -188,7 +188,7 @@ public class MediaFileHash {
         try {
             md5Digest = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException ex) {
-            return EMPTYHASH;
+            return UNKNOWN;
         }
         byte[] digestDef = md5Digest.digest();
         byte[] digest = null;

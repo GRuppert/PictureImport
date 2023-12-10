@@ -457,7 +457,7 @@ public class JPGHash implements Hasher {
     }
 
 
-    public static void readDigest(byte[] fileContent, ImageDTO imageDTO) throws IOException {
+    public static void readDigest(byte[] fileContent, ImageDTO imageDTO) {
         MessageDigest md5Digest = null;
         try {
             md5Digest = MessageDigest.getInstance("MD5");
@@ -523,6 +523,7 @@ public class JPGHash implements Hasher {
             if (digest != null && !Arrays.equals(digest, digestDef)) {
                 imageDTO.hash = MediaFileHash.processHash(digest);
             }
+            imageDTO.exifBackup = fileStruct.isBackup();
         }  catch(Exception e) {
         }
     }

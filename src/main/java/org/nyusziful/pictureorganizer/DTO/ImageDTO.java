@@ -1,15 +1,13 @@
 package org.nyusziful.pictureorganizer.DTO;
 
-import org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash;
-
 import java.time.ZonedDateTime;
 
-import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.EMPTYHASH;
+import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.UNKNOWN;
 import static org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash.Type;
 
 public class ImageDTO {
-    public String hash = EMPTYHASH;
-    public String exifHash = EMPTYHASH;
+    public String hash = UNKNOWN;
+    public String exifHash = UNKNOWN;
     public ZonedDateTime dateTaken = null;
     public ZonedDateTime dateCorrected = null;
     public String originalFilename = "";
@@ -19,6 +17,7 @@ public class ImageDTO {
     public String altitude = "";
     public String parentHash = "";
     public byte[] exif = null;
-    public String fullhash = EMPTYHASH;
+    public Boolean exifBackup = null;
+    public String fullhash = UNKNOWN;
 
 }

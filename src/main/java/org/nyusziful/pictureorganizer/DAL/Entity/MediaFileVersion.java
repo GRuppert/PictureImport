@@ -72,12 +72,13 @@ public class MediaFileVersion extends TrackingEntity {
         // this form used by Hibernate
     }
 
-    public MediaFileVersion(String filehash, MediaFileVersion parent, Long size, MediaFile mediaFile, ZonedDateTime dateStored) {
+    public MediaFileVersion(String filehash, MediaFileVersion parent, Long size, MediaFile mediaFile, ZonedDateTime dateStored, Boolean invalid) {
         this.filehash = filehash;
         this.parent = parent;
         this.size = size;
         this.mediaFile = mediaFile;
         this.media = new HashSet<>();
+        this.invalid = invalid;
         setDateStored(dateStored);
     }
 
@@ -185,6 +186,14 @@ public class MediaFileVersion extends TrackingEntity {
 
     public Set<Media> getMedia() {
         return media;
+    }
+
+    public Media getMainMedia() {
+        if (media != null && !media.isEmpty())
+            for (Media media1 : media) {
+                if (media1.getMediaType().equals(Media.MediaType.MAIN)) return media1;
+            }
+        return null;
     }
 
     public int getVersionNumber() {

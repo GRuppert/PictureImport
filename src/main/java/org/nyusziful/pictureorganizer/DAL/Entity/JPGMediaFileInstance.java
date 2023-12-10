@@ -26,7 +26,9 @@ public class JPGMediaFileInstance extends MediaFileInstance {
 */
     }
 
-    public boolean addExifbackup(boolean orig) {
+/*
+//TODO this should be a new Version
+   public boolean addExifbackup(boolean orig) {
         boolean exifbackup = JPGHash.addBackupExif(filePath.toFile(), orig);
         JPGMediaFileVersion jpgMediaFileVersion = ((JPGMediaFileVersion)getMediaFileVersion());
         if (jpgMediaFileVersion != null)

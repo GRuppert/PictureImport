@@ -13,15 +13,12 @@ public class JPGMediaFileVersion extends MediaFileVersion {
         // this form used by Hibernate
     }
 
-    public JPGMediaFileVersion(String filehash, JPGMediaFileVersion parent, Long size, JPGMediaFile mediaFile, ZonedDateTime dateStored) {
-        super(filehash, parent, size, mediaFile, dateStored);
+    public JPGMediaFileVersion(String filehash, JPGMediaFileVersion parent, Long size, JPGMediaFile mediaFile, ZonedDateTime dateStored, Boolean invalid, Boolean exifbackup) {
+        super(filehash, parent, size, mediaFile, dateStored, invalid);
+        this.exifbackup = exifbackup;
     }
 
     public Boolean getExifbackup() {
         return exifbackup;
-    }
-
-    public void setExifbackup(Boolean exifbackup) {
-        this.exifbackup = exifbackup;
     }
 }

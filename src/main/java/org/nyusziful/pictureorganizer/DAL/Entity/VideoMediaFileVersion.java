@@ -11,8 +11,8 @@ public class VideoMediaFileVersion extends MediaFileVersion {
         // this form used by Hibernate
     }
 
-    public VideoMediaFileVersion(String filehash, VideoMediaFileVersion parent, Long size, VideoMediaFile mediaFile, ZonedDateTime dateStored) {
-        super(filehash, parent, size, mediaFile, dateStored);
+    public VideoMediaFileVersion(String filehash, VideoMediaFileVersion parent, Long size, VideoMediaFile mediaFile, ZonedDateTime dateStored, Boolean invalid) {
+        super(filehash, parent, size, mediaFile, dateStored, invalid);
     }
 
 }

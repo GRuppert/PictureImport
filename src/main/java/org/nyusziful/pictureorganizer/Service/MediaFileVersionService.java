@@ -3,6 +3,7 @@ package org.nyusziful.pictureorganizer.Service;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileVersionDAO;
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileVersionDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
+import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 
 import java.util.*;
@@ -11,11 +12,9 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 public class MediaFileVersionService {
     private MediaFileVersionDAO mediaFileVersionDAO;
-    private ImageService imageService;
     private static MediaFileVersionService instance;
 
     private MediaFileVersionService() {
-        imageService = new ImageService();
         mediaFileVersionDAO = new MediaFileVersionDAOImplHib();
     }
 
@@ -26,15 +25,15 @@ public class MediaFileVersionService {
         return instance;
     }
 
-    public MediaFileVersion createMediaFileVersion(String name, Meta meta, String fullhash, long fileSize, MediaFile mediaFile, MediaFileVersion parent) {
+    public MediaFileVersion createMediaFileVersion(String name, Meta meta, ImageDTO imageDTO, long fileSize, MediaFile mediaFile, MediaFileVersion parent, Boolean invalid) {
         if (supportedRAWFileType(name)) {
-            return new RAWMediaFileVersion(fullhash, (RAWMediaFileVersion) parent, fileSize, (RAWMediaFile)mediaFile, meta.date);
+            return new RAWMediaFileVersion(imageDTO.fullhash, (RAWMediaFileVersion) parent, fileSize, (RAWMediaFile)mediaFile, meta.date, invalid);
         } else if (supportedJPGFileType(name)) {
-            return new JPGMediaFileVersion(fullhash, (JPGMediaFileVersion) parent, fileSize, (JPGMediaFile)mediaFile, meta.date);
+            return new JPGMediaFileVersion(imageDTO.fullhash, (JPGMediaFileVersion) parent, fileSize, (JPGMediaFile)mediaFile, meta.date, invalid, imageDTO.exifBackup);
         } else if (supportedVideoFileType(name)) {
-            return new VideoMediaFileVersion(fullhash, (VideoMediaFileVersion) parent, fileSize, (VideoMediaFile)mediaFile, meta.date);
+            return new VideoMediaFileVersion(imageDTO.fullhash, (VideoMediaFileVersion) parent, fileSize, (VideoMediaFile)mediaFile, meta.date, invalid);
         } else {
-            return new MediaFileVersion(fullhash, parent, fileSize, mediaFile, meta.date);
+            return new MediaFileVersion(imageDTO.fullhash, parent, fileSize, mediaFile, meta.date, invalid);
         }
     }
     public void saveMediaFileVersion(MediaFileVersion mediaFileVersion) {
@@ -73,5 +72,9 @@ public class MediaFileVersionService {
 
     public List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion) {
         return mediaFileVersionDAO.getMediafileVersionsByParent(mediaFileVersion);
+    }
+
+    public Media createMedia(MediaFileVersion mediaFileVersion, Image image, Meta meta, Media.MediaType mediaType) {
+        if (mediaFileVersion instanceof JPGMediaFileVersion) return new JPGMedia(mediaFileVersion, image, meta, mediaType); else return new Media(mediaFileVersion, image, meta, mediaType);
     }
 }

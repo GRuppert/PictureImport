@@ -11,6 +11,7 @@ import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import org.nyusziful.pictureorganizer.Main.CommonProperties;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
+import org.nyusziful.pictureorganizer.Service.Hash.MediaFileHash;
 import org.nyusziful.pictureorganizer.Service.Rename.RenameService;
 import org.nyusziful.pictureorganizer.UI.Contoller.MainController;
 import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
@@ -342,7 +343,7 @@ public class MediaFileInstanceService {
             MediaFileInstance RAWmediaFileInstance = mediaFileInstanceByFilename.get(filename);
             if (RAWmediaFileInstance != null && !RAWmediaFileInstance.getMediaFileVersion().getMediaFile().equals(JPGmediaFileInstance.getMediaFileVersion().getMediaFile().getMainMediaFile())) {
                 JPGmediaFileInstance.getMediaFileVersion().getMediaFile().setMainMediaFile(RAWmediaFileInstance.getMediaFileVersion().getMediaFile());
-                saveMediaFileInstance(JPGmediaFileInstance);
+                MediaFileService.getInstance().saveMediaFile(JPGmediaFileInstance.getMediaFileVersion().getMediaFile());
             }
         });
         long end = System.nanoTime();
@@ -419,8 +420,8 @@ public class MediaFileInstanceService {
                         mediaFile = MediaFileService.getInstance().createMediaFile(name, meta);
                         whatToSave.add("mediaFile");
                     }
-                    mediafileVersion = MediaFileVersionService.getInstance().createMediaFileVersion(name, meta, imageDTO.fullhash, fileSize, mediaFile, newInstance ? null : mediaFileInstance.getMediaFileVersion());
-                    mediafileVersion.getMedia().add(new Media(mediafileVersion, image, meta));
+                    mediafileVersion = MediaFileVersionService.getInstance().createMediaFileVersion(name, meta, imageDTO, fileSize, mediaFile, newInstance ? null : mediaFileInstance.getMediaFileVersion(), MediaFileHash.EMPTYHASH.equals(imageDTO.hash));
+                    mediafileVersion.getMedia().add(MediaFileVersionService.getInstance().createMedia(mediafileVersion, image, meta, Media.MediaType.MAIN));
                     whatToSave.add("version");
                 } else if (!newInstance) {
                     if (!mediafileVersion.getMediaFile().equals(mediaFile)) notes += " New versions (id="+mediafileVersion.getId()+") MediaFile doesn't match with the old (id=" + mediaFileInstance.getMediaFileVersion().getId() + ") ones.";
@@ -515,5 +516,9 @@ public class MediaFileInstanceService {
     }
     public List<MediaFileInstance> getMediaFilesInstancesByMediaFile(MediaFile mediaFile) {
         return mediaFileInstanceDAO.getByMediaFile(mediaFile);
+    }
+
+    public Collection<MediaFileInstance> getMediaFileInstances(Collection<Integer> mediaFileInstanceIDs) {
+        return mediaFileInstanceDAO.getByIds(mediaFileInstanceIDs);
     }
 }

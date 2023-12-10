@@ -11,8 +11,8 @@ public class RAWMediaFileVersion extends MediaFileVersion {
         // this form used by Hibernate
     }
 
-    public RAWMediaFileVersion(String filehash, RAWMediaFileVersion parent, Long size, RAWMediaFile mediaFile, ZonedDateTime dateStored) {
-        super(filehash, parent, size, mediaFile, dateStored);
+    public RAWMediaFileVersion(String filehash, RAWMediaFileVersion parent, Long size, RAWMediaFile mediaFile, ZonedDateTime dateStored, Boolean invalid) {
+        super(filehash, parent, size, mediaFile, dateStored, invalid);
     }
 
 }
