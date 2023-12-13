@@ -391,6 +391,7 @@ public class MediaFileInstanceService {
                     || mediaFileInstance.getDateMod().compareTo(dateMod) != 0
 //                    || (mediaFileInstance instanceof VideoMediaFileInstance && !file.getName().endsWith(".MTS") && ((VideoMediaFileVersion)mediaFileInstance.getMediaFileVersion().getMedia().)..getDuration() == 0))
             ) {
+                final String name = filePath.getFileName().toString();
                 System.out.println(file.toPath());
                 ImageDTO imageDTO = getHash(filePath.toFile());
                 times.add(System.nanoTime());
@@ -409,7 +410,6 @@ public class MediaFileInstanceService {
                     whatToSave.add("image");
                 }
                 times.add(System.nanoTime());
-                final String name = filePath.getFileName().toString();
 
                 MediaFile mediaFile = newInstance ? null : mediaFileInstance.getMediaFileVersion().getMediaFile();
 

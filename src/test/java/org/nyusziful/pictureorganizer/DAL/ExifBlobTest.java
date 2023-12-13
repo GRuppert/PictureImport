@@ -14,6 +14,7 @@ import static org.junit.Assert.assertTrue;
 public class ExifBlobTest {
     @Test
     public void testImageService() {
+        JPAConnection.setTest(true);
         MediaFileService mediafileService = MediaFileService.getInstance();
         String fileLoc = "E:\\Work\\Testfiles\\conflictHandleResult\\WP_20150711_15_59_03_Pro__highres.jpg";
         //TODO fix it

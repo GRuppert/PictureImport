@@ -15,29 +15,27 @@ import com.drew.imaging.png.PngMetadataReader;
 import com.drew.imaging.quicktime.QuickTimeMetadataReader;
 import com.drew.imaging.tiff.TiffMetadataReader;
 import com.drew.metadata.*;
-import com.drew.metadata.mp4.Mp4Directory;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 import com.adobe.internal.xmp.XMPException;
 import com.adobe.internal.xmp.XMPIterator;
 import com.adobe.internal.xmp.XMPMeta;
 import com.adobe.internal.xmp.XMPMetaFactory;
 import com.adobe.internal.xmp.properties.XMPPropertyInfo;
-import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
 import com.drew.metadata.xmp.XmpDirectory;
 
 import java.io.*;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.time.temporal.TemporalAccessor;
-import java.time.temporal.TemporalField;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
 import org.apache.commons.io.FilenameUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import static com.drew.metadata.exif.makernotes.SonyType1MakernoteDirectory.TAG_SEQUENCE_NUMBER;
 import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
 
 /**
@@ -45,6 +43,7 @@ import static org.nyusziful.pictureorganizer.UI.StaticTools.*;
  * @author gabor
  */
 public class ExifReadWriteIMR {
+    private static Logger logger = LoggerFactory.getLogger(ExifReadWriteIMR.class);
     public static ArrayList<Meta> readFileMeta(File[] files, ZoneId defaultTZ) {
         ArrayList<Meta> results = new ArrayList<>();
         for (File file : files) {
@@ -96,17 +95,18 @@ public class ExifReadWriteIMR {
         String title = null;
         String keyword = null;
         Integer shotnumber = null;
+        logger.debug("Reading Exif from " + name);
         try {
             tags = readMeta(inputStream, name);
         } catch (ImageProcessingException | IOException ex) {
             Meta meta = createMeta(name, getZonedTimeFromStr(captureDate), dateFormat, model, iID, dID, odID, orig, quality, duration);
             meta.note = ex.toString();
-            System.out.println(meta);
+            logger.error(meta.toString());
             return meta;
         }
 
         for (String[] tag : tags) {
-//                System.out.println(tag[0] + " : " + tag[1]);
+            logger.debug(tag[0] + " : " + tag[1]);
             switch (tag[0]) {
                 case "Model":
                 case "tiff:Model":
@@ -276,7 +276,17 @@ public class ExifReadWriteIMR {
                     for (Tag tag : directory.getTags()) {
                         String value = null;
                         try {
-                            value = "Orientation".equals(tag.getTagName()) ? Integer.toString(directory.getInt(tag.getTagType())) : tag.getDescription();
+                            switch (tag.getTagName()) {
+                                case "Orientation":
+                                    value = Integer.toString(directory.getInt(tag.getTagType()));
+                                    break;
+                                case "Sequence Number":
+                                    value = String.valueOf(directory.getInteger(TAG_SEQUENCE_NUMBER));
+                                    break;
+                                default:
+                                    value = tag.getDescription();
+                                    break;
+                            }
                         } catch (MetadataException e) {
                             value = tag.getDescription();
                         }
@@ -311,11 +321,21 @@ public class ExifReadWriteIMR {
         metadata.getDirectories().forEach(directory -> directory.getTags().stream().forEach(tag -> {
 
             if (tag.getDescription() != null && !tag.getDescription().replaceAll("\\s+", "").equals("")) {
-                String value = tag.getDescription();
-                if ("Orientation".equals(tag.getTagName()))
+                String value = null;
                 try {
-                    value = Integer.toString(directory.getInt(tag.getTagType()));
+                    switch (tag.getTagName()) {
+                        case "Orientation":
+                            value = Integer.toString(directory.getInt(tag.getTagType()));
+                            break;
+                        case "Sequence Number":
+                            value = String.valueOf(directory.getInteger(TAG_SEQUENCE_NUMBER));
+                            break;
+                        default:
+                            value = tag.getDescription();
+                            break;
+                    }
                 } catch (MetadataException e) {
+                    value = tag.getDescription();
                 }
                 tags.add(new String[]{tag.getTagName(), value});
             }

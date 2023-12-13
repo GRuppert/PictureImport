@@ -113,7 +113,7 @@ public class MediaFileHash {
     }
 
     private static void getDigest(Type type, byte[] fileContent, ImageDTO imageDTO) throws IOException {
-
+        imageDTO.hash = MediaFileHash.EMPTYHASH;
         switch (type) {
             case TIFF:
                 TIFFHash.readDigest(fileContent, imageDTO);
@@ -131,6 +131,8 @@ public class MediaFileHash {
                 case "avci":
                 case "avcs":
                     break;*/
+            default:
+                imageDTO.hash = MediaFileHash.UNKNOWN;
         }
     }
 

@@ -52,7 +52,7 @@ public class MediaFileVersion extends TrackingEntity {
     @Column(name = "invalid")
     private Boolean invalid;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "mediaFileVersion")
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "mediaFileVersion")
     private Set<Media> media;
 
     @Transient
@@ -62,7 +62,7 @@ public class MediaFileVersion extends TrackingEntity {
 //        if (dateStoredString != null)
 //            dateStored = ZonedDateTime.parse(dateStoredString, XmpDateFormatTZ);
         String prefix = "";
-        if (dateStoredTZString.startsWith("+") || dateStoredTZString.startsWith("-"))
+        if (dateStoredTZString != null && (dateStoredTZString.startsWith("+") || dateStoredTZString.startsWith("-")))
             prefix = "UTC";
         if (dateStoredLocal != null && dateStoredTZString != null)
             dateStored = dateStoredLocal.toLocalDateTime().atZone(ZoneId.of(prefix + dateStoredTZString));
@@ -158,10 +158,6 @@ public class MediaFileVersion extends TrackingEntity {
 
     public Boolean isInvalid() {
         return invalid;
-    }
-
-    public void setInvalid(Boolean invalid) {
-        this.invalid = invalid;
     }
 
     public MediaFileVersion getParent() {

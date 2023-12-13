@@ -25,7 +25,7 @@ public class Meta {
     public String orig;
     public Boolean dateFormat;
     public String quality;
-    public long duration;
+    public Long duration;
     public Integer orientation;
     public Integer rating;
     public String title;

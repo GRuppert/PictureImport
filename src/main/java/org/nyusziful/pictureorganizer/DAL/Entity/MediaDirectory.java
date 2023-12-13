@@ -5,6 +5,7 @@ import org.nyusziful.pictureorganizer.DAL.DAO.HasID;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 import static java.lang.Integer.parseInt;
 
@@ -70,5 +71,17 @@ public class MediaDirectory implements HasID {
 
     public void setLastDate(LocalDate lastDate) {
         this.lastDate = lastDate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MediaDirectory that)) return false;
+        return getId() == that.getId() && Objects.equals(getFirstDate(), that.getFirstDate()) && Objects.equals(getLastDate(), that.getLastDate()) && Objects.equals(getLabel(), that.getLabel());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
     }
 }

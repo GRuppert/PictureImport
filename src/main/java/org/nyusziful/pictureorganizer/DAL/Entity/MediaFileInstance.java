@@ -178,7 +178,4 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
         this.mediaFileVersion = mediaFileVersion;
         this.mediaFile = mediaFileVersion.getMediaFile();
     }
-
-    public void addImage(Image image) {
-    }
 }

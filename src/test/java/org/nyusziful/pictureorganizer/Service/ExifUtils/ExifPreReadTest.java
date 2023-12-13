@@ -24,7 +24,7 @@ public class ExifPreReadTest {
      * Test of readMeta method, of class ExifReadWrite.
      */
     @Test
-    public void testReadMeta() throws Exception {
+    public void testReadMeta() {
         System.out.println("readMeta");
         String fileName = "D5C03339_Exif231.ARW";
         ClassLoader classLoader = ExifReadWriteIMR.class.getClassLoader();
