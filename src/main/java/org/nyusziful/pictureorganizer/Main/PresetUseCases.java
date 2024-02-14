@@ -1,6 +1,7 @@
 package org.nyusziful.pictureorganizer.Main;
 
 import org.nyusziful.pictureorganizer.DAL.DAO.MediaFileInstanceDAOImplHib;
+import org.nyusziful.pictureorganizer.DAL.JPAConnection;
 import org.nyusziful.pictureorganizer.DTO.ImageDTO;
 import org.nyusziful.pictureorganizer.DTO.MediafileInstanceDTO;
 import org.nyusziful.pictureorganizer.Service.ExifUtils.ExifService;
@@ -150,7 +151,11 @@ public class PresetUseCases {
 //        File dir = new File("G:\\Pictures\\Photos");
 //        File dir = new File("D:\\Képek\\Babi");
 //        File dir = new File("D:\\Photos");
-        File dir = new File("E:\\Work\\Testfiles\\NewDBStructureRW");
+//        File dir = new File("E:\\Work\\Testfiles\\NewDBStructureRW");
+        JPAConnection.setMode(JPAConnection.DBMode.DEV);
+
+//        File dir = new File("H:\\Photos\\Fekete2TB");
+        File dir = new File("H:\\Photos\\KékB");
 
         ArrayList<File> directories = new ArrayList<>();
         try {
@@ -165,7 +170,7 @@ public class PresetUseCases {
         for (File directory : directories) {
 //            if ("H:\\Képek\\Photos\\Új\\Frankfurt\\5100\\PRIVATE\\M4ROOT\\CLIP".equals(directory.toPath().toString())) skip = false;
             if (skip) continue;
-            final Set<MediafileInstanceDTO> mediaFiles = mediafileInstanceService.readMediaFilesFromFolder(directory.toPath(), true, false, CommonProperties.getInstance().getZone(), "", null);
+            final Set<MediafileInstanceDTO> mediaFiles = mediafileInstanceService.readMediaFilesFromFolder(directory.toPath(), false, false, CommonProperties.getInstance().getZone(), "", null);
 /*            for (MediafileDTO mediafileDTO : mediaFiles) {
                 RenameMediaFile renameMediaFile = new RenameMediaFile(mediafileDTO, "", "", toDir+directory.getName());
                 final String newName = mediafileService.getMediaFileName(renameMediaFile.getMediafileDTO(), "6");

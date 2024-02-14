@@ -2,6 +2,7 @@ package org.nyusziful.pictureorganizer.Service.Backend;
 
 import jakarta.persistence.EntityManager;
 import org.apache.logging.log4j.core.util.Assert;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile;
@@ -18,13 +19,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 
+import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static org.junit.Assert.*;
 
 public class MediaTest {
     Path tmpdir;
     @Before
     public void switchToTestDB() throws IOException {
-        JPAConnection.setTest(true);
+        JPAConnection.setMode(JPAConnection.DBMode.TEST);
         EntityManager entityManager = JPAConnection.getInstance().getEntityManager();
         entityManager.createNativeQuery("TRUNCATE TABLE testpictureorganizer.media_file_instance").executeUpdate();
         entityManager.createNativeQuery("TRUNCATE TABLE testpictureorganizer.media_image").executeUpdate();
@@ -43,6 +45,15 @@ public class MediaTest {
         if (null == driveService.getLocalDrive(tmpdir.toString().substring(0, 1))
         ) {
             driveService.addLocalDrive(tmpdir.toString().substring(0, 1));
+        }
+    }
+
+    @After
+    public void checkReadOnly() throws IOException {
+        File file = new File(this.getClass().getClassLoader().getResource("RAWJPG").getFile());
+        for (File testFile : file.listFiles(File::isFile)) {
+            if (!"JPG1ROTATE.JPG".equals(testFile.getName()) && !"JPG1.JPG".equals(testFile.getName()))
+                assertEquals(testFile.getName() + " mismatch from original data", -1L, Files.mismatch(testFile.toPath(), Paths.get(tmpdir.toAbsolutePath().toString(), testFile.getName())));
         }
     }
 
@@ -97,7 +108,7 @@ public class MediaTest {
                 case "BROKEN1.JPG":
                     brokenIds.add(mediaFileInstance.getMediaFileVersion().getMediaFile().getId());
                     assertEquals(true, mediaFileInstance.getMediaFileVersion().isInvalid());
-                    assertNull(mediaFileInstance.getMediaFileVersion().getDateStored()); //TODO we could do better
+                    assertNull(mediaFileInstance.getMediaFileVersion().getDateStored()); //TODO even with a broken image the metadata should be accessible
                     break;
                 case "JPG1.JPG":
                     assertEquals(true, ((JPGMediaFile)mediaFileInstance.getMediaFileVersion().getMediaFile()).isStandalone());
@@ -116,9 +127,9 @@ public class MediaTest {
         for (MediaFileInstance mediaFileInstance : afterMediaFileInstances) {
             switch (mediaFileInstance.getFilename()) {
                 case "JPG1.JPG":
-                    assertEquals(beforeVersionId, mediaFileInstance.getMediaFileVersion().getId());
+                    assertNotEquals(beforeVersionId, mediaFileInstance.getMediaFileVersion().getId());
                     assertEquals(beforeMFId, mediaFileInstance.getMediaFileVersion().getMediaFile().getId());
-                    assertEquals(8, mediaFileInstance.getMediaFileVersion().getMainMedia().getOrientation().intValue());
+                    assertEquals(6, mediaFileInstance.getMediaFileVersion().getMainMedia().getOrientation().intValue());
                     break;
                 default:
                     assertEquals(mediaFileInstance.getId(), (int) beforeInstanceIds.get(mediaFileInstance.getFilename()));
@@ -129,11 +140,10 @@ public class MediaTest {
             }
         }
         assertEquals(2, brokenIds.size());
-        //TODO check if files are not modified
     }
 
-    private static void rotate(File file) {
-//        Files.copy(new File(this.getClass().getClassLoader().getResource("RAWJPG").getFile()+"\\JPG1ROTATE.JPG").toPath(), file.toPath(), REPLACE_EXISTING);
+    private void rotate(File file) throws IOException {
+        Files.copy(new File(this.getClass().getClassLoader().getResource("RAWJPG/rotated/JPG1.JPG").getFile()).toPath(), file.toPath(), REPLACE_EXISTING);
     }
 
 

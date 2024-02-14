@@ -13,7 +13,10 @@ public class JPAConnection {
     private EntityManagerFactory factory;
     private static JPAConnection instance;
 
-    private static boolean test = false;
+    public enum DBMode {
+        TEST, DEV, PROD
+    }
+    private static DBMode mode = DBMode.PROD;
 
     public static JPAConnection getInstance() {
         if (instance == null) {
@@ -24,16 +27,23 @@ public class JPAConnection {
 
     private JPAConnection() {
         Map properties = new HashMap<>();
-        properties.put("jakarta.persistence.jdbc.url", "jdbc:mysql://127.0.0.1:3306/" + (isTest() ? "test" : "") + "pictureorganizer?useUnicode=yes&amp&characterEncoding=UTF-8");
+        properties.put("jakarta.persistence.jdbc.url", "jdbc:mysql://127.0.0.1:3306/" + (isTest() ? "test" : isDev() ? "dev" : "") + "pictureorganizer?useUnicode=yes&amp&characterEncoding=UTF-8");
         factory = Persistence.createEntityManagerFactory( "mysql-picture", properties);
     }
 
-    public static boolean isTest() {
-        return test;
+    public static boolean isDev() {
+        return DBMode.DEV.equals(getMode());
     }
 
-    public static void setTest(boolean test) {
-        JPAConnection.test = test;
+    public static boolean isTest() {
+        return DBMode.TEST.equals(getMode());
+    }
+
+    public static DBMode getMode() {
+        return mode;
+    }
+    public static void setMode(DBMode mode) {
+        JPAConnection.mode = mode;
     }
 
     public EntityManager getEntityManager() {

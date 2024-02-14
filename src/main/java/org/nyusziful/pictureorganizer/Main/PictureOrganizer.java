@@ -26,6 +26,8 @@ public class PictureOrganizer extends Application {
         } else {
             DBConnection.getLocalConnection();
         }*/
+        JPAConnection.setMode(JPAConnection.DBMode.DEV);
+
         view = this;
         this.primaryStage = stage;
 

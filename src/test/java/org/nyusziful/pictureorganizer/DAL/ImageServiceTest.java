@@ -32,7 +32,7 @@ public class ImageServiceTest {
 
     @Before
     public void setUp() {
-        JPAConnection.setTest(true);
+        JPAConnection.setMode(JPAConnection.DBMode.TEST);
         ImageDTO imageFirstDTO = new ImageDTO();
         String testHash = "TESTFIRST";
         String testType = "type";

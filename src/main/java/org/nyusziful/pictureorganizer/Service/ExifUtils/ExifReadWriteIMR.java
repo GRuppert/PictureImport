@@ -1,8 +1,3 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
 package org.nyusziful.pictureorganizer.Service.ExifUtils;
 
 import com.drew.imaging.avi.AviMetadataReader;
@@ -171,7 +166,10 @@ public class ExifReadWriteIMR {
                     }catch(DateTimeParseException excep){}
                     break;
                 case "Orientation":
-                    try {
+                    if (orientation != null) break;
+                    //TODO thmbnail meta should be separated
+                case "Orientation Exif":
+                try {
                         orientation = Integer.parseInt(tag[1]);
                     } catch (NumberFormatException nfe) {
   /*
@@ -274,14 +272,17 @@ public class ExifReadWriteIMR {
             for (Directory directory : metadata.getDirectories()) {
                 if (!directory.getClass().equals(XmpDirectory.class))
                     for (Tag tag : directory.getTags()) {
-                        String value = null;
+                        String tagName = tag.getTagName();
+                        String value;
                         try {
                             switch (tag.getTagName()) {
                                 case "Orientation":
                                     value = Integer.toString(directory.getInt(tag.getTagType()));
+                                    if ("Exif IFD0".equals(directory.getName())) tagName = "Orientation Exif";
                                     break;
                                 case "Sequence Number":
                                     value = String.valueOf(directory.getInteger(TAG_SEQUENCE_NUMBER));
+                                    if ("0".equals(value)) value = "1";
                                     break;
                                 default:
                                     value = tag.getDescription();
@@ -290,7 +291,7 @@ public class ExifReadWriteIMR {
                         } catch (MetadataException e) {
                             value = tag.getDescription();
                         }
-                        String[] temp = {tag.getTagName(), value};
+                        String[] temp = {tagName, value};
                         if (value != null && !value.replaceAll("\\s+", "").equals("")) tags.add(temp);
                     }
             }
@@ -321,7 +322,7 @@ public class ExifReadWriteIMR {
         metadata.getDirectories().forEach(directory -> directory.getTags().stream().forEach(tag -> {
 
             if (tag.getDescription() != null && !tag.getDescription().replaceAll("\\s+", "").equals("")) {
-                String value = null;
+                String value;
                 try {
                     switch (tag.getTagName()) {
                         case "Orientation":

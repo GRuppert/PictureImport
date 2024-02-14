@@ -135,3 +135,4 @@ mfo.title
 ;
 
 SELECT count(*) FROM media_image;
+

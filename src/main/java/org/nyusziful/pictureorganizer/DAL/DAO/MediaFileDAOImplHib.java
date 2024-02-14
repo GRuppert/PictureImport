@@ -51,13 +51,13 @@ public class MediaFileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
     public MediaFile getMediafileByImage(String hash, String type, Integer shotnumber, boolean batch) {
         EntityManager entityManager = jpaConnection.getEntityManager();
         EntityTransaction transaction = entityManager.getTransaction();
-        List<MediaFile> results;
+        List<Integer> results;
         try{
             Query nativeQuery = JPAConnection.getInstance().getEntityManager().createNativeQuery(
-                    "SELECT DISTINCT mf.* FROM media_file_version mfv LEFT JOIN media_file mf ON mf.id = mfv.media_file_id LEFT JOIN media_image mi ON mi.media_file_version_id = mfv.id LEFT JOIN image i ON i.id = mi.image_id WHERE i.odid = :hash AND mf.file_type = :type AND mf.shotnumber = :shotnumber");
+                    "SELECT DISTINCT mf.id FROM media_file_version mfv LEFT JOIN media_file mf ON mf.id = mfv.media_file_id LEFT JOIN media_image mi ON mi.media_file_version_id = mfv.id LEFT JOIN image i ON i.id = mi.image_id WHERE i.odid = :hash AND mf.file_type = :type AND mf.shotnumber = :shotnumber");
             nativeQuery.setParameter("hash", hash);
             nativeQuery.setParameter("shotnumber", shotnumber);
-            nativeQuery.setParameter("type", type);
+            nativeQuery.setParameter("type", type.toUpperCase());
             results = nativeQuery.getResultList();
             if (!batch) transaction.commit();
         }catch(RuntimeException e){
@@ -74,7 +74,7 @@ public class MediaFileDAOImplHib extends CRUDDAOImpHib<MediaFile> implements Med
             }
         }
         if (results.size() == 0) return null;
-        if (results.size() == 1) return results.get(0);
+        if (results.size() == 1) return getById(results.get(0), batch);
         throw new RuntimeException("more than one Mediafile for " + hash + ":" + type + ":" + shotnumber);
     }
 

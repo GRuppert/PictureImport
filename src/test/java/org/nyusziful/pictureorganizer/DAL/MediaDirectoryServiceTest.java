@@ -19,7 +19,7 @@ public class MediaDirectoryServiceTest {
 
     @Before
     public void setup() {
-        JPAConnection.setTest(true);
+        JPAConnection.setMode(JPAConnection.DBMode.TEST);
         EntityManager entityManager = JPAConnection.getInstance().getEntityManager();
         entityManager.createNativeQuery("TRUNCATE TABLE testpictureorganizer.media_directory").executeUpdate();
         mediaDirectoryService = MediaDirectoryService.getInstance();

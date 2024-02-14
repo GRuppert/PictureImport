@@ -25,7 +25,8 @@ public class Media implements Cloneable {
     @ManyToOne
     @JoinColumn(name= "image_id", referencedColumnName="id")
     private Image image;
-    @Column(name = "media_type")
+    @Enumerated(EnumType.STRING)
+    @Column(length = 5, name = "media_type")
     private MediaType mediaType;
     private Long duration;
     private String latitude;

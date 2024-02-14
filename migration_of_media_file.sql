@@ -111,3 +111,13 @@ ADD CONSTRAINT `media_file_instance_fk_media_file`
   REFERENCES `pictureorganizer`.`media_file` (`id`)
   ON DELETE NO ACTION
   ON UPDATE NO ACTION;
+
+ALTER TABLE `pictureorganizer`.`media_image`
+    ADD CONSTRAINT `media_image_fk_media_file_version`
+        FOREIGN KEY (`media_file_version_id`)
+            REFERENCES `pictureorganizer`.`media_file_version` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION;
+
+ALTER TABLE `devpictureorganizer`.`media_image`
+    ADD COLUMN `media_type` VARCHAR(5) NULL DEFAULT 'MAIN' AFTER `title`;

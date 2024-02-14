@@ -26,7 +26,7 @@ public class MediaFile extends TrackingEntity {
     @Column(name = "original_filename")
     private String originalFilename;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name= "original_version_id", referencedColumnName="id")
     private MediaFileVersion originalVersion;
 

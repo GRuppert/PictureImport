@@ -415,6 +415,9 @@ public class MediaFileInstanceService {
 
                 MediaFileVersion mediafileVersion = MediaFileVersionService.getInstance().getMediafileVersion(imageDTO.fullhash);
                 if (mediafileVersion == null) {
+                    MediaFile fromDB = MediaFileService.getInstance().getMediafileByImage(imageDTO.hash, imageDTO.type, meta.shotnumber);
+                    if (mediaFile == null) mediaFile = fromDB;
+                    else if (!mediaFile.equals(fromDB)) notes += " New versions (id="+mediafileVersion.getId()+") MediaFile doesn't match with the old (id=" + mediaFileInstance.getMediaFileVersion().getId() + ") ones.";
                     mediaFile = MediaFileService.getInstance().getMediafileByImage(imageDTO.hash, imageDTO.type, meta.shotnumber);
                     if (mediaFile == null) {
                         mediaFile = MediaFileService.getInstance().createMediaFile(name, meta);
