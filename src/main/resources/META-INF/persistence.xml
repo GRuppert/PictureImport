@@ -29,17 +29,18 @@
 -->
             <property name="jakarta.persistence.jdbc.user" value="picture" />
             <property name="jakarta.persistence.jdbc.password" value="picture" />
-            <property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create"/>
-            <property name="jakarta.persistence.schema-generation.scripts.create-target" value="./create.sql"/>
-            <property name="jakarta.persistence.schema-generation.scripts.drop-target" value="./drop.sql"/>
+            <!--
+                        <property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create"/>
+                        <property name="jakarta.persistence.schema-generation.scripts.create-target" value="./create.sql"/>
+                        <property name="jakarta.persistence.schema-generation.scripts.drop-target" value="./drop.sql"/>
+            -->
             <property name="mysql-picture.logging.level" value="FINE"/>
             <property name="connection.useUnicode" value="true"/>
             <property name="connection.characterEncoding" value="UTF-8"/>
             <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
 
+            <property name="hibernate.hbm2ddl.auto" value="validate" />
+
         </properties>
     </persistence-unit>
 </persistence>
-
-
-

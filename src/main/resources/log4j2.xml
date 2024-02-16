@@ -19,14 +19,20 @@
         </RollingFile >
     </Appenders>
     <Loggers>
-        <Logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-            <AppenderRef ref="STDOUT" />
+        <Logger name="org.hibernate.SQL" level="debug" additivity="false">
+            <AppenderRef ref="STDOUT"/>
         </Logger>
-        <Logger name="org.hibernate.descriptor.sql" level="trace" additivity="false">
-            <AppenderRef ref="STDOUT" />
+        <Logger name="org.hibernate.orm.jdbc.bind" level="trace" additivity="false">
+            <AppenderRef ref="STDOUT"/>
         </Logger>
-        <Logger name="org.hibernate.cache" level="INFO">
-            <AppenderRef ref="STDOUT" />
+        <Logger name="org.hibernate.stat" level="trace" additivity="false">
+            <AppenderRef ref="STDOUT"/>
+        </Logger>
+        <Logger name="org.hibernate.SQL_SLOW" level="trace" additivity="false">
+            <AppenderRef ref="STDOUT"/>
+        </Logger>
+        <Logger name="org.hibernate.cache" level="trace" additivity="false">
+            <AppenderRef ref="STDOUT"/>
         </Logger>
         <Logger name="com.mchange" level="DEBUG">
             <AppenderRef ref="STDOUT" />
