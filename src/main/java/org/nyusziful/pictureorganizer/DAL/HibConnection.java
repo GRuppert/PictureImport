@@ -25,7 +25,7 @@ public class HibConnection {
     private HibConnection() {
         if (getSessionFactory() == null) {
             final StandardServiceRegistry registry = new StandardServiceRegistryBuilder()
-                    .configure() // configures settings from hibernate.cfg.xml
+                    .configure() // configures settings from persistence.xml
                     .build();
             try {
                 sessionFactory = new MetadataSources(registry).buildMetadata().buildSessionFactory();
