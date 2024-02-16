@@ -52,6 +52,9 @@ public class MediaFileVersion extends TrackingEntity {
     @Column(name = "invalid")
     private Boolean invalid;
 
+    @Column(name = "original")
+    private Boolean original;
+
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "mediaFileVersion")
     private Set<Media> media;
 
@@ -212,5 +215,13 @@ public class MediaFileVersion extends TrackingEntity {
                 ", parent=" + parent +
                 ", invalid=" + invalid +
                 '}';
+    }
+
+    public Boolean getOriginal() {
+        return original;
+    }
+
+    public void setOriginal(Boolean original) {
+        this.original = original;
     }
 }

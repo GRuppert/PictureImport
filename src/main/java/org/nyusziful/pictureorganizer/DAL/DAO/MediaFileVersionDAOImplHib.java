@@ -108,4 +108,38 @@ public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> 
         else
             return null;
     }
+
+    @Override
+    public MediaFileVersion getOriginalMediafileVersion(MediaFile mediaFile) {
+        return getOriginalMediafileVersion(mediaFile, false);
+    }
+    @Override
+    public MediaFileVersion getOriginalMediafileVersion(MediaFile mediaFile, boolean batch) {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        List<MediaFileVersion> results;
+        try{//LEFT JOIN FETCH i.mediaFiles
+            TypedQuery<MediaFileVersion> typedQuery = entityManager.createQuery("SELECT mfv from MediaFileVersion mfv WHERE mfv.mediaFile=:mediaFile AND mfv.original", MediaFileVersion.class);
+            typedQuery.setParameter("mediaFile", mediaFile);
+            results = typedQuery.getResultList();
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+
+        }finally{
+            if(!batch){
+                entityManager.close();
+            }
+        }
+        if (!results.isEmpty())
+            return results.get(0);
+        else
+            return null;
+    }
+
 }

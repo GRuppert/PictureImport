@@ -10,8 +10,8 @@ public class VideoMediaFile extends MediaFile {
         // this form used by Hibernate
     }
 
-    public VideoMediaFile(VideoMediaFileVersion originalVersion, String originalFilename, Integer shotnumber) {
-        super(originalVersion, originalFilename, shotnumber);
+    public VideoMediaFile(String originalFilename, Integer shotnumber) {
+        super(originalFilename, shotnumber);
     }
 
 }

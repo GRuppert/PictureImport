@@ -26,10 +26,6 @@ public class MediaFile extends TrackingEntity {
     @Column(name = "original_filename")
     private String originalFilename;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name= "original_version_id", referencedColumnName="id")
-    private MediaFileVersion originalVersion;
-
     @ManyToOne
     @JoinColumn(name= "media_directory_id", referencedColumnName="id")
     private MediaDirectory mediaDirectory;
@@ -38,8 +34,7 @@ public class MediaFile extends TrackingEntity {
         // this form used by Hibernate
     }
 
-    public MediaFile(MediaFileVersion originalVersion, String originalFilename, Integer shotnumber) {
-        this.originalVersion = originalVersion;
+    public MediaFile(String originalFilename, Integer shotnumber) {
         this.originalFilename = originalFilename;
         this.shotnumber = shotnumber;
     }
@@ -54,14 +49,14 @@ public class MediaFile extends TrackingEntity {
             if (id > -1) {
                 return id == anotherFile.id;
             }
-            return (this.originalVersion != null && this.originalVersion.equals(anotherFile.originalVersion));
+            return (shotnumber.equals(shotnumber) && this.originalFilename.equals(anotherFile.originalFilename));
         }
         return false;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(originalVersion);
+        return Objects.hash(originalFilename, shotnumber);
     }
 
     public int getId() {
@@ -90,14 +85,6 @@ public class MediaFile extends TrackingEntity {
 
     public void setOriginalFilename(String originalFilename) {
         this.originalFilename = originalFilename;
-    }
-
-    public MediaFileVersion getOriginalVersion() {
-        return originalVersion;
-    }
-
-    public void setOriginalVersion(MediaFileVersion originalVersion) {
-        this.originalVersion = originalVersion;
     }
 
     public MediaDirectory getMediaDirectory() {

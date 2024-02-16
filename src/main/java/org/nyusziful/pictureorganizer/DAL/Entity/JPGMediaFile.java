@@ -11,8 +11,8 @@ public class JPGMediaFile extends MediaFile {
     public JPGMediaFile() {
     }
 
-    public JPGMediaFile(JPGMediaFileVersion originalVersion, String originalFilename, Integer shotnumber, boolean standalone, MediaFile mainMediaFile) {
-        super(originalVersion, originalFilename, shotnumber);
+    public JPGMediaFile(String originalFilename, Integer shotnumber, boolean standalone, MediaFile mainMediaFile) {
+        super(originalFilename, shotnumber);
         super.setMainMediaFile(mainMediaFile);
         setStandalone(standalone);
     }

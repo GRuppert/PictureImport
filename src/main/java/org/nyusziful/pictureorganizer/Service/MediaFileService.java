@@ -26,13 +26,13 @@ public class MediaFileService {
 
     public MediaFile createMediaFile(String name, Meta meta) {
         if (supportedRAWFileType(name)) {
-            return new RAWMediaFile(null, meta.originalFilename, meta.shotnumber);
+            return new RAWMediaFile(meta.originalFilename, meta.shotnumber);
         } else if (supportedJPGFileType(name)) {
-            return new JPGMediaFile(null, meta.originalFilename, meta.shotnumber, JPGMediaFile.setWithQuality(meta.quality), null);
+            return new JPGMediaFile(meta.originalFilename, meta.shotnumber, JPGMediaFile.setWithQuality(meta.quality), null);
         } else if (supportedVideoFileType(name)) {
-            return new VideoMediaFile(null, meta.originalFilename, meta.shotnumber);
+            return new VideoMediaFile(meta.originalFilename, meta.shotnumber);
         } else {
-            return new MediaFile(null, meta.originalFilename, meta.shotnumber);
+            return new MediaFile(meta.originalFilename, meta.shotnumber);
         }
     }
     public List<MediaFile> getMediafiles() {

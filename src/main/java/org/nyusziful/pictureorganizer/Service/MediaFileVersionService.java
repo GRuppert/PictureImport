@@ -77,4 +77,8 @@ public class MediaFileVersionService {
     public Media createMedia(MediaFileVersion mediaFileVersion, Image image, Meta meta, Media.MediaType mediaType) {
         if (mediaFileVersion instanceof JPGMediaFileVersion) return new JPGMedia(mediaFileVersion, image, meta, mediaType); else return new Media(mediaFileVersion, image, meta, mediaType);
     }
+
+    public MediaFileVersion getOriginalMediafileVersion(MediaFile mediaFile) {
+        return mediaFileVersionDAO.getOriginalMediafileVersion(mediaFile);
+    }
 }

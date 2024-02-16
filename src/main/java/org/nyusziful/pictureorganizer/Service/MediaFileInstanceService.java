@@ -441,9 +441,17 @@ public class MediaFileInstanceService {
                 }
                 times.add(System.nanoTime());
             }
-            if (original && !mediaFileInstance.getMediaFileVersion().equals(mediaFileInstance.getMediaFileVersion().getMediaFile().getOriginalVersion())) {
-                    mediaFileInstance.getMediaFileVersion().getMediaFile().setOriginalVersion(mediaFileInstance.getMediaFileVersion());
-                    whatToSave.add("mediaFile");
+            MediaFileVersion originalMediafileVersion = null;
+            if (original && !Boolean.TRUE.equals(mediaFileInstance.getMediaFileVersion().getOriginal())) {
+                    if (!whatToSave.contains("mediaFile")) {
+                        originalMediafileVersion = MediaFileVersionService.getInstance().getOriginalMediafileVersion(mediaFileInstance.getMediaFileVersion().getMediaFile());
+                        if (originalMediafileVersion != null) {
+                            originalMediafileVersion.setOriginal(false);
+                            whatToSave.add("originalversion");
+                        }
+                    }
+                    mediaFileInstance.getMediaFileVersion().setOriginal(true);
+                    whatToSave.add("version");
             }
 
 
@@ -457,6 +465,9 @@ public class MediaFileInstanceService {
                 MediaFileService.getInstance().saveMediaFile(mediaFileInstance.getMediaFileVersion().getMediaFile(),true);
             }
             if (whatToSave.contains("version")) {
+                if (whatToSave.contains("originalversion")) {
+                    MediaFileVersionService.getInstance().saveMediaFileVersion(originalMediafileVersion,true);
+                }
                 MediaFileVersionService.getInstance().saveMediaFileVersion(mediaFileInstance.getMediaFileVersion(),true);
                 for (Media media : mediaFileInstance.getMediaFileVersion().getMedia()) {
                     mediaDAO.persist(media, true);

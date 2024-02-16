@@ -121,3 +121,5 @@ ALTER TABLE `pictureorganizer`.`media_image`
 
 ALTER TABLE `devpictureorganizer`.`media_image`
     ADD COLUMN `media_type` VARCHAR(5) NULL DEFAULT 'MAIN' AFTER `title`;
+ALTER TABLE `testpictureorganizer`.`media_file_version`
+    ADD COLUMN `original` BIT(1) NULL DEFAULT NULL AFTER `exifbackup`;

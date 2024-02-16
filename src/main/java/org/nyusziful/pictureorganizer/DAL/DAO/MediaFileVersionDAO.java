@@ -13,4 +13,6 @@ public interface MediaFileVersionDAO extends CRUDDAO<MediaFileVersion> {
     List<MediaFileVersion> getMediafileVersionsByMediaFile(MediaFile mediaFile, boolean batch);
     List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion);
     List<MediaFileVersion> getMediafileVersionsByParent(MediaFileVersion mediaFileVersion, boolean batch);
+    MediaFileVersion getOriginalMediafileVersion(MediaFile mediaFile);
+    MediaFileVersion getOriginalMediafileVersion(MediaFile mediaFile, boolean batch);
 }

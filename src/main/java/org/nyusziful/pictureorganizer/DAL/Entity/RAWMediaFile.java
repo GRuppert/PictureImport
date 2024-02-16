@@ -10,8 +10,8 @@ public class RAWMediaFile extends MediaFile {
         // this form used by Hibernate
     }
 
-    public RAWMediaFile(RAWMediaFileVersion originalVersion, String originalFilename, Integer shotnumber) {
-        super(originalVersion, originalFilename, shotnumber);
+    public RAWMediaFile(String originalFilename, Integer shotnumber) {
+        super(originalFilename, shotnumber);
     }
 
 }
