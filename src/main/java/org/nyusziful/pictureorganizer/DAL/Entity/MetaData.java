@@ -3,8 +3,10 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 import jakarta.persistence.*;
 import org.nyusziful.pictureorganizer.DTO.Meta;
 
+/*
 @Entity
 @Table(name = "meta_data")
+ */
 public class MetaData {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

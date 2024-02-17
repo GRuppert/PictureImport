@@ -1,12 +1,13 @@
 package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import jakarta.persistence.*;
-
+/*
 @Entity
 @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
 @Table(name = "media_image")
 @DiscriminatorColumn(name = "file_type")
 @DiscriminatorValue("DEF")
+ */
 public class m_old implements Cloneable {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
