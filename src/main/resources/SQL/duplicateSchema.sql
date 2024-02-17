@@ -16,3 +16,11 @@ CREATE TABLE devpictureorganizer.media_file_old LIKE pictureorganizer.media_file
 INSERT INTO devpictureorganizer.media_file_old SELECT * FROM pictureorganizer.media_file_old;
 CREATE TABLE devpictureorganizer.media_file_instance LIKE pictureorganizer.media_file_instance;
 INSERT INTO devpictureorganizer.media_file_instance SELECT * FROM pictureorganizer.media_file_instance;
+
+ALTER TABLE `pictureorganizer`.`media_file_version` 
+CHANGE COLUMN `invalid` `invalid` BIT(1) NULL DEFAULT NULL ;
+
+ALTER TABLE `testpictureorganizer`.`media_file_version` 
+ADD COLUMN `original` BIT(1) NULL DEFAULT NULL AFTER `exifbackup`;
+SET SQL_SAFE_UPDATES = 0;
+UPDATE `pictureorganizer`.`media_file_version` SET original = 1 WHERE id IN (SELECT DISTINCT(original_version_id) FROM devpictureorganizer.media_file WHERE original_version_id IS NOT NULL);
