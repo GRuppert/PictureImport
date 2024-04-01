@@ -77,4 +77,12 @@ public class MediaFileVersionService {
     public Media createMedia(MediaFileVersion mediaFileVersion, Image image, Meta meta, Media.MediaType mediaType) {
         if (mediaFileVersion instanceof JPGMediaFileVersion) return new JPGMedia(mediaFileVersion, image, meta, mediaType); else return new Media(mediaFileVersion, image, meta, mediaType);
     }
+
+    public void setAsOriginal(int id, boolean batch) {
+        mediaFileVersionDAO.setAsOriginal(id, batch);
+    }
+
+    public void setAsInvalid(int id, boolean batch) {
+        mediaFileVersionDAO.setAsInvalid(id, batch);
+    }
 }

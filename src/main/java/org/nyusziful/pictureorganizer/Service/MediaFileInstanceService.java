@@ -309,7 +309,9 @@ public class MediaFileInstanceService {
         Set<MediaFileInstance> sidecarJPGs = new HashSet<>();
         long getDrive = System.nanoTime();
         Drive drive = driveService.getLocalDrive(path.toString().substring(0, 1));
-        if (drive == null) return new HashSet<>();
+        if (drive == null) {
+            throw new RuntimeException("Drive not found");
+        }
         long getFolder = System.nanoTime();
         Folder folder = folderService.getFolder(path);
         long getFiles = System.nanoTime();

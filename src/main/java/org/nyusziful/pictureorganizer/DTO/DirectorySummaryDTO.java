@@ -44,6 +44,11 @@ public class DirectorySummaryDTO implements Comparable<DirectorySummaryDTO>, Sum
         return sb.toString();
     }
 
+    @Override
+    public boolean isSelected() {
+        return false;
+    }
+
     public Set<Integer> getIds(String name) {
         return idsMap.get(name);
     }

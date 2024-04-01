@@ -4,13 +4,14 @@ import org.jetbrains.annotations.NotNull;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDTO {
     private Folder folder;
     private HashMap<Integer, FileSummaryDTO> idsMap = new HashMap<>();
     private HashMap<Integer, String> mediaFilesIds;
-
     private int[] version = new int[0];
+    private boolean selected;
 
     public static final int MATCH = 0;
     public static final int DISTINCT = -1;
@@ -44,7 +45,7 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
 
 
     public Collection<FileSummaryDTO> getFilesSummaries() {
-        return idsMap.values();
+        return idsMap.values().stream().sorted().collect(Collectors.toList());
     }
 
     public String getSummaryText() {
@@ -92,6 +93,15 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
         for (Integer i : idsMap.keySet()) {
             idsMap.get(i).setName(mediaFilesIds.get(i));
         }
-
     }
+
+    @Override
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
+    }
+
 }

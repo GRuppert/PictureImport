@@ -6,9 +6,10 @@ import java.util.*;
 
 public class FileSummaryDTO implements Comparable<FileSummaryDTO>, SummaryDTO {
     private Integer mediaFileId;
-
     private String originalFileName;
     private Set<Integer> mediaFileVersionIds = new HashSet<>();
+    private boolean selected;
+
     public FileSummaryDTO(Integer mediaFileId) {
         this.mediaFileId = mediaFileId;
     }
@@ -41,5 +42,14 @@ public class FileSummaryDTO implements Comparable<FileSummaryDTO>, SummaryDTO {
 
     public void setName(String originalFileName) {
         this.originalFileName = originalFileName;
+    }
+
+    @Override
+    public boolean isSelected() {
+        return selected;
+    }
+
+    public void setSelected(boolean selected) {
+        this.selected = selected;
     }
 }

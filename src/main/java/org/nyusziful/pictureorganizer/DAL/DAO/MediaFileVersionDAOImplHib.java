@@ -8,6 +8,8 @@ import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileVersion;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.TypedQuery;
+import org.nyusziful.pictureorganizer.Service.MediaFileService;
+
 import java.util.List;
 
 public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> implements MediaFileVersionDAO {
@@ -107,5 +109,37 @@ public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> 
             return results;
         else
             return null;
+    }
+
+    @Override
+    public void setAsOriginal(int id) {
+        setAsOriginal(id, false);
+    }
+
+    @Override
+    public void setAsOriginal(int id, boolean batch) {
+        MediaFileVersion fileVersion = getById(id);
+        if (fileVersion != null) {
+            MediaFileService mediaFileService = MediaFileService.getInstance();
+            MediaFile mediaFile = mediaFileService.getMediaFileByID(fileVersion.getMediaFile().getId());
+            if (mediaFile != null) {
+                mediaFile.setOriginalVersion(fileVersion);
+                mediaFileService.saveMediaFile(mediaFile, batch);
+            }
+        }
+    }
+
+    @Override
+    public void setAsInvalid(int id) {
+        setAsInvalid(id, false);
+    }
+
+    @Override
+    public void setAsInvalid(int id, boolean batch) {
+        MediaFileVersion fileVersion = getById(id);
+        if (fileVersion != null) {
+            fileVersion.setInvalid(true);
+            merge(fileVersion, batch);
+        }
     }
 }

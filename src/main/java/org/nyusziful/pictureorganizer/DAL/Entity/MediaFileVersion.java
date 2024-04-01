@@ -78,7 +78,7 @@ public class MediaFileVersion extends TrackingEntity {
         this.size = size;
         this.mediaFile = mediaFile;
         this.media = new HashSet<>();
-        this.invalid = invalid;
+        this.setInvalid(invalid);
         setDateStored(dateStored);
     }
 
@@ -157,7 +157,7 @@ public class MediaFileVersion extends TrackingEntity {
     }
 
     public Boolean isInvalid() {
-        return invalid;
+        return getInvalid();
     }
 
     public MediaFileVersion getParent() {
@@ -210,7 +210,15 @@ public class MediaFileVersion extends TrackingEntity {
         return "MediaFileVersion{" +
                 "id=" + id +
                 ", parent=" + parent +
-                ", invalid=" + invalid +
+                ", invalid=" + getInvalid() +
                 '}';
+    }
+
+    public Boolean getInvalid() {
+        return invalid;
+    }
+
+    public void setInvalid(Boolean invalid) {
+        this.invalid = invalid;
     }
 }
