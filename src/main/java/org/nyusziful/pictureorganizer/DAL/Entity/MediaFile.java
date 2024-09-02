@@ -45,18 +45,10 @@ public class MediaFile extends TrackingEntity {
     }
 
     @Override
-    public boolean equals(Object anObject){
-        if (this == anObject) {
-            return true;
-        }
-        if (anObject instanceof MediaFile) {
-            MediaFile anotherFile = (MediaFile)anObject;
-            if (id > -1) {
-                return id == anotherFile.id;
-            }
-            return (this.originalVersion != null && this.originalVersion.equals(anotherFile.originalVersion));
-        }
-        return false;
+    public boolean equals(Object o){
+        if (this == o) return true;
+        if (!(o instanceof MediaFile other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && (originalVersion != null && originalVersion.equals(other.originalVersion)));
     }
 
     @Override

@@ -1,5 +1,7 @@
 package org.nyusziful.pictureorganizer.DTO;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
@@ -8,7 +10,7 @@ public class FileSummaryDTO implements Comparable<FileSummaryDTO>, SummaryDTO {
     private Integer mediaFileId;
     private String originalFileName;
     private Set<Integer> mediaFileVersionIds = new HashSet<>();
-    private boolean selected;
+    private BooleanProperty selected = new SimpleBooleanProperty(false);
 
     public FileSummaryDTO(Integer mediaFileId) {
         this.mediaFileId = mediaFileId;
@@ -25,7 +27,8 @@ public class FileSummaryDTO implements Comparable<FileSummaryDTO>, SummaryDTO {
         return mediaFileId - o.mediaFileId;
     }
 
-    public String getSummaryText() {
+    @Override
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(originalFileName).append(":");
         ArrayList<Integer> list = new ArrayList<>(getMediaFileVersionIds());
@@ -46,10 +49,21 @@ public class FileSummaryDTO implements Comparable<FileSummaryDTO>, SummaryDTO {
 
     @Override
     public boolean isSelected() {
+        return selected.get();
+    }
+
+    @Override
+    public void setSelectedValue(boolean selected) {
+        this.selected.set(selected);
+    }
+
+
+    @Override
+    public BooleanProperty getSelected() {
         return selected;
     }
 
-    public void setSelected(boolean selected) {
-        this.selected = selected;
+    public Integer getMediaFileId() {
+        return mediaFileId;
     }
 }

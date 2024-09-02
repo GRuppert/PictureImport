@@ -12,7 +12,7 @@ public class MetaData {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false, nullable = false)
     private int id;
-    private Long duration;
+    private int duration;
     private String latitude;
     private String longitude;
     private String altitude;

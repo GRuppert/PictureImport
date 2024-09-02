@@ -155,7 +155,7 @@ public class PresetUseCases {
         JPAConnection.setMode(JPAConnection.DBMode.DEV);
 
 //        File dir = new File("H:\\Photos\\Fekete2TB");
-        File dir = new File("H:\\Photos\\KékB");
+        File dir = new File("H:\\4TBRed\\Képek\\Photos");
 
         ArrayList<File> directories = new ArrayList<>();
         try {

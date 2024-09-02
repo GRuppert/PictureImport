@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
 
-<TreeView fx:id="summaryTree" xmlns:fx="http://javafx.com/fxml/1" prefHeight="600" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.SummaryController">
-</TreeView>
+<SplitPane xmlns:fx="http://javafx.com/fxml/1" orientation="VERTICAL" prefHeight="600" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.SummaryController">
+    <TreeView fx:id="summaryTree" prefHeight="1000" prefWidth="450">
+    </TreeView>
+    <TreeView fx:id="versionTree" prefHeight="400" prefWidth="450">
+    </TreeView>
+</SplitPane>
+

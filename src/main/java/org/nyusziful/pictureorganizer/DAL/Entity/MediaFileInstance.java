@@ -111,20 +111,12 @@ public class MediaFileInstance extends TrackingEntity implements Cloneable {
     }
 
     @Override
-    public boolean equals(Object anObject){
-        if (this == anObject) {
-            return true;
-        }
-        if (anObject instanceof MediaFileInstance) {
-            MediaFileInstance anotherFile = (MediaFileInstance)anObject;
-            if (id > -1) {
-                return id == anotherFile.id;
-            }
-            return (this.filename != null && this.filename.equals(anotherFile.filename)) &&
-                    (this.folder != null && this.folder.equals(anotherFile.folder)) &&
-                    (this.dateMod != null && this.dateMod.toInstant().toEpochMilli() == anotherFile.dateMod.toInstant().toEpochMilli());
-        }
-        return false;
+    public boolean equals(Object o){
+        if (this == o) return true;
+        if (!(o instanceof MediaFileInstance other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && (filename != null && filename.equals(other.filename)) &&
+                (folder != null && folder.equals(other.folder)) &&
+                (dateMod != null && dateMod.toInstant().toEpochMilli() == other.dateMod.toInstant().toEpochMilli()));
     }
 
     @Override

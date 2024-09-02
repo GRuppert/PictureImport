@@ -1,5 +1,7 @@
 package org.nyusziful.pictureorganizer.DTO;
 
+import javafx.beans.property.BooleanProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import org.jetbrains.annotations.NotNull;
 import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
 
@@ -11,8 +13,7 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
     private HashMap<Integer, FileSummaryDTO> idsMap = new HashMap<>();
     private HashMap<Integer, String> mediaFilesIds;
     private int[] version = new int[0];
-    private boolean selected;
-
+    private BooleanProperty selected = new SimpleBooleanProperty(false);
     public static final int MATCH = 0;
     public static final int DISTINCT = -1;
     public static final int MIX = 1;
@@ -35,12 +36,8 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
     }
 
     public void put(Integer mediaFileId, Integer mediaFileVersionId) {
-        FileSummaryDTO fileSummaryDTO = idsMap.get(mediaFileId);
-        if (fileSummaryDTO == null) {
-            fileSummaryDTO = new FileSummaryDTO(mediaFileId);
-            idsMap.put(mediaFileId, fileSummaryDTO);
-        }
-        fileSummaryDTO.add(mediaFileVersionId);
+        idsMap.putIfAbsent(mediaFileId, new FileSummaryDTO(mediaFileId));
+        idsMap.get(mediaFileId).add(mediaFileVersionId);
     }
 
 
@@ -48,7 +45,8 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
         return idsMap.values().stream().sorted().collect(Collectors.toList());
     }
 
-    public String getSummaryText() {
+    @Override
+    public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append(idsMap.keySet().containsAll(mediaFilesIds.keySet()) ? "FULL" : (idsMap.keySet().size() + "/" + mediaFilesIds.size()));
         sb.append(" V");
@@ -56,7 +54,7 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
             sb.append(i).append("-");
         }
         sb.deleteCharAt(sb.length() - 1);
-        sb.append(" ").append(folder);
+        sb.append(" ").append(folder.getId()).append(" ").append(folder);
         return sb.toString();
     }
 
@@ -80,15 +78,15 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
 
     public void setVersion(ArrayList<Set<Integer>> mfvIdsList) {
         ArrayList<Integer> versionList = new ArrayList<>();
-        for (int j = 0; j < mfvIdsList.size(); j++) {
-            Set<Integer> mfvIds = mfvIdsList.get(j);
-            int i = compareWith(getVersions(), mfvIds);
-            if (i == MATCH || i == MIX) versionList.add(j);
+        for (int i = 0; i < mfvIdsList.size(); i++) {
+            Set<Integer> mfvIds = mfvIdsList.get(i);
+            int compared = compareWith(getVersions(), mfvIds);
+            if (compared == MATCH || compared == MIX) versionList.add(i);
         }
         version = new int[versionList.size()];
-        for (int j = 0; j < versionList.size(); j++) {
-            Integer i = versionList.get(j);
-            version[j] = i;
+        for (int i = 0; i < versionList.size(); i++) {
+            Integer version = versionList.get(i);
+            this.version[i] = version;
         }
         for (Integer i : idsMap.keySet()) {
             idsMap.get(i).setName(mediaFilesIds.get(i));
@@ -97,11 +95,18 @@ public class FolderSummaryDTO implements Comparable<FolderSummaryDTO>, SummaryDT
 
     @Override
     public boolean isSelected() {
+        return selected.get();
+    }
+
+    @Override
+    public void setSelectedValue(boolean selected) {
+        this.selected.set(selected);
+    }
+
+    @Override
+    public BooleanProperty getSelected() {
         return selected;
     }
 
-    public void setSelected(boolean selected) {
-        this.selected = selected;
-    }
 
 }

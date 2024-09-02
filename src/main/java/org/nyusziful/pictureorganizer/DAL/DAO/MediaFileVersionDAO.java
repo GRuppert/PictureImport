@@ -17,4 +17,6 @@ public interface MediaFileVersionDAO extends CRUDDAO<MediaFileVersion> {
     void setAsOriginal(int id, boolean batch);
     void setAsInvalid(int id);
     void setAsInvalid(int id, boolean batch);
+    void setParent(int childId, Integer parentId);
+    void setParent(int childId, Integer parentId, boolean batch);
 }

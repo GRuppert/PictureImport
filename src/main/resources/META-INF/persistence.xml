@@ -18,6 +18,9 @@
         <class>org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFileVersion</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFileInstance</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.Media</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.JPGMedia</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.RAWMedia</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.VideoMedia</class>
         <class>org.nyusziful.pictureorganizer.DAL.Entity.Image</class>
         <properties>
 <!--

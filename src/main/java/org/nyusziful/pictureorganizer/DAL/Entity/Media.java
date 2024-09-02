@@ -26,9 +26,8 @@ public class Media implements Cloneable {
     @JoinColumn(name= "image_id", referencedColumnName="id")
     private Image image;
     @Enumerated(EnumType.STRING)
-    @Column(length = 5, name = "media_type")
+    @Column(length = 5, name = "media_type", columnDefinition = "varchar")
     private MediaType mediaType;
-    private Long duration;
     private String latitude;
     private String longitude;
     private String altitude;
@@ -43,7 +42,6 @@ public class Media implements Cloneable {
     public Media(MediaFileVersion mediaFileVersion, Image image, Meta meta, MediaType mediaType) {
         this.mediaFileVersion = mediaFileVersion;
         this.image = image;
-        this.duration = meta.duration;
         this.latitude = meta.latitude;
         this.longitude = meta.longitude;
         this.altitude = meta.altitude;
@@ -60,7 +58,6 @@ public class Media implements Cloneable {
         Media media = new Media();
         media.mediaFileVersion = this.mediaFileVersion;
         media.image = this.image;
-        media.duration = this.getDuration();
         media.latitude = this.getLatitude();
         media.longitude = this.getLongitude();
         media.altitude = this.getAltitude();
@@ -80,10 +77,6 @@ public class Media implements Cloneable {
 
     public MediaType getMediaType() {
         return mediaType;
-    }
-
-    public Long getDuration() {
-        return duration;
     }
 
     public String getLatitude() {

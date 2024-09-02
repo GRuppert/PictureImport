@@ -99,22 +99,10 @@ public class MediaFileVersion extends TrackingEntity {
     }
 
     @Override
-    public boolean equals(Object anObject){
-        if (this == anObject) {
-            return true;
-        }
-        if (anObject instanceof MediaFileVersion) {
-            MediaFileVersion anotherFile = (MediaFileVersion)anObject;
-            if (id > -1) {
-                if (id == anotherFile.id) return true;
-                else return false;
-            }
-            if (
-                (this.filehash != null && this.filehash.equals(anotherFile.filehash)) &&
-                this.size == anotherFile.size
-            ) return true;
-        }
-        return false;
+    public boolean equals(Object o){
+        if (this == o) return true;
+        if (!(o instanceof MediaFileVersion other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && (filehash != null && filehash.equals(other.filehash)) && size == other.size);//TODO for broken files this might be not ok
     }
 
     @Override
@@ -158,6 +146,10 @@ public class MediaFileVersion extends TrackingEntity {
 
     public Boolean isInvalid() {
         return getInvalid();
+    }
+
+    public void setParent(MediaFileVersion parent) {
+        this.parent = parent;
     }
 
     public MediaFileVersion getParent() {
@@ -220,5 +212,13 @@ public class MediaFileVersion extends TrackingEntity {
 
     public void setInvalid(Boolean invalid) {
         this.invalid = invalid;
+    }
+
+    public boolean isAncestor(MediaFileVersion mediaFileVersion) {
+        MediaFileVersion parent = getParent();
+        while (parent != null) {
+            if (parent.equals(mediaFileVersion)) return true;
+        }
+        return false;
     }
 }

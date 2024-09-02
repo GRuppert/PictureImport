@@ -61,7 +61,7 @@ public class Image extends TrackingEntity implements Serializable {
     private byte[] exif;
 
     @Column(name = "duration")
-    private long duration;
+    private int duration;
     @ManyToOne
     @JoinColumn(name="parent_id", referencedColumnName="id")
     private Image parent;
@@ -204,11 +204,11 @@ public class Image extends TrackingEntity implements Serializable {
         this.originalFileHash = originalFileHash;
     }
 
-    public void setDuration(long duration) {
+    public void setDuration(int duration) {
         this.duration = duration;
     }
 
-    public long getDuration() {
+    public int getDuration() {
         return duration;
     }
 

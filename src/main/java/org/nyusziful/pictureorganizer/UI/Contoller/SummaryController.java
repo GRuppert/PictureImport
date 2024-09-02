@@ -1,19 +1,13 @@
 package org.nyusziful.pictureorganizer.UI.Contoller;
 
-import javafx.event.ActionEvent;
-import javafx.event.EventHandler;
-import javafx.event.EventType;
+import javafx.event.Event;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.MenuItem;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
-import org.nyusziful.pictureorganizer.DTO.DirectorySummaryDTO;
-import org.nyusziful.pictureorganizer.DTO.FileSummaryDTO;
-import org.nyusziful.pictureorganizer.DTO.FolderSummaryDTO;
-import org.nyusziful.pictureorganizer.DTO.SummaryDTO;
+import org.nyusziful.pictureorganizer.DAL.Entity.Folder;
+import org.nyusziful.pictureorganizer.DAL.Entity.MediaFileVersion;
+import org.nyusziful.pictureorganizer.DTO.*;
 import org.nyusziful.pictureorganizer.Service.MediaFileGeneralService;
 import org.nyusziful.pictureorganizer.Service.MediaFileVersionService;
 
@@ -24,11 +18,15 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
 
-import static java.awt.SystemColor.menu;
-
 public class SummaryController implements Initializable {
     @FXML
     private TreeView<SummaryDTO> summaryTree;
+    @FXML
+    private TreeView<VersionDTO> versionTree;
+
+    private DirectorySummaryDTO selectedDirectory = null;
+    private TreeItem<VersionDTO> vroot = new TreeItem<>();
+
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -62,6 +60,11 @@ public class SummaryController implements Initializable {
             }
             size++;
         }*/
+        versionTree.setRoot(vroot);
+        versionTree.setShowRoot(false);
+        versionTree.setCellFactory(cb -> new VersionTreeCell());
+
+
         TreeItem<SummaryDTO> root = new TreeItem<>();
         summaryTree.setRoot(root);
         summaryTree.setEditable(true);
@@ -77,10 +80,10 @@ public class SummaryController implements Initializable {
                     if (newValue) {
                         if (directorySummaryDTOTreeItem.getChildren().contains(null)) {
                             directorySummaryDTOTreeItem.getChildren().clear();
-                            for (FolderSummaryDTO loadDirectoryVersionStatus : MediaFileGeneralService.getInstance().loadDirectoryVersionStatus(directorySummaryDTO.getIds("Collision"))) {
-                                TreeItem<SummaryDTO> folderSummaryDTOTreeItem = new TreeItem<>(loadDirectoryVersionStatus);
+                            for (FolderSummaryDTO folderSummaryDTO : MediaFileGeneralService.getInstance().loadDirectoryVersionStatus(directorySummaryDTO.getIds("Collision"))) {
+                                TreeItem<SummaryDTO> folderSummaryDTOTreeItem = new TreeItem<>(folderSummaryDTO);
                                 directorySummaryDTOTreeItem.getChildren().add(folderSummaryDTOTreeItem);
-                                for (FileSummaryDTO fileSummaryDTO : loadDirectoryVersionStatus.getFilesSummaries()) {
+                                for (FileSummaryDTO fileSummaryDTO : folderSummaryDTO.getFilesSummaries()) {
                                     folderSummaryDTOTreeItem.getChildren().add(new TreeItem<>(fileSummaryDTO));
                                 }
                             }
@@ -89,20 +92,66 @@ public class SummaryController implements Initializable {
                 });
             }
         }
+        summaryTree.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> setSelectedDirectory(newValue));
+    }
+
+    private void setSelectedDirectory(TreeItem<SummaryDTO> selectedItem) {
+        DirectorySummaryDTO newDirectoryDTO = null;
+        if (selectedItem != null) {
+            SummaryDTO newDirectory = null;
+            if (selectedItem.getValue() instanceof DirectorySummaryDTO) {
+                newDirectory = selectedItem.getValue();
+            } else if (selectedItem.getValue() instanceof FolderSummaryDTO) {
+                newDirectory = selectedItem.getParent().getValue();
+            } else if (selectedItem.getValue() instanceof FileSummaryDTO) {
+                newDirectory = selectedItem.getParent().getParent().getValue();
+            }
+            if (!Objects.equals(selectedDirectory, selectedItem.getValue())) {
+                newDirectoryDTO = (DirectorySummaryDTO) newDirectory;
+            }
+        }
+        if (!Objects.equals(selectedDirectory, newDirectoryDTO)) {
+            updateVTree(newDirectoryDTO);
+            selectedDirectory = newDirectoryDTO;
+        }
+    }
+
+    private void updateVTree(DirectorySummaryDTO directoryDTO) {
+        vroot.getChildren().clear();
+        if (directoryDTO != null) {
+            for (VersionDTO item : MediaFileGeneralService.getInstance().loadDirectoryVersions(directoryDTO.getMediaDirectory().getId())) {
+                vroot.getChildren().add(new TreeItem<>(item));
+            }
+        }
     }
 
     public class SummaryTreeCell extends TreeCell<SummaryDTO> {
+        private final CheckBox checkBox = new CheckBox();
+
+        public SummaryTreeCell() {
+            checkBox.setOnAction(e -> {
+                getTreeView().getTreeItem(getIndex()).getValue().setSelectedValue(checkBox.isSelected());
+                for (TreeItem<SummaryDTO> child : getTreeView().getTreeItem(getIndex()).getChildren()) {
+                    child.getValue().setSelectedValue(checkBox.isSelected());
+                    Event.fireEvent(child, new TreeItem.TreeModificationEvent<>(TreeItem.valueChangedEvent(), child));
+                }
+            });
+        }
+
         @Override
         public void updateItem(SummaryDTO item, boolean empty) {
             super.updateItem(item, empty);
             if (empty || item == null) {
                 setContextMenu(null);
+                setText("");
             } else {
+                setText(item.toString());
+                checkBox.setSelected(item.isSelected());
                 if (item instanceof DirectorySummaryDTO) {
-                    setText(item.getSummaryText());
+                    setGraphic(null);
                 } else {
+                    setGraphic(checkBox);
                     ContextMenu contextMenu = new ContextMenu();
-                    setText(item.getSummaryText());
                     setContextMenu(contextMenu);
                     if (item instanceof FolderSummaryDTO) {
                         FolderSummaryDTO folderSummaryDTO = (FolderSummaryDTO) item;
@@ -116,24 +165,55 @@ public class SummaryController implements Initializable {
                             }
                         });
                         contextMenu.getItems().add(copyPathToClipboard);
+
                         contextMenu.getItems().add(new SeparatorMenuItem());
+                        MediaFileVersionService mediaFileVersionService = MediaFileVersionService.getInstance();
+
                         MenuItem setAsOriginal = new MenuItem("Set as original");
                         setAsOriginal.setOnAction(event -> {
-                            MediaFileVersionService mediaFileVersionService = MediaFileVersionService.getInstance();
                             for (Integer version : folderSummaryDTO.getVersions()) {
                                 mediaFileVersionService.setAsOriginal(version, true);
                             }
                         });
                         contextMenu.getItems().add(setAsOriginal);
+
                         MenuItem setAsInvalid = new MenuItem("Set as invalid");
                         setAsInvalid.setOnAction(event -> {
-                            MediaFileVersionService mediaFileVersionService = MediaFileVersionService.getInstance();
                             for (Integer version : folderSummaryDTO.getVersions()) {
                                 mediaFileVersionService.setAsInvalid(version, true);
                             }
                         });
                         contextMenu.getItems().add(setAsInvalid);
-                        contextMenu.getItems().add(new MenuItem("Set parent"));
+                        MenuItem setAsParent = new MenuItem("Set as Parent");
+                        setAsParent.setOnAction(event -> {
+                            HashMap<Integer, HashSet<Integer>> parents = new HashMap<>();
+                            for (FileSummaryDTO version : folderSummaryDTO.getFilesSummaries()) {
+                                Set<Integer> mediaFileVersionIds = version.getMediaFileVersionIds();
+                                if (mediaFileVersionIds.size() != 1) return; //multiple versions of the same file in the "parent" directory
+                                for (Integer mediaFileVersionId : mediaFileVersionIds) {
+                                    for (TreeItem<SummaryDTO> sibling : getTreeItem().getParent().getChildren()) {
+                                        if (getTreeItem().equals(sibling)) continue;
+                                        if (sibling.getValue().isSelected()) {
+                                            for (TreeItem<SummaryDTO> childItem : sibling.getChildren()) {
+                                                FileSummaryDTO fileSummaryDTO = (FileSummaryDTO) childItem.getValue();
+                                                if (version.getMediaFileId().equals(fileSummaryDTO.getMediaFileId())) {
+                                                    if (fileSummaryDTO.getMediaFileVersionIds().size() != 1) continue; //multiple versions of the same file in the "slave" directory
+                                                    if (fileSummaryDTO.getMediaFileVersionIds().contains(mediaFileVersionId)) continue;
+                                                    System.out.println(mediaFileVersionId + ":" + fileSummaryDTO.getMediaFileVersionIds());
+//                                                    parents.getOrDefault(mediaFileVersionId, new HashSet<>()).addAll(fileSummaryDTO.getMediaFileVersionIds());
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            for (Integer parent : parents.keySet()) {
+                                for (Integer child : parents.get(parent)) {
+                                    mediaFileVersionService.setParent(child, parent, true);
+                                }
+                            }
+                        });
+                        contextMenu.getItems().add(setAsParent);
                     } else if (item instanceof FileSummaryDTO) {
                         contextMenu.getItems().add(new MenuItem("Set as original"));
                         contextMenu.getItems().add(new MenuItem("Set as invalid"));
@@ -146,4 +226,28 @@ public class SummaryController implements Initializable {
             }
         }
     }
+
+    public class VersionTreeCell extends TreeCell<VersionDTO> {
+
+        @Override
+        public void updateItem(VersionDTO item, boolean empty) {
+            super.updateItem(item, empty);
+            if (empty || item == null) {
+                setTooltip(null);
+                setText("");
+            } else {
+                setText(item.toString());
+                StringBuilder sb = new StringBuilder("Directories:\n");
+                for (Folder folder : item.getFolders()) {
+                    sb.append(folder).append("\n");
+                }
+                sb.append("New Files:\n");
+                for (MediaFileVersion newVersion : item.getNewVersions()) {
+                    sb.append(newVersion.getMediaFile().getOriginalFilename()).append("(").append(newVersion).append(")\n");
+                }
+                setTooltip(new Tooltip(sb.toString()));
+            }
+        }
+    }
+
 }

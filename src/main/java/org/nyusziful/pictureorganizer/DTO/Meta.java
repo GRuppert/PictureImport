@@ -25,7 +25,7 @@ public class Meta {
     public String orig;
     public Boolean dateFormat;
     public String quality;
-    public Long duration;
+    public Integer duration;
     public Integer orientation;
     public Integer rating;
     public String title;
@@ -40,7 +40,7 @@ public class Meta {
     public Meta() {
     }
 
-    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, Integer orientation, String make, Integer rating, Long duration, Integer shotnumber) {
+    public Meta(int nameVersion, String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String note, String orig, String quality, Integer orientation, String make, Integer rating, Integer duration, Integer shotnumber) {
         this.nameVersion = nameVersion;
         this.originalFilename = originalFilename;
         this.date = date;

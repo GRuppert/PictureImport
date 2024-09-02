@@ -85,4 +85,9 @@ public class MediaFileVersionService {
     public void setAsInvalid(int id, boolean batch) {
         mediaFileVersionDAO.setAsInvalid(id, batch);
     }
+
+    public void setParent(int child, int parent, boolean batch) {
+        mediaFileVersionDAO.setParent(child, parent, batch);
+    }
+
 }

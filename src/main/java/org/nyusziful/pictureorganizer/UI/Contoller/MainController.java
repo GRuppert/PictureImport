@@ -117,12 +117,11 @@ public class MainController implements Initializable {
         from.setText(commonProperties.getFromDir().toString());
         to.setText(commonProperties.getToDir().toString());
 
-        TreeView summaryTree = null;
-        VBox rightBox = new VBox(2);
-        VBox mediaDirectoryList = null;
+        SplitPane summary;
+        VBox mediaDirectoryList;
         try {
-            summaryTree = new FXMLLoader(getClass().getResource("/fxml/summary.fxml")).load();
-            summaryTree.setStyle("-fx-border-color: black");
+            summary = new FXMLLoader(getClass().getResource("/fxml/summary.fxml")).load();
+            summary.setStyle("-fx-border-color: black");
 
 /*
             FXMLLoader loader2 = new FXMLLoader(getClass().getResource(
@@ -133,12 +132,12 @@ public class MainController implements Initializable {
 */
             mediaDirectoryList = new FXMLLoader(getClass().getResource("/fxml/mediaDirectoryList.fxml")).load();
             mediaDirectoryList.setStyle("-fx-border-color: black");
-            rightBox.getChildren().addAll(mediaDirectoryList, summaryTree);
-            rightBox.setPadding(new Insets(10));
+            summary.setPadding(new Insets(10));
+            mainPane.setLeft(mediaDirectoryList);
+            mainPane.setCenter(summary);
         } catch (IOException e) {
             e.printStackTrace();
         }
-        mainPane.setRight(rightBox);
         progressIndicator.progressProperty().addListener((observable, oldValue, newValue) -> {if (newValue.intValue() == 1) beep();});
     }
 

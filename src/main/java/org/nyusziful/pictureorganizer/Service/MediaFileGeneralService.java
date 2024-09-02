@@ -5,6 +5,7 @@ import org.nyusziful.pictureorganizer.DAL.DAO.MediaGeneralDAOImplHib;
 import org.nyusziful.pictureorganizer.DAL.Entity.*;
 import org.nyusziful.pictureorganizer.DTO.DirectorySummaryDTO;
 import org.nyusziful.pictureorganizer.DTO.FolderSummaryDTO;
+import org.nyusziful.pictureorganizer.DTO.VersionDTO;
 
 import java.util.Collection;
 
@@ -55,4 +56,8 @@ public class MediaFileGeneralService {
         new MediaFileGeneralService().loadStatus(888);
     }
 
+    public Collection<VersionDTO> loadDirectoryVersions(int mediaDirectoryId) {
+        return mediaGeneralDAO.loadDirectoryVersions(mediaDirectoryId);
+
+    }
 }

@@ -17,6 +17,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <mainClass>org.nyusziful.pictureorganizer.Main.PictureOrganizer</mainClass>
         <hibernate.version>6.4.4.Final</hibernate.version>
+        <java.fx.version>23-ea+22</java.fx.version>
     </properties>
 
     <organization>
@@ -161,12 +162,12 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-            <version>21</version>
+            <version>${java.fx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
-            <version>21</version>
+            <version>${java.fx.version}</version>
         </dependency>
 
         <!--Business-->

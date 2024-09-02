@@ -2,13 +2,15 @@ package org.nyusziful.pictureorganizer.DAL.Entity;
 
 import jakarta.persistence.*;
 
+import java.util.Objects;
+
 @Entity
 @Table(name = "drive")
 public class Drive {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(updatable = false, nullable = false)
-    private int id;
+    private int id= -1;
     private String description;
     private String volumeSN;
     private boolean backup;
@@ -52,5 +54,17 @@ public class Drive {
 
     public void setVolumeSN(String volumeSN) {
         this.volumeSN = volumeSN;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Drive other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && Objects.equals(getVolumeSN(), other.getVolumeSN()));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getId());
     }
 }

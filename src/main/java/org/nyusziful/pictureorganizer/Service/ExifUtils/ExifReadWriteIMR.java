@@ -83,7 +83,7 @@ public class ExifReadWriteIMR {
         Boolean dateFormat = false;
         String orig = null;
         String quality = null;
-        long duration = 0;
+        int duration = 0;
         Integer orientation = null;
         Integer rating = null;
         String make = null;
@@ -152,7 +152,7 @@ public class ExifReadWriteIMR {
                         if ("00:00:60".equals(tag[1])) {
                             duration = 60;
                         } else {
-                            duration = Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
+                            duration = (int) Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
                         }
                     }catch(NumberFormatException excep){
                         excep.printStackTrace();
@@ -162,7 +162,7 @@ public class ExifReadWriteIMR {
                     break;
                 case "Duration":
                     try{
-                        duration = Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
+                        duration = (int) Duration.between (LocalTime.MIN, LocalTime.parse ( tag[1] )).getSeconds();
                     }catch(DateTimeParseException excep){}
                     break;
                 case "Orientation":
@@ -230,7 +230,7 @@ public class ExifReadWriteIMR {
         return meta;
     }
 
-    private static Meta createMeta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String orig, String quality, long duration) {
+    private static Meta createMeta(String originalFilename, ZonedDateTime date, Boolean dateFormat, String model, String iID, String dID, String odID, String orig, String quality, int duration) {
         Meta meta = new Meta();
         meta.originalFilename = originalFilename;
         meta.date = date;

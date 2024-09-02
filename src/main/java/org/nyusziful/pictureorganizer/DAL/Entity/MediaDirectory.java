@@ -76,8 +76,8 @@ public class MediaDirectory implements HasID {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof MediaDirectory that)) return false;
-        return getId() == that.getId() && Objects.equals(getFirstDate(), that.getFirstDate()) && Objects.equals(getLastDate(), that.getLastDate()) && Objects.equals(getLabel(), that.getLabel());
+        if (!(o instanceof MediaDirectory other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && Objects.equals(getFirstDate(), other.getFirstDate()) && Objects.equals(getLastDate(), other.getLastDate()) && Objects.equals(getLabel(), other.getLabel()));
     }
 
     @Override

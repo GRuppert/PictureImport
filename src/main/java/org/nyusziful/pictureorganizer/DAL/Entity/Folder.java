@@ -7,6 +7,7 @@ import jakarta.persistence.*;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collection;
+import java.util.Objects;
 
 @Entity
 @Table(
@@ -70,5 +71,17 @@ public class Folder extends TrackingEntity {
 
     public int getId() {
         return id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Folder other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && Objects.equals(path, other.path) && Objects.equals(getDrive(), other.getDrive()));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getId());
     }
 }
