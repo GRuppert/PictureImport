@@ -120,8 +120,15 @@ public class SummaryController implements Initializable {
         vroot.getChildren().clear();
         if (directoryDTO != null) {
             for (VersionDTO item : MediaFileGeneralService.getInstance().loadDirectoryVersions(directoryDTO.getMediaDirectory().getId())) {
-                vroot.getChildren().add(new TreeItem<>(item));
+                addVTreeLevel(item);
             }
+        }
+    }
+
+    private void addVTreeLevel(VersionDTO versionDTO) {
+        vroot.getChildren().add(new TreeItem<>(versionDTO));
+        for (VersionDTO child : versionDTO.getChildren()) {
+            addVTreeLevel(child);
         }
     }
 
@@ -200,7 +207,8 @@ public class SummaryController implements Initializable {
                                                     if (fileSummaryDTO.getMediaFileVersionIds().size() != 1) continue; //multiple versions of the same file in the "slave" directory
                                                     if (fileSummaryDTO.getMediaFileVersionIds().contains(mediaFileVersionId)) continue;
                                                     System.out.println(mediaFileVersionId + ":" + fileSummaryDTO.getMediaFileVersionIds());
-//                                                    parents.getOrDefault(mediaFileVersionId, new HashSet<>()).addAll(fileSummaryDTO.getMediaFileVersionIds());
+                                                    parents.putIfAbsent(mediaFileVersionId, new HashSet<>());
+                                                    parents.get(mediaFileVersionId).addAll(fileSummaryDTO.getMediaFileVersionIds());
                                                 }
                                             }
                                         }
@@ -212,6 +220,7 @@ public class SummaryController implements Initializable {
                                     mediaFileVersionService.setParent(child, parent, true);
                                 }
                             }
+                            mediaFileVersionService.flush();
                         });
                         contextMenu.getItems().add(setAsParent);
                     } else if (item instanceof FileSummaryDTO) {
@@ -242,7 +251,7 @@ public class SummaryController implements Initializable {
                     sb.append(folder).append("\n");
                 }
                 sb.append("New Files:\n");
-                for (MediaFileVersion newVersion : item.getNewVersions()) {
+                for (MediaFileVersion newVersion : item.getSpecificVersions()) {
                     sb.append(newVersion.getMediaFile().getOriginalFilename()).append("(").append(newVersion).append(")\n");
                 }
                 setTooltip(new Tooltip(sb.toString()));

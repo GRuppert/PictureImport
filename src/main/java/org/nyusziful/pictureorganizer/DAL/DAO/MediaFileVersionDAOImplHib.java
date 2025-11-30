@@ -150,15 +150,14 @@ public class MediaFileVersionDAOImplHib extends CRUDDAOImpHib<MediaFileVersion> 
 
     @Override
     public void setParent(int childId, Integer parentId, boolean batch) {
-        //TODO avoid circular reference
         MediaFileVersion child = getById(childId);
         MediaFileVersion parent = (parentId == null) ? null : getById(parentId);
-        if (parent.isAncestor(parent)) return;
         if (child != null) {
+            if (child.isAncestor(parent)) return;
             child.setParent(parent);
-        merge(child, batch);
+            merge(child, batch);
+        }
     }
-}
 
 
 }

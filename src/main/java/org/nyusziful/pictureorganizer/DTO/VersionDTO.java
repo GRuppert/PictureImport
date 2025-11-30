@@ -13,7 +13,7 @@ public class VersionDTO {
     private Set<VersionDTO> children = new HashSet<>();
     private Set<Folder> folders;
     private HashMap<Integer, Set<Integer>> versions = new HashMap<>();
-    private Set<MediaFileVersion> newVersions = new HashSet<>();
+    private Set<MediaFileVersion> specificVersions = new HashSet<>(); //Versions which exist only in these folders
 
     public VersionDTO(Set<Folder> folders) {
         this.folders = folders;
@@ -25,6 +25,7 @@ public class VersionDTO {
 
     public void setParent(VersionDTO parent) {
         this.parent = parent;
+        parent.getChildren().add(this);
     }
 
     public Set<Folder> getFolders() {
@@ -37,10 +38,18 @@ public class VersionDTO {
 
     @Override
     public String toString() {
-        return  folders.size() + " Folders " + newVersions.size() + " new Files from  (" + versions.size() + ")";
+        return  getLevel() + ") " + folders.size() + " Folders " + specificVersions.size() + " new Files from  (" + versions.size() + ")";
     }
 
-    public Collection<MediaFileVersion> getNewVersions() {
-        return newVersions;
+    private int getLevel() {
+        return parent == null ? 0 : parent.getLevel() + 1;
+    }
+
+    public Collection<MediaFileVersion> getSpecificVersions() {
+        return specificVersions;
+    }
+
+    public Set<VersionDTO> getChildren() {
+        return children;
     }
 }

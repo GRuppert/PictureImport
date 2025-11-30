@@ -144,63 +144,91 @@ public class MediaGeneralDAOImplHib implements MediaGeneralDAO {
             mediaFileToName.putIfAbsent(mfId, originalFileName);
         }
 
-        Set<VersionDTO> nodes = new HashSet<>();
+        Set<VersionDTO> rootNodes = new HashSet<>();
         for (Integer root : roots) {
             Set<Folder> folders = versionToFolder.get(root);
-            boolean newRoot = true;
-            for (VersionDTO versionDTO : nodes) {
+            boolean isNewNode = true;
+            for (VersionDTO versionDTO : rootNodes) {
                 Set<Folder> nodeFolders = versionDTO.getFolders();
                 if (!getCommonElement(nodeFolders, folders).isEmpty()) {
                     nodeFolders.retainAll(folders);
-                    newRoot = false;
+                    isNewNode = false;
                 }
             }
-            if (newRoot) {
+            if (isNewNode) {
                 VersionDTO newNode = new VersionDTO(folders);
-                nodes.add(newNode);
+                rootNodes.add(newNode);
             }
         }
 
-        for (Integer root : roots) {
-            Set<Folder> folderIds = versionToFolder.get(root);
-            for (VersionDTO versionDTO : nodes) {
-                Set<Folder> nodeFolderIds = versionDTO.getFolders();
-                Set<Folder> commonElements = getCommonElement(nodeFolderIds, folderIds);
+        for (Integer rootId : roots) {
+            Set<Folder> folders = versionToFolder.get(rootId);
+            for (VersionDTO versionDTO : rootNodes) {
+                Set<Folder> nodeFolders = versionDTO.getFolders();
+                Set<Folder> commonElements = getCommonElement(nodeFolders, folders);
                 if (!commonElements.isEmpty()) {
-                    versionDTO.getVersions().putIfAbsent(versionToMediaFile.get(root), new HashSet<>());
-                    versionDTO.getVersions().get(versionToMediaFile.get(root)).add(root);
-                    if (commonElements.size() == folderIds.size() && commonElements.size() == nodeFolderIds.size()) {
-                        versionDTO.getNewVersions().add(mediaFileVersionDAO.getById(root));
+                    versionDTO.getVersions().putIfAbsent(versionToMediaFile.get(rootId), new HashSet<>());
+                    versionDTO.getVersions().get(versionToMediaFile.get(rootId)).add(rootId);
+                    if (commonElements.size() == folders.size() && commonElements.size() == nodeFolders.size()) {
+                        versionDTO.getSpecificVersions().add(mediaFileVersionDAO.getById(rootId));
                     }
                 }
             }
         }
 
-
-
-
-/*
-        HashMap<Integer, VersionNode> mapVersionToNode = new HashMap<>();
-        HashMap<Integer, Set<VersionNode>> mapFolderToNode = new HashMap<>();
-        VersionNode versionNode = mapVersionToNode.get(mfvId);
-        if (versionNode == null) {
-            VersionNode parentNode = null;
-            if (parentId != null) {
-                mapVersionToNode.putIfAbsent(parentId, new VersionNode());
-                parentNode = mapVersionToNode.get(parentId);
+        Set<VersionDTO> nodes = new HashSet<>();
+        for (Integer childId : versionToParent.keySet()) {
+            Integer parentMFVId = versionToParent.get(childId);
+            Integer parentMFId = versionToMediaFile.get(parentMFVId);
+            Set<Folder> folders = versionToFolder.get(childId);
+            boolean isNewNode = true;
+            for (VersionDTO versionDTO : nodes) {
+                Set<Folder> nodeFolders = versionDTO.getFolders();
+                if (versionDTO.getParent().getVersions().get(parentMFId).contains(parentMFVId)) {
+                    nodeFolders.retainAll(folders);
+                    isNewNode = false;
+                }
             }
-            for (VersionNode node : mapFolderToNode.get(folderId)) {
-                if (Objects.equals(node.getParent(), parentNode)) {
-                    versionNode = node;
-                    break;
+            if (isNewNode) {
+                VersionDTO newNode = new VersionDTO(folders);
+                nodes.add(newNode);
+                for (VersionDTO versionDTO : rootNodes) {
+                    if (versionDTO.getVersions().get(parentMFId).contains(parentMFVId)) {
+                        newNode.setParent(versionDTO);
+                    }
                 }
             }
         }
-        versionNode.addFolder(mfvId, folderId);
-*/
+
+        for (Integer childId : versionToParent.keySet()) {
+            Integer parentMFVId = versionToParent.get(childId);
+            Integer parentMFId = versionToMediaFile.get(parentMFVId);
+            for (VersionDTO versionDTO : nodes) {
+                if (versionDTO.getParent().getVersions().get(parentMFId).contains(parentMFVId)) {
+                    versionDTO.getVersions().putIfAbsent(versionToMediaFile.get(childId), new HashSet<>());
+                    versionDTO.getVersions().get(versionToMediaFile.get(childId)).add(childId);
+                }
+            }
+        }
+
+        for (VersionDTO childNode : nodes) {
+            if (childNode.getParent() != null) continue;
+            nodeLoop:
+            for (VersionDTO parentNode : nodes) {
+                if (parentNode.equals(childNode)) continue;
+                for (Integer mfId : childNode.getVersions().keySet()) {
+                    Set<Integer> parentVersions = parentNode.getVersions().get(mfId);
+                    if (parentVersions == null) continue nodeLoop;
+                    for (Integer childMfvId : childNode.getVersions().get(mfId)) {
+                        if (!parentVersions.contains(versionToParent.get(childMfvId))) continue nodeLoop;
+                    }
+                }
+                childNode.setParent(parentNode);
+            }
+        }
 
 
-        return nodes;
+        return rootNodes;
     }
 
     private Set<Folder> getCommonElement(Set<Folder> nodeFolders, Set<Folder> folders) {
@@ -208,5 +236,11 @@ public class MediaGeneralDAOImplHib implements MediaGeneralDAO {
         common.addAll(nodeFolders);
         common.retainAll(folders);
         return common;
+    }
+
+    public static void main(String[] args) {
+        JPAConnection.setMode(JPAConnection.DBMode.DEV);
+        MediaGeneralDAO test = new MediaGeneralDAOImplHib();
+        test.loadDirectoryVersions(12);
     }
 }

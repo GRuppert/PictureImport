@@ -1,1 +1,15 @@
 TEST Versions
+
+
+DEBUG | 2024-09-08 17:33:51 | [JavaFX Application Thread] spi.SqlStatementLogger (SqlStatementLogger.java:135) - update media_file set creator=?,credate=?,main_id=?,media_directory_id=?,original_filename=?,original_version_id=?,shotnumber=?,updater=?,upddate=?,standalone=? where id=?
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:35) - binding parameter (1:VARCHAR) <- [null]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:35) - binding parameter (2:TIMESTAMP) <- [null]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:35) - binding parameter (3:INTEGER) <- [null]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:24) - binding parameter (4:INTEGER) <- [12]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:24) - binding parameter (5:VARCHAR) <- [eIMAG0001.JPG]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:24) - binding parameter (6:INTEGER) <- [57166]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:35) - binding parameter (7:INTEGER) <- [null]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:24) - binding parameter (8:VARCHAR) <- [HALOSZOBA]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:24) - binding parameter (9:TIMESTAMP) <- [2024-09-08 17:33:51.099]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:24) - binding parameter (10:BOOLEAN) <- [true]
+TRACE | 2024-09-08 17:33:51 | [JavaFX Application Thread] descriptor.JdbcBindingLogging (JdbcBindingLogging.java:24) - binding parameter (11:INTEGER) <- [60904]
