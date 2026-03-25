@@ -13,6 +13,54 @@ A Java 21 desktop application (JavaFX GUI) for managing large personal photo/vid
 
 ---
 
+## Three Distinct Media Type Workflows
+
+This is the most fundamental architectural split in the system. The three media types have different preservation contracts, different mutability rules, and different source-of-truth models.
+
+### JPG / Non-RAW — File is self-contained, file is the source of truth
+
+- The file carries **all information about itself** — pixels, metadata, provenance history, hashes
+- The **filename is volatile** — it is a commodity handle for OS-level access, nothing more. Any information encoded only in the filename (e.g. a hash) is permanently lost on rename. This is why provenance must live inside the file.
+- **Sidecar files are not used** for JPG. They are non-conventional, invisible to most tools, and trivially lost on copy, move, or rename. Everything goes into embedded XMP.
+- The **DB is a performance cache and cross-file index**, not the source of truth:
+  - Reading 100k files per query is not realistic
+  - Drives may be detached — the DB must serve queries without them
+  - But if the DB is lost, re-scanning all available files must be able to reconstruct it
+  - What cannot be reconstructed: explicitly deleted/invalid versions (e.g. a corrupted file that was purged) — this is accepted and documented
+- Cross-file relationships that matter (RAW+JPG pairing, document identity) must be **encoded in the files themselves** (via `porg:` XMP fields), not only in the DB, so they survive DB loss.
+
+### RAW (ARW/DNG/NEF) — File is sacred, never written to directly
+
+- RAW contains the original sensor data. It is the photographic negative. **It must never be modified after import.**
+- All metadata changes (time corrections, GPS, captions, ratings) go into an **XMP sidecar file** (`.xmp` alongside the RAW file)
+- The RAW file's `contentHash` is immutable by definition — it IS the original
+- The RAW `contentHash` serves as the **permanent anchor identity** for the entire pair
+- The sidecar XMP carries: all history deltas, all metadata corrections, canonical hash reference, pairing link to JPG
+- **Backup = RAW file + sidecar file** — they must always travel together. A RAW without its sidecar loses all post-capture metadata; a sidecar without its RAW is meaningless.
+- Sidecar absence is not always an error on first import (no edits yet), but must be created on first metadata operation
+
+**The contradiction problem** — three sources may disagree for the same metadata field:
+
+| Source | Meaning | Trust level |
+|---|---|---|
+| RAW embedded EXIF | What the camera recorded at capture | Immutable original, but may be wrong (clock drift, no GPS at capture time) |
+| XMP sidecar | Current applied/corrected state | Authoritative for current intent |
+| Paired JPG EXIF | What was embedded when JPG was generated, may have been independently edited | Informational, may diverge |
+
+**Conflict resolution hierarchy:** `sidecar XMP > paired JPG > RAW embedded`
+- Sidecar is the "applied" state — the user's expressed intent
+- Paired JPG is informational and may have been independently corrected
+- RAW embedded is the camera original — preserved but may be superseded
+- When sources disagree beyond tolerance: flag as `metadataStatus=DATE_CONFLICT` and surface for user resolution
+- The original RAW values are always preserved and never overwritten — conflict is additive, not destructive
+
+### Video — Distinct media with time dimension
+
+- Video has unique attributes: duration, codec, framerate, audio tracks, resolution
+- Folder watcher debounce must be longer for video (large files take longer to write; editors may re-encode multiple passes)
+
+---
+
 ## Problem Space — Root Causes & Attack Vectors
 
 The design is driven by defending against three root-cause failure modes:
@@ -124,6 +172,29 @@ Compare reconstructed state against actual EXIF → detect corruption → self-h
 | Ransomware | **different** | different | Pixel data destroyed — do not back up |
 | EXIF pointer broken | **same** | different | Structural damage, pixels safe, can repair |
 | File renamed | **same** | **same** | No content change, canonical hash still valid |
+| Video trim | **different** | different | Intentional pixel-level edit — `VIDEO_TRIM` reason, not suspicious |
+| RAW file (any state) | **immutable** | immutable | RAW is never written — contentHash is permanent anchor |
+| Sidecar updated | n/a | sidecar fullHash changes | RAW unchanged; sidecar carries its own canonical hash |
+
+### 6. DB as Reconstructible Cache
+
+The DB is authoritative for **performance and cross-file queries** (drives may be detached, 100k file scans are not realistic at query time). But it must be reconstructible from files alone.
+
+**What the DB stores that is NOT in the files (computed/derived state):**
+- `backupStatus`, `integrityStatus`, `ransomwareStatus`, `lastVerifiedAt` — recalculated on rescan
+- 3-2-1 compliance aggregate — recalculated from `MediaFileInstance` records
+- Drive mount state, `lastSeenAt` — re-established on reconnect
+
+**What must be encoded IN the files to survive DB loss:**
+- All provenance history and deltas (`porg:` XMP history)
+- `contentHash`, `porg:CanonicalHash` — embedded in file/sidecar
+- Document identity: `xmpMM:DocumentID`, `xmpMM:OriginalDocumentID` — survives rename
+- Pairing link: `porg:pairedFile` in JPG XMP → canonical reference to its RAW sibling (by DocumentID, not filename)
+- Reverse link: `porg:pairedJpg` in RAW sidecar → canonical reference to its JPG
+
+**What is intentionally unrecoverable after DB loss:**
+- Explicitly deleted versions (corrupted files that were purged) — accepted and documented
+- Verification timestamps older than the last rescan
 
 ---
 
@@ -137,21 +208,47 @@ Import is intentionally **triggered manually by the user** for visibility and co
 User initiates import (SD card / camera USB)
         │
         ▼
-  Scan for files
+  Scan for files — detect pairs (same basename, same dir, same shotnumber)
         │
         ├─ Already known? (contentHash in DB) → skip / flag as duplicate location
         │
-        └─ New file:
-              ├─ Parse EXIF → check pointer integrity (validate IFD offsets within file bounds)
-              ├─ Back up raw EXIF bytes → write into porg:ExifBackup in XMP
-              ├─ Extract: datetime, camera, GPS, orientation, shotnumber
-              ├─ Detect ARW+JPG pair (same basename, same directory, same shotnumber)
-              ├─ Compute contentHash (pixel data only)
-              ├─ Write initial XMP history entry (action=IMPORT, agent, when)
-              ├─ Zero porg:CanonicalHash, compute canonical hash, write back
-              ├─ Rename file (existing V6 scheme)
-              ├─ DB: Image + MediaFile + MediaFileVersion(parent=null) + MediaFileInstance
-              └─ Mark 3-2-1 status: 1/3 copies — backup needed
+        ├─ JPG / non-RAW:
+        │     ├─ Parse EXIF → validate IFD offsets within file bounds
+        │     ├─ Back up raw EXIF bytes → write into porg:ExifBackup in XMP
+        │     ├─ Extract: datetime, camera, GPS, orientation, shotnumber
+        │     ├─ Write porg:pairedFile → DocumentID of paired RAW (if exists)
+        │     ├─ Compute contentHash (pixel data only)
+        │     ├─ Write XMP history entry (action=IMPORT)
+        │     ├─ Zero porg:CanonicalHash, compute, write back
+        │     ├─ Rename file (V6 scheme)
+        │     └─ DB: Image + MediaFile + MediaFileVersion(parent=null, sealed) + MediaFileInstance
+        │
+        ├─ RAW (ARW/DNG/NEF):
+        │     ├─ Compute contentHash (sensor data) → this is the permanent immutable anchor
+        │     ├─ Extract embedded EXIF (read-only reference, never modify RAW)
+        │     ├─ Create XMP sidecar if not present:
+        │     │     ├─ Write porg:RawContentHash (= contentHash, immutable)
+        │     │     ├─ Write porg:pairedJpg → DocumentID of paired JPG (if exists)
+        │     │     └─ Write sidecar history entry (action=IMPORT)
+        │     ├─ Rename RAW + sidecar together (V6 scheme, same base name)
+        │     └─ DB: Image + MediaFile + MediaFileVersion(parent=null, sealed) + MediaFileInstance
+        │           (RAW MediaFileVersion.contentHash never changes after this point)
+        │
+        └─ Video:
+              ├─ Compute contentHash (frame data)
+              ├─ Extract: datetime, camera, duration, GPS
+              ├─ Write XMP history entry (action=IMPORT)
+              ├─ Zero porg:CanonicalHash, compute, write back
+              ├─ Rename file (V6 scheme)
+              └─ DB: Image + MediaFile + MediaFileVersion(parent=null, sealed, duration=X) + MediaFileInstance
+```
+
+**After pair detection, resolve date conflicts immediately at import:**
+```
+Paired RAW+JPG found:
+  ├─ Compare DateTimeOriginal: RAW embedded vs JPG embedded
+  ├─ If within tolerance (e.g. <2s): use RAW value as canonical, note in sidecar
+  └─ If diverged: flag metadataStatus=DATE_CONFLICT, surface to user before completing import
 ```
 
 ### Step 2: Adding Metadata — GPS, Captions, Ratings *(auto-detected via folder watcher)*
@@ -161,31 +258,47 @@ External editors (Lightroom, Windows Explorer, etc.) are not aware of PictureOrg
 ```
 ENTRY_MODIFY detected by WatchService
         │
-        ├─ Debounce: wait 3–5s for write to settle
+        ├─ Debounce: wait 3–5s for write to settle (longer for video: 15–30s)
         │   (editors write temp files, rename, delete — multiple events per save)
-        ├─ Known media extension? No → ignore
-        ├─ Compute new contentHash
+        ├─ Known media extension? No → ignore (.xmp sidecar changes handled separately below)
         │
-        ├─ contentHash SAME, fullHash DIFFERENT
-        │     → metadata-only change (external editor wrote EXIF/XMP)
-        │     → read new EXIF, diff against DB-known state
-        │     → write XMP history: {action=EXTERNAL_EDIT, agent=Unknown, delta}
-        │     → new MediaFileVersion(reason=EXTERNAL_EDIT, parent=previous)
-        │     → recompute and write new porg:CanonicalHash
-        │     → assert contentHash == original contentHash (safeguard)
+        ├─ JPG modified:
+        │     ├─ Compute new contentHash
+        │     ├─ contentHash SAME, fullHash DIFFERENT
+        │     │     → metadata-only change
+        │     │     → diff EXIF/XMP against DB-known state
+        │     │     → write XMP history: {action=EXTERNAL_EDIT, agent=Unknown, delta}
+        │     │     → new MediaFileVersion(reason=EXTERNAL_EDIT, parent=previous)
+        │     │     → recompute and write porg:CanonicalHash
+        │     │     → assert contentHash == original contentHash (safeguard)
+        │     └─ contentHash DIFFERENT
+        │           → pixel data changed — flag SUSPICIOUS
+        │           → if sealed original: RANSOMWARE_CANDIDATE
+        │           → do NOT auto-create version — require user confirmation
         │
-        ├─ contentHash DIFFERENT
-        │     → pixel data changed — flag SUSPICIOUS
-        │     → if sealed original: RANSOMWARE_CANDIDATE
-        │     → do NOT auto-create version — require user confirmation
+        ├─ RAW modified:
+        │     → RAW contentHash must NEVER change after import
+        │     → ANY change to a RAW file = CORRUPTION or RANSOMWARE_CANDIDATE
+        │     → immediate flag, no version created, alert user
+        │
+        ├─ XMP sidecar modified (.xmp file):
+        │     → Paired RAW is untouched (expected)
+        │     → Diff sidecar against DB-known state
+        │     → Write porg: history entry into sidecar (action=EXTERNAL_EDIT)
+        │     → Recompute sidecar canonicalHash
+        │     → Check for conflicts: sidecar values vs paired JPG vs RAW embedded
+        │     → If conflict: flag metadataStatus=DATE_CONFLICT / GPS_CONFLICT
+        │     → new MediaFileVersion(reason=EXTERNAL_EDIT) for the RAW logical file
         │
         ├─ ENTRY_DELETE
-        │     → mark MediaFileInstance as MISSING (never delete from DB)
+        │     ├─ RAW deleted: CRITICAL — mark MISSING, alert (may be ransomware)
+        │     ├─ Sidecar deleted: flag — post-capture metadata lost, attempt restore from DB
+        │     └─ JPG deleted: mark MediaFileInstance as MISSING (never delete from DB)
         │
         └─ ENTRY_CREATE
               → known contentHash? → duplicate, link it
               → else: surface to user for manual import decision
-```
+              → if .xmp appears alongside known RAW: associate as its sidecar
 
 **Folder watcher edge cases:**
 
@@ -204,12 +317,34 @@ Detection is automatic (TimeShift UI visualises drift). Approval and commit is m
 ```
 User approves shift in TimeShift UI
         │
-        ├─ Write corrected datetime to EXIF DateTimeOriginal, DateTimeDigitized
-        ├─ Preserve original in porg:OriginalDateTime (never lost)
-        ├─ Append XMP history: {action=TIME_FIX, shiftSeconds=X, reason="clock drift"}
-        ├─ Apply same shift to paired ARW (if exists)
-        ├─ Assert: contentHash unchanged
-        └─ New MediaFileVersion(reason=TIME_FIX), same contentHash, new fullHash
+        ├─ JPG:
+        │     ├─ Write corrected datetime to EXIF DateTimeOriginal, DateTimeDigitized
+        │     ├─ Preserve original in porg:OriginalDateTime (never lost, never overwritten)
+        │     ├─ Append XMP history: {action=TIME_FIX, shiftSeconds=X, reason=...}
+        │     ├─ Assert: contentHash unchanged
+        │     └─ New MediaFileVersion(reason=TIME_FIX), same contentHash, new fullHash
+        │
+        ├─ RAW (via sidecar — RAW file never touched):
+        │     ├─ Write corrected datetime into sidecar XMP only
+        │     ├─ Preserve RAW's original datetime in sidecar as porg:RawOriginalDateTime
+        │     ├─ Append sidecar history: {action=TIME_FIX, shiftSeconds=X}
+        │     └─ New MediaFileVersion(reason=TIME_FIX) for the logical RAW file
+        │
+        └─ Paired RAW+JPG: apply same shift atomically to both
+              → if shift differs between them (pre-existing conflict): surface to user first
+```
+
+### Step 3b: Video Trim *(user-initiated)*
+
+```
+User trims video (crops in time)
+        │
+        ├─ contentHash of trimmed video WILL differ from original — this is expected
+        ├─ Original version is preserved (sealed, never deleted unless user explicitly requests)
+        ├─ New MediaFileVersion(reason=VIDEO_TRIM, trimStart=Xs, trimEnd=Ys, duration=Z)
+        ├─ New version's contentHash is computed from trimmed content
+        ├─ Append XMP history: {action=VIDEO_TRIM, trimStart, trimEnd, originalDuration}
+        └─ DB: duration stored on MediaFileVersion (not on Image — it's version-specific)
 ```
 
 ### Step 4: Backup
@@ -218,11 +353,16 @@ User approves shift in TimeShift UI
 Backup run (scheduled or manual)
         │
         ├─ Pre-backup integrity scan:
-        │     ├─ Recompute contentHash for all files pending backup
-        │     ├─ Sealed original and contentHash changed → RANSOMWARE_FLAG, abort directory
+        │     ├─ JPG/Video: recompute contentHash, compare to DB sealed original
+        │     ├─ RAW: recompute contentHash — if changed: CORRUPTION (RAW is always sealed)
+        │     ├─ Sidecar: verify sidecar is present alongside every RAW
+        │     ├─ Any sealed original contentHash changed → RANSOMWARE_FLAG, abort directory
         │     └─ >N files in directory flagged simultaneously → hold entire backup, alert user
         │
-        ├─ Copy files to target drive(s)
+        ├─ Copy files to target drive(s):
+        │     ├─ JPG/Video: copy file
+        │     └─ RAW: copy RAW file + sidecar together (fail if sidecar missing and RAW has history)
+        │
         ├─ Verify copy: recompute contentHash on destination, compare to source
         ├─ DB: new MediaFileInstance(drive=backupDrive) for each copied file
         ├─ Check 3-2-1 compliance: ≥3 instances, ≥2 media types, ≥1 offsite?
@@ -350,15 +490,21 @@ Phase 1 (provenance chain)
 | Content-aware hashing (pixel only) | ✅ `JPGHash`, `TIFFHash`, `MP4Hash` | — |
 | EXIF backup embedding | ✅ `addBackupExif()` | Not called on import path |
 | EXIF pointer validation | Partial (`TIFFHash` parses IFD) | Offset bounds checking; repair path |
-| Version/parent chain | ✅ `MediaFileVersion.parent` | `reason` field; immutability seal |
+| Version/parent chain | ✅ `MediaFileVersion.parent` | `reason` field; immutability seal; `VIDEO_TRIM` with trimStart/trimEnd/duration |
 | XMP read | ✅ `ExifReadWriteIMR` reads `xmpMM:*` | — |
 | XMP write / history | ❌ | `XmpHistoryWriter`, delta logging |
 | Canonical hash | ❌ | Reserved field + zero-before-hash protocol |
 | `validateAgainstBackupExif()` | ✅ (buggy) | Fix: always returns `false` |
 | TimeShift detection UI | ✅ `TimeLine`, `Stripes`, `Picture` | `TimeLineController` is empty |
-| TimeShift commit to disk | ❌ | Write EXIF, create version, XMP history |
-| ARW+JPG pairing | Partial (`mainMediaFile` field) | Import-time matching logic |
-| Folder watcher | ❌ | `WatchService` integration |
+| TimeShift commit to disk | ❌ | JPG: write EXIF + XMP history; RAW: write sidecar only |
+| ARW+JPG pairing | Partial (`mainMediaFile` field) | Import-time matching; `porg:pairedFile` links in files; conflict detection |
+| RAW immutability enforcement | ❌ | Any RAW file modification = immediate CORRUPTION flag |
+| XMP sidecar management | ❌ | Create on first edit; keep in sync with RAW; backup as unit |
+| RAW/sidecar/JPG conflict detection | ❌ | Date, GPS, caption reconciliation with priority hierarchy |
+| DB reconstruction from files | ❌ | Re-scan all files → rebuild Image/MediaFileVersion graph from `porg:` XMP |
+| `porg:pairedFile` cross-reference | ❌ | Encode pairing by DocumentID in files (not just DB) |
+| Video trim workflow | ❌ | `VIDEO_TRIM` version reason; trimStart/trimEnd; duration per version |
+| Folder watcher | ❌ | `WatchService` integration; RAW vs sidecar vs JPG handling; video debounce |
 | Ransomware detection | Partial (manual `VerifyHash`) | Automated scanning, anomaly rules, quarantine |
 | 3-2-1 compliance | Partial (instances tracked) | `Drive.mediaType/location`, policy engine |
 | Pre-computed status columns | ❌ | `ImageStatus` table + background scanner |
@@ -368,8 +514,12 @@ Phase 1 (provenance chain)
 
 ## Key Invariants to Enforce
 
-1. **`contentHash` of a new `MediaFileVersion` must equal `contentHash` of its parent** — unless the version reason is explicitly `PIXEL_EDIT` (which should be rare and require confirmation)
+1. **`contentHash` of a new `MediaFileVersion` must equal `contentHash` of its parent** — unless the version reason is explicitly `VIDEO_TRIM` or `PIXEL_EDIT` (rare, requires confirmation)
 2. **Sealed originals (`MediaFileVersion.isOriginal() == true`) must never have their `contentHash` change** — any detected change is a `RANSOMWARE_CANDIDATE`
-3. **`porg:CanonicalHash` must be zeroed before computing the canonical hash** — enforced in `JPGHash` segment parsing
-4. **Every file write goes through the version event framework** — no direct file modification without a corresponding `MediaFileVersion` record and XMP history entry
-5. **Backup propagation is gated by pre-backup integrity scan** — no automatic propagation of files with changed `contentHash` on sealed originals
+3. **RAW files are always sealed — their `contentHash` is immutable** — any change detected after import is `CORRUPTION`, regardless of reason
+4. **RAW and its sidecar are backed up as an atomic unit** — backing up one without the other is an error if the sidecar has post-import history
+5. **`porg:CanonicalHash` must be zeroed before computing the canonical hash** — enforced in `JPGHash` segment parsing; same protocol for sidecar XMP
+6. **Every file write goes through the version event framework** — no direct file modification without a corresponding `MediaFileVersion` record and XMP history entry
+7. **Backup propagation is gated by pre-backup integrity scan** — no automatic propagation of files with changed `contentHash` on sealed originals
+8. **Pairing links are stored in both files** — `porg:pairedFile` in JPG XMP + `porg:pairedJpg` in sidecar, using `xmpMM:DocumentID` (not filename) so they survive renames
+9. **The DB is a cache** — every piece of information needed for recovery must be derivable from scanning files alone; the DB may be rebuilt from scratch at any time
