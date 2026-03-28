@@ -52,6 +52,15 @@ public class MediaFileVersion extends TrackingEntity {
     @Column(name = "invalid")
     private Boolean invalid;
 
+    /**
+     * The reason this version was created. Use the constants from
+     * {@code org.nyusziful.pictureorganizer.Service.ExifUtils.History.MediaDataChange}
+     * (e.g. {@code VIDEO_TRIM}, {@code PIXEL_EDIT}) or other free-form strings for
+     * metadata-only operations. Null for the original import version.
+     */
+    @Column(name = "reason")
+    private String reason;
+
     @OneToMany(fetch = FetchType.EAGER, mappedBy = "mediaFileVersion")
     private Set<Media> media;
 
@@ -213,6 +222,10 @@ public class MediaFileVersion extends TrackingEntity {
     public void setInvalid(Boolean invalid) {
         this.invalid = invalid;
     }
+
+    public String getReason() { return reason; }
+
+    public void setReason(String reason) { this.reason = reason; }
 
     public boolean isAncestor(MediaFileVersion mediaFileVersion) {
         MediaFileVersion parent = getParent();
