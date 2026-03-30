@@ -6,6 +6,7 @@
 package org.nyusziful.pictureorganizer.Service.ExifUtils;
 
 import org.nyusziful.pictureorganizer.DTO.Meta;
+import com.adobe.internal.xmp.XMPException;
 import com.drew.imaging.ImageProcessingException;
 
 import java.io.File;
@@ -13,12 +14,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
-import static org.nyusziful.pictureorganizer.UI.StaticTools.getFile;
-import static org.nyusziful.pictureorganizer.UI.StaticTools.getZonedTimeFromStr;
 
 /**
  *
@@ -61,6 +58,22 @@ public class ExifService {
     }
 
     public static Boolean originalJPG(File file) {return ExifReadWriteIMR.originalJPG(file);
+    }
+
+    /**
+     * Appends a provenance history event to the XMP metadata of {@code file}.
+     *
+     * @param file                  target file — {@code .xmp} sidecar or image (JPG etc.)
+     * @param ver         agent string, e.g. {@code "PictureOrganizer/2.0"}
+     * @param changes               field-level deltas; use {@code _contentHash} synthetic entry at IMPORT/VIDEO_TRIM
+     * @param previousCanonicalHash hash before this write; supply at IMPORT, {@code null} otherwise
+     */
+    public static void addXmpHistoryEvent(File file,
+                                          String ver,
+                                          List<MetadataChange> changes,
+                                          String previousCanonicalHash)
+            throws IOException, XMPException {
+        XmpHistoryWriter.addEvent(file, ver, changes, previousCanonicalHash);
     }
 
     public static void main(String[] args) {

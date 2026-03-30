@@ -65,11 +65,12 @@ This is the most fundamental architectural split in the system. The three media 
 
 The design is driven by defending against three root-cause failure modes:
 
-| Attack Vector | Root Cause |
-|---|---|
-| **EXIF corruption on write** | EXIF uses absolute byte offsets in IFD structure. Any editor that inserts bytes without rewriting all pointers silently breaks data. |
-| **Loss of information on rename** | If provenance data (e.g. fullHash) is encoded only in the filename, a rename destroys it permanently. |
+| Attack Vector                      | Root Cause                                                                                                                                     |
+|------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|
+| **EXIF corruption on write**       | EXIF uses absolute byte offsets in IFD structure. Any editor that inserts bytes without rewriting all pointers silently breaks data.           |
+| **Loss of information on rename**  | If provenance data (e.g. fullHash) is encoded only in the filename, a rename destroys it permanently.                                          |
 | **Ransomware / silent corruption** | Files can be encrypted or corrupted without the user noticing until recovery is needed — too late if the backup already propagated the damage. |
+| **Byte rot**                      | Files stored on a phyisical device might get corrupted. Some SW/OS setup counteract this, but we want to be aware any damage.                  |
 
 ---
 
@@ -149,14 +150,14 @@ Compare reconstructed state against actual EXIF → detect corruption → self-h
 ```xml
 <stEvt:action>METADATA_UPDATE</stEvt:action>
 <stEvt:when>2025-07-14T18:23:00+02:00</stEvt:when>
-<stEvt:softwareAgent>PictureOrganizer/2.0</stEvt:softwareAgent>
+<stEvt:ver>2.0</stEvt:ver>
 <porg:changes>
   <rdf:Bag>
     <rdf:li>{"f":"DateTimeOriginal","from":"2025:01:15 14:23:00","to":"2025:01:15 15:23:00"}</rdf:li>
     <rdf:li>{"f":"GPSLatitude","from":null,"to":"47.4979"}</rdf:li>
+    <rdf:li>{"f":"contentHash","from":>a3f9...,"to":"b7d2..."}</rdf:li>
   </rdf:Bag>
 </porg:changes>
-<porg:contentHash>a3f9...</porg:contentHash>
 <porg:previousCanonicalHash>b7d2...</porg:previousCanonicalHash>
 ```
 
