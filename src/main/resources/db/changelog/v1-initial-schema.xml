@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.26.xsd">
+
+    <!--
+        V1 — Initial monolithic schema (~2020-01-26)
+        Source: createDB.sql
+        All DDL targets MySQL (dbms="mysql") since it uses MySQL-specific
+        syntax and this migration must not run on H2 test databases.
+    -->
+
+    <changeSet id="v1-drive" author="auto" dbms="mysql">
+        <comment>Create drive table — represents physical storage volumes</comment>
+        <sql>
+CREATE TABLE `drive` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `volumeSN` varchar(20) DEFAULT NULL,
+  `description` varchar(45) DEFAULT NULL,
+  `backup` bit(1) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `volumeSN_UNIQUE` (`volumeSN`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS `drive`;</rollback>
+    </changeSet>
+
+    <changeSet id="v1-folder" author="auto" dbms="mysql">
+        <comment>Create folder table — represents filesystem directories</comment>
+        <sql>
+CREATE TABLE `folder` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `parent_id` int(11) unsigned DEFAULT NULL,
+  `drive_id` int(11) unsigned NOT NULL,
+  `path` varchar(512) NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `credate` datetime DEFAULT NULL,
+  `upddate` datetime DEFAULT NULL,
+  `creator` varchar(255) DEFAULT NULL,
+  `updater` varchar(255) DEFAULT NULL,
+  `actfold` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `path_UNIQUE` (`drive_id`,`path`),
+  KEY `drive_id_idx` (`drive_id`),
+  KEY `folder_folder_idx` (`parent_id`),
+  KEY `folder_path_idx` (`path`),
+  CONSTRAINT `drive_id` FOREIGN KEY (`drive_id`) REFERENCES `drive` (`id`),
+  CONSTRAINT `folder_folder` FOREIGN KEY (`parent_id`) REFERENCES `folder` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS `folder`;</rollback>
+    </changeSet>
+
+    <changeSet id="v1-image" author="auto" dbms="mysql">
+        <comment>Create image table — logical picture identity</comment>
+        <sql>
+CREATE TABLE `image` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `odid` varchar(32) NOT NULL,
+  `parent_id` int(11) unsigned DEFAULT NULL,
+  `camera_make` VARCHAR(45) NULL DEFAULT NULL,
+  `camera_model` VARCHAR(45) NULL DEFAULT NULL,
+  `date_taken` varchar(32) DEFAULT NULL,
+  `date_corrected` varchar(32) DEFAULT NULL,
+  `original_filename` varchar(45) DEFAULT NULL,
+  `original_file_hash` VARCHAR(32) NULL DEFAULT NULL,
+  `bestimate_filename` varchar(45) DEFAULT NULL,
+  `bestimate_file_hash` VARCHAR(32) NULL DEFAULT NULL,
+  `type` varchar(10) DEFAULT NULL,
+  `latitude` varchar(45) DEFAULT NULL,
+  `longitude` varchar(45) DEFAULT NULL,
+  `altitude` varchar(45) DEFAULT NULL,
+  `orientation` BIT(1) NULL DEFAULT NULL,
+  `title` VARCHAR(255) NULL DEFAULT NULL,
+  `keyword` VARCHAR(255) NULL DEFAULT NULL,
+  `rating` INT NULL DEFAULT NULL,
+  `credate` datetime DEFAULT NULL,
+  `upddate` datetime DEFAULT NULL,
+  `creator` varchar(255) DEFAULT NULL,
+  `updater` varchar(255) DEFAULT NULL,
+  `orig_exif` BLOB DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `ODID_UNIQUE` (`odid`,`type`),
+  KEY `ParentImage_idx` (`parent_id`),
+  CONSTRAINT `parent_image` FOREIGN KEY (`parent_id`) REFERENCES `image` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS `image`;</rollback>
+    </changeSet>
+
+    <changeSet id="v1-media-file-monolithic" author="auto" dbms="mysql">
+        <comment>
+            Create monolithic media_file table.
+            This wide table held location (drive+folder+filename), content identity
+            (filehash, size), EXIF backup flag, image metadata AND date information
+            all in one place — later normalised in V2.
+        </comment>
+        <sql>
+CREATE TABLE `media_file` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `image_id` int(11) unsigned DEFAULT NULL,
+  `drive_id` int(11) unsigned NOT NULL,
+  `folder_id` int(11) unsigned NOT NULL DEFAULT '0',
+  `filename` varchar(256) NOT NULL,
+  `original_filename` varchar(256) DEFAULT NULL,
+  `date_from_filename` DATETIME NULL DEFAULT NULL,
+  `name_version` int(2) unsigned DEFAULT 0,
+  `XMPattached` bit(1) DEFAULT NULL,
+  `parent` int(11) unsigned DEFAULT NULL,
+  `filehash` varchar(32) DEFAULT NULL,
+  `size` bigint(19) unsigned DEFAULT NULL,
+  `date_mod` datetime DEFAULT NULL,
+  `exifbackup` bit(1) DEFAULT NULL,
+  `standalone` bit(1) DEFAULT NULL,
+  `date_stored` varchar(32) DEFAULT NULL,
+  `date_stored_local` datetime DEFAULT NULL,
+  `date_stored_utc` datetime DEFAULT NULL,
+  `date_stored_tz` varchar(45) DEFAULT NULL,
+  `latitude` varchar(45) DEFAULT NULL,
+  `longitude` varchar(45) DEFAULT NULL,
+  `altitude` varchar(45) DEFAULT NULL,
+  `orientation` BIT(1) NULL DEFAULT NULL,
+  `duration` INT NULL DEFAULT NULL,
+  `keyword` VARCHAR(255) NULL DEFAULT NULL,
+  `rating` INT NULL DEFAULT NULL,
+  `title_in_filename` VARCHAR(255) NULL DEFAULT NULL,
+  `title` VARCHAR(255) NULL DEFAULT NULL,
+  `type` varchar(5) DEFAULT NULL,
+  `shotnumber` INT UNSIGNED NULL,
+  `credate` datetime DEFAULT NULL,
+  `upddate` datetime DEFAULT NULL,
+  `creator` varchar(255) DEFAULT NULL,
+  `updater` varchar(255) DEFAULT NULL,
+  `exif` BLOB DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `id_UNIQUE` (`id`),
+  UNIQUE KEY `file_UNIQUE` (`drive_id`,`folder_id`,`filename`),
+  KEY `mfile_drive_idx` (`drive_id`),
+  KEY `mfile_image_idx` (`image_id`),
+  KEY `mfile_folder_idx` (`folder_id`),
+  KEY `mfile_parent_idx` (`parent`),
+  CONSTRAINT `mfile_drive` FOREIGN KEY (`drive_id`) REFERENCES `drive` (`id`),
+  CONSTRAINT `mfile_folder` FOREIGN KEY (`folder_id`) REFERENCES `folder` (`id`),
+  CONSTRAINT `mfile_image` FOREIGN KEY (`image_id`) REFERENCES `image` (`id`),
+  CONSTRAINT `mfile_parent` FOREIGN KEY (`parent`) REFERENCES `media_file` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS `media_file`;</rollback>
+    </changeSet>
+
+</databaseChangeLog>

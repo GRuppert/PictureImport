@@ -5,6 +5,8 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,10 +27,56 @@ public class JPAConnection {
         return instance;
     }
 
+    private static final String H2_JDBC_URL =
+            "jdbc:h2:mem:testpictorg;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
+
     private JPAConnection() {
-        Map properties = new HashMap<>();
-        properties.put("jakarta.persistence.jdbc.url", "jdbc:mysql://127.0.0.1:3306/" + (isTest() ? "test" : isDev() ? "dev" : "") + "pictureorganizer?useUnicode=yes&amp&characterEncoding=UTF-8");
-        factory = Persistence.createEntityManagerFactory( "mysql-picture", properties);
+        if (mode == DBMode.TEST) {
+            // Run Liquibase to create the H2 schema from the versioned changelogs,
+            // then hand the already-initialised DataSource to Hibernate (hbm2ddl=none).
+            applyLiquibaseSchema(H2_JDBC_URL);
+            factory = Persistence.createEntityManagerFactory("h2-picture");
+        } else {
+            Map<String, String> properties = new HashMap<>();
+            String dbPrefix = isDev() ? "dev" : "";
+            properties.put("jakarta.persistence.jdbc.url",
+                    "jdbc:mysql://127.0.0.1:3306/" + dbPrefix + "pictureorganizer?useUnicode=yes&characterEncoding=UTF-8");
+            factory = Persistence.createEntityManagerFactory("mysql-picture", properties);
+        }
+    }
+
+    /**
+     * Destroys the singleton so that a subsequent {@link #getInstance()} call
+     * creates a fresh instance — useful in tests that need to switch modes between runs.
+     *
+     * <p>Call {@link #shutdown()} first to close any open EntityManager/factory.
+     */
+    public static void resetInstance() {
+        instance = null;
+    }
+
+    /**
+     * Runs all Liquibase changelogs from {@code db/changelog/db.changelog-master.xml}
+     * against the given JDBC URL.  The H2-specific changesets will create the current
+     * schema; MySQL-only changesets are silently skipped by Liquibase's {@code dbms} filter.
+     */
+    private static void applyLiquibaseSchema(String jdbcUrl) {
+        try {
+            Class.forName("org.h2.Driver");
+            try (Connection conn = DriverManager.getConnection(jdbcUrl, "sa", "")) {
+                liquibase.database.Database db =
+                        liquibase.database.DatabaseFactory.getInstance()
+                                .findCorrectDatabaseImplementation(
+                                        new liquibase.database.jvm.JdbcConnection(conn));
+                liquibase.Liquibase liquibase = new liquibase.Liquibase(
+                        "db/changelog/db.changelog-master.xml",
+                        new liquibase.resource.ClassLoaderResourceAccessor(),
+                        db);
+                liquibase.update(new liquibase.Contexts());
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Liquibase schema initialisation failed for " + jdbcUrl, e);
+        }
     }
 
     public static boolean isDev() {

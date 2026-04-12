@@ -1,0 +1,300 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.26.xsd">
+
+    <!--
+        V2 — Schema normalisation migration
+        Sources: migration_of_media_file.sql, creating_media_files.sql
+        All changesets are MySQL-only (dbms="mysql") because:
+         • They rename / restructure tables from V1
+         • Data migration uses SELECT … INTO CREATE TABLE which is MySQL-specific
+         • These changes must not run on H2 which gets its schema from h2-test-schema.xml
+    -->
+
+    <!-- Step 1: rename old monolithic table to preserve data during migration -->
+    <changeSet id="v2-rename-media-file-to-old" author="auto" dbms="mysql">
+        <comment>Preserve V1 media_file data by renaming it to media_file_old</comment>
+        <sql>ALTER TABLE media_file RENAME media_file_old;</sql>
+        <rollback>ALTER TABLE media_file_old RENAME media_file;</rollback>
+    </changeSet>
+
+    <!-- Step 2: create new media_file_version (content-hash layer) and populate from media_file_old -->
+    <changeSet id="v2-create-media-file-version" author="auto" dbms="mysql">
+        <comment>
+            New media_file_version: one row per unique content (filehash + file_type).
+            Populated from media_file_old grouping on content identity.
+        </comment>
+        <sql splitStatements="false">
+CREATE TABLE media_file_version (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  commit VARCHAR(45) NULL DEFAULT NULL,
+  invalid TINYINT UNSIGNED NULL,
+  parent_id INT UNSIGNED NULL,
+  media_file_id INT UNSIGNED NULL,
+  exifbackup BIT(1) NULL
+) SELECT
+    filehash,
+    type AS file_type,
+    parent_id,
+    size,
+    standalone,
+    date_stored,
+    date_stored_local,
+    date_stored_utc,
+    date_stored_tz
+  FROM media_file_old
+  GROUP BY filehash, type, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS media_file_version;</rollback>
+    </changeSet>
+
+    <!-- Step 3: add indexes and unique key on media_file_version -->
+    <changeSet id="v2-media-file-version-indexes" author="auto" dbms="mysql">
+        <sql>
+ALTER TABLE `media_file_version`
+  ADD UNIQUE INDEX `filehash_unique` (`filehash` ASC, `file_type` ASC) VISIBLE,
+  ADD INDEX `filehash_idx` (`filehash` ASC, `file_type` ASC),
+  ADD INDEX `parent_fk_idx` (`parent_id` ASC);
+        </sql>
+        <rollback>
+ALTER TABLE `media_file_version`
+  DROP INDEX `filehash_unique`,
+  DROP INDEX `filehash_idx`,
+  DROP INDEX `parent_fk_idx`;
+        </rollback>
+    </changeSet>
+
+    <!-- Step 4: create new media_file (content-abstraction layer) and populate -->
+    <changeSet id="v2-create-media-file" author="auto" dbms="mysql">
+        <comment>
+            New media_file: one row per logical media file identity
+            (original_filename + file_type + standalone combination).
+            Two passes: hashed files (image_id > 3) and non-hashed files.
+        </comment>
+        <sql splitStatements="false">
+CREATE TABLE media_file (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  main_id INT UNSIGNED NULL,
+  image_id INT UNSIGNED NULL COMMENT 'temp for migration',
+  shotnumber INT UNSIGNED NULL
+) SELECT
+    mfo.original_filename,
+    mfo.title_in_filename,
+    mfo.type AS file_type,
+    mfo.standalone,
+    mfi.id AS original_version_id
+  FROM media_file_old mfo
+  LEFT JOIN media_file_version mfi ON mfi.filehash = mfo.filehash
+  WHERE mfo.filehash IN (
+    SELECT mfox.filehash FROM media_file_old mfox WHERE mfox.image_id &lt; 4
+    GROUP BY mfox.filehash
+  )
+  GROUP BY mfo.original_filename, mfo.title_in_filename, mfo.type, mfo.standalone, mfi.id;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS media_file;</rollback>
+    </changeSet>
+
+    <changeSet id="v2-media-file-populate-hashed" author="auto" dbms="mysql">
+        <comment>Populate media_file with entries from media_file_old that have image_id &gt; 3</comment>
+        <sql splitStatements="false">
+INSERT INTO media_file (original_filename, title_in_filename, file_type, standalone, image_id, shotnumber, original_version_id)
+SELECT
+    mfo.original_filename,
+    mfo.title_in_filename,
+    mfo.type AS file_type,
+    mfo.standalone,
+    mfo.image_id,
+    mfo.shotnumber,
+    NULL
+FROM media_file_old mfo
+WHERE mfo.image_id &gt; 3
+GROUP BY mfo.image_id, mfo.type, mfo.shotnumber, mfo.original_filename, mfo.title_in_filename, mfo.standalone;
+        </sql>
+        <rollback/>
+    </changeSet>
+
+    <!-- Step 5: create media_image (image-specific metadata layer) -->
+    <changeSet id="v2-create-media-image" author="auto" dbms="mysql">
+        <comment>
+            New media_image: links media_file_version to image, carries per-file
+            image metadata (duration, GPS, orientation, keyword, rating, title).
+        </comment>
+        <sql splitStatements="false">
+CREATE TABLE media_image (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  invalid TINYINT UNSIGNED NULL
+) SELECT
+    mfv.id AS media_file_version_id,
+    mfv.file_type,
+    mfo.image_id,
+    mfo.exifbackup,
+    mfo.duration,
+    mfo.latitude,
+    mfo.longitude,
+    mfo.altitude,
+    mfo.orientation,
+    mfo.keyword,
+    mfo.rating,
+    mfo.title
+  FROM media_file_old mfo
+  LEFT JOIN media_file_version mfv ON mfo.filehash = mfv.filehash AND mfo.type = mfv.file_type
+  GROUP BY
+    mfv.id, mfv.file_type, mfo.image_id, mfo.exifbackup, mfo.duration,
+    mfo.latitude, mfo.longitude, mfo.altitude, mfo.orientation,
+    mfo.keyword, mfo.rating, mfo.title;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS media_image;</rollback>
+    </changeSet>
+
+    <!-- Step 6: create media_file_instance (physical-location layer) -->
+    <changeSet id="v2-create-media-file-instance" author="auto" dbms="mysql">
+        <comment>
+            New media_file_instance: one row per physical file location
+            (folder_id + filename), replacing the V1 drive/folder columns on media_file.
+        </comment>
+        <sql splitStatements="false">
+CREATE TABLE media_file_instance (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+) SELECT
+    id AS media_file_old_id,
+    folder_id,
+    filename,
+    name_version,
+    date_mod,
+    XMPattached
+  FROM media_file_old;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS media_file_instance;</rollback>
+    </changeSet>
+
+    <!-- Step 7: add tracking columns to media_file and media_file_instance -->
+    <changeSet id="v2-tracking-columns-media-file" author="auto" dbms="mysql">
+        <comment>Add audit/tracking columns to the new media_file table</comment>
+        <sql>
+ALTER TABLE `media_file`
+  ADD COLUMN `media_directory_id` INT UNSIGNED NULL AFTER `main_id`,
+  ADD COLUMN `credate` DATETIME NULL AFTER `media_directory_id`,
+  ADD COLUMN `creator` VARCHAR(255) NULL AFTER `credate`,
+  ADD COLUMN `upddate` DATETIME NULL AFTER `creator`,
+  ADD COLUMN `updater` VARCHAR(255) NULL AFTER `upddate`;
+        </sql>
+        <rollback>
+ALTER TABLE `media_file`
+  DROP COLUMN `media_directory_id`,
+  DROP COLUMN `credate`,
+  DROP COLUMN `creator`,
+  DROP COLUMN `upddate`,
+  DROP COLUMN `updater`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v2-tracking-columns-media-file-instance" author="auto" dbms="mysql">
+        <comment>Add audit columns plus media_file_version and media_file FKs to media_file_instance</comment>
+        <sql>
+ALTER TABLE `media_file_instance`
+  ADD COLUMN `media_file_version_id` INT UNSIGNED NULL AFTER `XMPattached`,
+  ADD COLUMN `media_file_id` INT UNSIGNED NULL AFTER `media_file_version_id`,
+  ADD COLUMN `file_type` VARCHAR(5) NULL AFTER `media_file_version_id`,
+  ADD COLUMN `credate` DATETIME NULL,
+  ADD COLUMN `creator` VARCHAR(255) NULL,
+  ADD COLUMN `upddate` DATETIME NULL,
+  ADD COLUMN `updater` VARCHAR(255) NULL;
+        </sql>
+        <rollback>
+ALTER TABLE `media_file_instance`
+  DROP COLUMN `media_file_version_id`,
+  DROP COLUMN `media_file_id`,
+  DROP COLUMN `file_type`,
+  DROP COLUMN `credate`,
+  DROP COLUMN `creator`,
+  DROP COLUMN `upddate`,
+  DROP COLUMN `updater`;
+        </rollback>
+    </changeSet>
+
+    <!-- Step 8: backfill media_file_instance FK columns -->
+    <changeSet id="v2-backfill-media-file-instance" author="auto" dbms="mysql">
+        <comment>Copy media_file_version_id and file_type into media_file_instance from media_file_version</comment>
+        <sql>
+UPDATE media_file_instance mfi
+  SET mfi.file_type = (
+    SELECT mfv.file_type FROM media_file_version mfv WHERE mfv.id = mfi.media_file_version_id
+  );
+UPDATE media_file_instance mfi
+  SET mfi.media_file_id = (
+    SELECT mfv.media_file_id FROM media_file_version mfv WHERE mfv.id = mfi.media_file_version_id
+  );
+        </sql>
+        <rollback/>
+    </changeSet>
+
+    <!-- Step 9: add foreign-key constraints and indexes -->
+    <changeSet id="v2-fk-media-file-instance-media-file" author="auto" dbms="mysql">
+        <sql>
+ALTER TABLE `media_file_instance`
+  ADD INDEX `media_file_instance_fk_media_file_idx` (`media_file_id` ASC),
+  ADD CONSTRAINT `media_file_instance_fk_media_file`
+    FOREIGN KEY (`media_file_id`) REFERENCES `media_file` (`id`)
+    ON DELETE NO ACTION ON UPDATE NO ACTION;
+        </sql>
+        <rollback>
+ALTER TABLE `media_file_instance`
+  DROP FOREIGN KEY `media_file_instance_fk_media_file`,
+  DROP INDEX `media_file_instance_fk_media_file_idx`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v2-fk-media-image-media-file-version" author="auto" dbms="mysql">
+        <sql>
+ALTER TABLE `media_image`
+  ADD CONSTRAINT `media_image_fk_media_file_version`
+    FOREIGN KEY (`media_file_version_id`) REFERENCES `media_file_version` (`id`)
+    ON DELETE NO ACTION ON UPDATE NO ACTION;
+        </sql>
+        <rollback>
+ALTER TABLE `media_image`
+  DROP FOREIGN KEY `media_image_fk_media_file_version`;
+        </rollback>
+    </changeSet>
+
+    <!-- Step 10: add media_type column to media_image -->
+    <changeSet id="v2-media-image-media-type" author="auto" dbms="mysql">
+        <comment>Added media_type discriminator column to media_image</comment>
+        <sql>
+ALTER TABLE `media_image`
+  ADD COLUMN `media_type` VARCHAR(5) NULL DEFAULT 'MAIN' AFTER `title`;
+        </sql>
+        <rollback>ALTER TABLE `media_image` DROP COLUMN `media_type`;</rollback>
+    </changeSet>
+
+    <!-- Step 11: backfill date_stored_* on media_file_version from cross-hash deduplication -->
+    <changeSet id="v2-backfill-date-stored" author="auto" dbms="mysql" runOnChange="false">
+        <comment>
+            Propagate date_stored* values to media_file_version rows that share a filehash
+            with rows that do have dates (from different folder/drive locations).
+        </comment>
+        <sql>
+SET SQL_SAFE_UPDATES = 0;
+UPDATE media_file_version mf
+  SET mf.date_stored = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored IS NOT NULL) AS t)
+  WHERE mf.date_stored IS NULL;
+UPDATE media_file_version mf
+  SET mf.date_stored_local = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored_local) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored_local IS NOT NULL) AS t)
+  WHERE mf.date_stored_local IS NULL;
+UPDATE media_file_version mf
+  SET mf.date_stored_utc = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored_utc) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored_utc IS NOT NULL) AS t)
+  WHERE mf.date_stored_utc IS NULL;
+UPDATE media_file_version mf
+  SET mf.date_stored_tz = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored_tz) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored_tz IS NOT NULL) AS t)
+  WHERE mf.date_stored_tz IS NULL;
+UPDATE media_file_version mf
+  SET mf.date_stored_tz = 'Europe/Berlin'
+  WHERE mf.date_stored_tz IN ('+01:00', '+02:00');
+        </sql>
+        <rollback/>
+    </changeSet>
+
+</databaseChangeLog>

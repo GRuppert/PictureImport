@@ -9,6 +9,8 @@ import java.io.*;
 import java.lang.reflect.Array;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.charset.StandardCharsets;
 import java.security.DigestInputStream;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -31,6 +33,7 @@ public class JPGHash implements Hasher {
     private static final boolean SKIP_ORIENTATION = false;
     private static final String BACKUPID = "Backup";
     private static final String BACKUP_EST_ID = "BakEst";
+    private static final String HASH_COMMENT_PREFIX = "canonical-hash:";
 
     private static long startOfImageJPG(BufferedInputStream in) throws IOException {
         int lastReadByte;
@@ -525,6 +528,137 @@ public class JPGHash implements Hasher {
             }
             imageDTO.exifBackup = fileStruct.isBackup();
         }  catch(Exception e) {
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Canonical-hash JPEG COMMENT segment support
+    // -------------------------------------------------------------------------
+
+    /**
+     * Returns {@code true} if the JPEG file already contains an embedded
+     * canonical-hash COMMENT segment written by {@link #writeCanonicalHash}.
+     */
+    public static boolean hasCanonicalHash(File file) {
+        return readCanonicalHash(file) != null;
+    }
+
+    /**
+     * Scans the JPEG COMMENT segments (marker 0xFE) for a payload that starts
+     * with {@code "canonical-hash:"}.
+     *
+     * @return the 32-char hex hash, or {@code null} if not present
+     */
+    public static String readCanonicalHash(File file) {
+        JPEGMediaFileStruct fileStruct = scan(file);
+        try (RandomAccessFile raf = new RandomAccessFile(file, "r")) {
+            for (JPEGSegment segment : fileStruct.getSegments()) {
+                if (segment.getMarker() == 254 /* COMMENT */) {
+                    int payloadLen = (int) (segment.getLength() - 4); // minus marker(2) + lengthField(2)
+                    if (payloadLen <= 0) continue;
+                    raf.seek(segment.getStartAddress() + 4);
+                    byte[] payload = new byte[payloadLen];
+                    raf.readFully(payload);
+                    String content = new String(payload, StandardCharsets.UTF_8);
+                    if (content.startsWith(HASH_COMMENT_PREFIX)) {
+                        return content.substring(HASH_COMMENT_PREFIX.length()).trim();
+                    }
+                }
+            }
+        } catch (IOException e) {
+            LOG.warn("readCanonicalHash failed for {}: {}", file, e.getMessage());
+        }
+        return null;
+    }
+
+    /**
+     * Rewrites the JPEG file inserting (or replacing) a COMMENT segment that
+     * embeds the canonical hash immediately after the SOI marker.
+     *
+     * <p>All other segment data and inter-segment bytes (important for
+     * multi-image JPEGs that contain embedded thumbnails) are preserved
+     * verbatim.  The replacement is atomic on all platforms via
+     * {@link Files#move} with {@link StandardCopyOption#REPLACE_EXISTING}.
+     *
+     * @return {@code true} on success
+     */
+    public static boolean writeCanonicalHash(File file, String canonicalHash) {
+        JPEGMediaFileStruct fileStruct = scan(file);
+
+        // Build new COMMENT segment: 0xFF 0xFE + 2-byte length + content
+        byte[] content = (HASH_COMMENT_PREFIX + canonicalHash).getBytes(StandardCharsets.UTF_8);
+        int lengthField = content.length + 2; // length field includes itself
+        byte[] commentSegment = new byte[4 + content.length];
+        commentSegment[0] = (byte) 0xFF;
+        commentSegment[1] = (byte) 0xFE;
+        commentSegment[2] = (byte) (lengthField >> 8);
+        commentSegment[3] = (byte) (lengthField & 0xFF);
+        System.arraycopy(content, 0, commentSegment, 4, content.length);
+
+        File tmpFile = new File(file.getPath() + ".tmp");
+        try (FileInputStream fis = new FileInputStream(file);
+             BufferedInputStream bis = new BufferedInputStream(fis);
+             FileOutputStream fos = new FileOutputStream(tmpFile);
+             BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+
+            long currentPos = 0;
+            boolean commentInserted = false;
+
+            for (JPEGSegment segment : fileStruct.getSegments()) {
+                // Copy any gap between end of previous segment and start of this one.
+                // This preserves inter-image bytes in multi-image (thumbnail-embedded) JPEGs.
+                long gap = segment.getStartAddress() - currentPos;
+                if (gap > 0) {
+                    writeBytes(bis, bos, gap);
+                    currentPos += gap;
+                }
+
+                if (segment.getMarker() == 216 /* SOI */ && !commentInserted) {
+                    // Copy SOI, then immediately insert our new COMMENT
+                    writeBytes(bis, bos, segment.getLength());
+                    currentPos += segment.getLength();
+                    bos.write(commentSegment);
+                    commentInserted = true;
+                } else if (segment.getMarker() == 254 /* COMMENT */) {
+                    // Read the segment to check whether it is an existing canonical-hash entry
+                    byte[] segBytes = BasicFileReader.readBytes(bis, (int) segment.getLength());
+                    currentPos += segment.getLength();
+                    boolean isOurComment = segBytes.length >= 4 + HASH_COMMENT_PREFIX.length()
+                            && HASH_COMMENT_PREFIX.equals(
+                                    new String(segBytes, 4, HASH_COMMENT_PREFIX.length(), StandardCharsets.UTF_8));
+                    if (!isOurComment) {
+                        bos.write(segBytes); // preserve unrelated COMMENT segments
+                    }
+                    // else: skip — replaced by the new COMMENT already written above
+                } else {
+                    writeBytes(bis, bos, segment.getLength());
+                    currentPos += segment.getLength();
+                }
+            }
+
+            // Copy any trailing bytes after the last tracked segment
+            long remaining = file.length() - currentPos;
+            if (remaining > 0) {
+                writeBytes(bis, bos, remaining);
+            }
+
+        } catch (IOException e) {
+            LOG.error("writeCanonicalHash failed for {}: {}", file, e.getMessage());
+            tmpFile.delete();
+            return false;
+        }
+
+        return replaceOriginal(file, tmpFile);
+    }
+
+    private static boolean replaceOriginal(File original, File tmp) {
+        try {
+            Files.move(tmp.toPath(), original.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            return true;
+        } catch (IOException e) {
+            LOG.error("replaceOriginal failed: could not replace {} with tmp file", original, e);
+            tmp.delete();
+            return false;
         }
     }
 

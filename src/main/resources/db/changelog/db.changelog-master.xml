@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.26.xsd">
+
+    <!--
+        DB History — PictureOrganizer / pictureorganizer schema
+        =========================================================
+
+        V1  ~2020-01-26  (createDB.sql)
+            Initial monolithic schema: drive, folder, image, media_file.
+            media_file held *everything*: location (drive+folder+filename),
+            content identity (filehash), image metadata (orientation, latitude …),
+            EXIF backup flag and date information — all in one wide table.
+
+        V2  ~2022-2023   (migration_of_media_file.sql, creating_media_files.sql)
+            Schema normalisation — the big refactoring:
+            • media_file renamed to media_file_old
+            • New media_file  — content-identity abstraction (original_filename,
+              file_type, standalone, shotnumber …)
+            • New media_file_version — one row per unique content hash
+              (filehash, file_type, exifbackup, date_stored_* …)
+            • New media_file_instance — one row per physical file location
+              (folder_id, filename, media_file_version_id …)
+            • New media_image — image-specific metadata extracted from
+              media_file_old (duration, latitude … orientation, keyword …)
+            • Tracking columns (credate/creator/upddate/updater) added to
+              media_file and media_file_instance
+            • Foreign-key chain wired up
+            This changeset is MySQL-only because it contains data-migration
+            SELECT … INTO CREATE TABLE statements.
+
+        V3  ~2023-12-17  (EmplyTables20231217.sql, Drive20231217.sql)
+            Current production state:
+            • media_directory table added
+            • folder.media_directory_id column added
+            • image.valid column added (NOT NULL, default b'0')
+            • image.orientation changed from BIT(1) to INT
+            • image.duration column added
+            • media_file restructured (removed drive_id/folder_id/filename;
+              added shotnumber, title_in_filename, media_directory_id,
+              original_version_id, credate/creator/upddate/updater)
+            • media_file_version.filehash UNIQUE key made per (filehash, file_type)
+            This changeset is the canonical "ground truth" for new deployments.
+
+        H2 Test schema:
+            Applied only on H2 (dbms="h2"). Creates the current schema
+            (V3 structure) in H2-compatible DDL in a single changeset so that
+            integration tests do not require a running MySQL server.
+    -->
+
+    <!-- ── V1: Initial monolithic schema — MySQL production only ─────────── -->
+    <include file="db/changelog/v1-initial-schema.xml"
+             relativeToChangelogFile="false"/>
+
+    <!-- ── V2: Normalization migration — MySQL production only ────────────── -->
+    <include file="db/changelog/v2-normalization.xml"
+             relativeToChangelogFile="false"/>
+
+    <!-- ── V3: Current production state — MySQL production only ───────────── -->
+    <include file="db/changelog/v3-current-additions.xml"
+             relativeToChangelogFile="false"/>
+
+    <!-- ── H2 test: full current schema in one shot (H2 only) ────────────── -->
+    <include file="db/changelog/h2-test-schema.xml"
+             relativeToChangelogFile="false"/>
+
+</databaseChangeLog>

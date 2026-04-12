@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.26.xsd">
+
+    <!--
+        V3 — Additions leading to current production state (~2023-12-17)
+        Source: EmplyTables20231217.sql, Drive20231217.sql
+        MySQL-only (dbms="mysql") — H2 tests use h2-test-schema.xml instead.
+
+        Changes introduced between V2 and the 2023-12-17 snapshot:
+          • media_directory table added (title, from_date, to_date)
+          • folder.media_directory_id column + FK added
+          • image: orientation changed BIT(1) → INT, valid column added (NOT NULL),
+            duration column added, camera_model widened, title widened to 511
+          • media_file completely restructured away from drive/folder model:
+            replaced drive_id/folder_id/filename with shotnumber, title_in_filename,
+            media_directory_id, original_version_id; tracking columns added
+          • media_file_version: date_stored columns split (local/utc/tz),
+            filehash UNIQUE key changed to (filehash, file_type), exifbackup added
+          • media_file_instance: media_file_version_id FK and media_file_id FK
+            formalised (already done in V2 but confirmed here)
+          • media_image: media_file_version FK formalised, image FK added
+    -->
+
+    <!-- ── media_directory ────────────────────────────────────────────────── -->
+    <changeSet id="v3-media-directory" author="auto" dbms="mysql">
+        <comment>New media_directory table — groups media files into thematic directories</comment>
+        <sql>
+CREATE TABLE `media_directory` (
+  `id` int unsigned NOT NULL AUTO_INCREMENT,
+  `from_date` date DEFAULT NULL,
+  `to_date` date DEFAULT NULL,
+  `title` varchar(231) COLLATE utf8mb4_0900_as_cs DEFAULT NULL,
+  `folder_name` varchar(255) COLLATE utf8mb4_0900_as_cs DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_as_cs;
+        </sql>
+        <rollback>DROP TABLE IF EXISTS `media_directory`;</rollback>
+    </changeSet>
+
+    <!-- ── folder: add media_directory_id ────────────────────────────────── -->
+    <changeSet id="v3-folder-media-directory-id" author="auto" dbms="mysql">
+        <comment>Link folder rows to media_directory</comment>
+        <sql>
+ALTER TABLE `folder`
+  ADD COLUMN `media_directory_id` INT UNSIGNED DEFAULT NULL,
+  ADD KEY `folder_fk_media_directory_idx` (`media_directory_id`),
+  ADD CONSTRAINT `folder_fk_media_directory`
+    FOREIGN KEY (`media_directory_id`) REFERENCES `media_directory` (`id`);
+        </sql>
+        <rollback>
+ALTER TABLE `folder`
+  DROP FOREIGN KEY `folder_fk_media_directory`,
+  DROP INDEX `folder_fk_media_directory_idx`,
+  DROP COLUMN `media_directory_id`;
+        </rollback>
+    </changeSet>
+
+    <!-- ── image: schema updates ─────────────────────────────────────────── -->
+    <changeSet id="v3-image-valid-column" author="auto" dbms="mysql">
+        <comment>Add valid flag to image (NOT NULL, default 0)</comment>
+        <sql>
+ALTER TABLE `image`
+  ADD COLUMN `valid` bit(1) NOT NULL DEFAULT b'0' AFTER `orig_exif`;
+        </sql>
+        <rollback>ALTER TABLE `image` DROP COLUMN `valid`;</rollback>
+    </changeSet>
+
+    <changeSet id="v3-image-orientation-to-int" author="auto" dbms="mysql">
+        <comment>orientation column was BIT(1); widened to INT to hold EXIF orientation values 1-8</comment>
+        <sql>ALTER TABLE `image` MODIFY COLUMN `orientation` int DEFAULT NULL;</sql>
+        <rollback>ALTER TABLE `image` MODIFY COLUMN `orientation` BIT(1) NULL DEFAULT NULL;</rollback>
+    </changeSet>
+
+    <changeSet id="v3-image-duration" author="auto" dbms="mysql">
+        <comment>Add duration column to image (used for video media)</comment>
+        <sql>
+ALTER TABLE `image`
+  ADD COLUMN `duration` int DEFAULT '0' AFTER `type`;
+        </sql>
+        <rollback>ALTER TABLE `image` DROP COLUMN `duration`;</rollback>
+    </changeSet>
+
+    <changeSet id="v3-image-odid-unique-valid" author="auto" dbms="mysql">
+        <comment>
+            Update ODID_UNIQUE to include valid column so that superseded
+            image records can coexist with their replacements.
+        </comment>
+        <sql>
+ALTER TABLE `image`
+  DROP INDEX `ODID_UNIQUE`,
+  ADD UNIQUE KEY `ODID_UNIQUE` (`odid`,`type`,`valid`);
+        </sql>
+        <rollback>
+ALTER TABLE `image`
+  DROP INDEX `ODID_UNIQUE`,
+  ADD UNIQUE KEY `ODID_UNIQUE` (`odid`,`type`);
+        </rollback>
+    </changeSet>
+
+    <!-- ── media_file: FK to media_file_version ──────────────────────────── -->
+    <changeSet id="v3-media-file-original-version-fk" author="auto" dbms="mysql">
+        <comment>
+            Add original_version_id FK from media_file to media_file_version.
+            This completes the circular reference (media_file_version also has a
+            media_file_id FK in the other direction).
+        </comment>
+        <sql>
+ALTER TABLE `media_file`
+  ADD KEY `media_file_fk_original_version_idx` (`original_version_id`),
+  ADD CONSTRAINT `media_file_fk_original_version`
+    FOREIGN KEY (`original_version_id`) REFERENCES `media_file_version` (`id`);
+        </sql>
+        <rollback>
+ALTER TABLE `media_file`
+  DROP FOREIGN KEY `media_file_fk_original_version`,
+  DROP INDEX `media_file_fk_original_version_idx`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v3-media-file-image-fk" author="auto" dbms="mysql">
+        <comment>Add image_id FK on media_file (migration temp column becomes a real FK)</comment>
+        <sql>
+ALTER TABLE `media_file`
+  ADD KEY `media_file_fk_image_idx` (`image_id`),
+  ADD CONSTRAINT `media_file_fk_image`
+    FOREIGN KEY (`image_id`) REFERENCES `image` (`id`);
+        </sql>
+        <rollback>
+ALTER TABLE `media_file`
+  DROP FOREIGN KEY `media_file_fk_image`,
+  DROP INDEX `media_file_fk_image_idx`;
+        </rollback>
+    </changeSet>
+
+    <changeSet id="v3-media-file-directory-fk" author="auto" dbms="mysql">
+        <comment>Add media_directory_id FK on media_file</comment>
+        <sql>
+ALTER TABLE `media_file`
+  ADD KEY `media_file_fk_directory_idx` (`media_directory_id`),
+  ADD CONSTRAINT `media_file_fk_directory`
+    FOREIGN KEY (`media_directory_id`) REFERENCES `media_directory` (`id`);
+        </sql>
+        <rollback>
+ALTER TABLE `media_file`
+  DROP FOREIGN KEY `media_file_fk_directory`,
+  DROP INDEX `media_file_fk_directory_idx`;
+        </rollback>
+    </changeSet>
+
+    <!-- ── media_file_version: filehash unique key update ───────────────── -->
+    <changeSet id="v3-media-file-version-fk-media-file" author="auto" dbms="mysql">
+        <comment>Formalise the media_file_id FK on media_file_version</comment>
+        <sql>
+ALTER TABLE `media_file_version`
+  ADD KEY `media_file_version_fk_media_file_idx` (`media_file_id`),
+  ADD CONSTRAINT `media_file_version_fk_media_file`
+    FOREIGN KEY (`media_file_id`) REFERENCES `media_file` (`id`);
+        </sql>
+        <rollback>
+ALTER TABLE `media_file_version`
+  DROP FOREIGN KEY `media_file_version_fk_media_file`,
+  DROP INDEX `media_file_version_fk_media_file_idx`;
+        </rollback>
+    </changeSet>
+
+    <!-- ── media_image: formalise FKs ────────────────────────────────────── -->
+    <changeSet id="v3-media-image-image-fk" author="auto" dbms="mysql">
+        <comment>Add FK from media_image to image</comment>
+        <sql>
+ALTER TABLE `media_image`
+  ADD KEY `media_image_fk_image_idx` (`image_id`),
+  ADD CONSTRAINT `media_image_fk_image`
+    FOREIGN KEY (`image_id`) REFERENCES `image` (`id`);
+        </sql>
+        <rollback>
+ALTER TABLE `media_image`
+  DROP FOREIGN KEY `media_image_fk_image`,
+  DROP INDEX `media_image_fk_image_idx`;
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
