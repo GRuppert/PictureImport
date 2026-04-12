@@ -11,9 +11,6 @@ import org.nyusziful.pictureorganizer.DAL.HibConnection;
 import org.nyusziful.pictureorganizer.DAL.JPAConnection;
 import org.nyusziful.pictureorganizer.Service.TimeShift.Picture;
 
-import static javafx.application.Application.launch;
-
-
 public class PictureOrganizer extends Application {
     public static PictureOrganizer view;
     private Stage primaryStage;
@@ -21,11 +18,13 @@ public class PictureOrganizer extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-/*        if (DBConnection.getConnection() != null) {
-            DBConnection.uploadLocalChanges();
-        } else {
-            DBConnection.getLocalConnection();
-        }*/
+        /*
+         * if (DBConnection.getConnection() != null) {
+         * DBConnection.uploadLocalChanges();
+         * } else {
+         * DBConnection.getLocalConnection();
+         * }
+         */
         JPAConnection.setMode(JPAConnection.DBMode.DEV);
 
         view = this;
@@ -36,7 +35,7 @@ public class PictureOrganizer extends Application {
         mainScene.getStylesheets().add(getClass().getResource("/styles/Charts.css").toExternalForm());
         primaryStage.setScene(mainScene);
 
-        //set Stage boundaries to visible bounds of the main screen
+        // set Stage boundaries to visible bounds of the main screen
         Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
         maxWidth = (int) (primaryScreenBounds.getWidth() - 150);
         maxHeight = (int) (primaryScreenBounds.getHeight() - 150);
@@ -50,7 +49,7 @@ public class PictureOrganizer extends Application {
     @Override
     public void stop() throws Exception {
         CommonProperties.getInstance().save();
-        //TODO check running task - stop - wait for commit
+        // TODO check running task - stop - wait for commit
         JPAConnection.shutdown();
     }
 
