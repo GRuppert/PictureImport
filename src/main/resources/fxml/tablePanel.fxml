@@ -3,9 +3,10 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.control.cell.PropertyValueFactory?>
-<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.Rename.TablePanelController">
+<BorderPane xmlns:fx="http://javafx.com/fxml/1" prefHeight="800" prefWidth="1200" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.TablePanelController">
     <top>
         <HBox>
+            <Button fx:id="btnSelected" text="Selected" onAction="#handleSelectedButtonAction"/>
             <Button fx:id="btnAll" text="All" onAction="#handleAllButtonAction"/>
             <Button fx:id="btnNone" text="None" onAction="#handleNoneButtonAction"/>
             <Button fx:id="btnInvert" text="Invert" onAction="#handleInvertButtonAction"/>
@@ -15,7 +16,7 @@
         <HBox>
             <Button fx:id="btnGo" text="Go" onAction="#handleGoButtonAction"/>
             <Button fx:id="btnAbort" text="Abort" onAction="#handleAbortButtonAction"/>
-            <Button fx:id="btnRefresh" text="Refresh" onAction="#handleRefreshButtonAction"/>
+            <Button fx:id="btnRefresh" text="Apply folder" onAction="#handleRefreshButtonAction"/>
             <ProgressIndicator fx:id="tableProgressIndicator" progress="0" visible="false"/>
         </HBox>
     </bottom>

@@ -1,0 +1,223 @@
+package org.nyusziful.pictureorganizer.DAL.DAO;
+
+import jakarta.persistence.criteria.CriteriaBuilder;
+import org.nyusziful.pictureorganizer.DAL.JPAConnection;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.EntityTransaction;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Root;
+import java.lang.reflect.ParameterizedType;
+import java.util.Collection;
+import java.util.List;
+
+public class CRUDDAOImpHib<T> implements CRUDDAO<T> {
+    private Class<T> entityBeanType;
+    protected JPAConnection jpaConnection;
+//           = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT_NAME)    protected HibConnection hibConnection;
+
+    public CRUDDAOImpHib() {
+        this.entityBeanType = ((Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0]);
+        jpaConnection = JPAConnection.getInstance();
+    }
+
+    @Override
+    public List<T> getAll() {
+        return getAll(false);
+    }
+
+    @Override
+    public List<T> getAll(boolean batch) {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        List<T> result = null;
+        try{
+            CriteriaQuery<T> criteria = entityManager.getCriteriaBuilder().createQuery( entityBeanType );
+            Root<T> cat = criteria.from( entityBeanType );
+            criteria.select( cat );
+            result = entityManager.createQuery( criteria ).getResultList();
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public T getById(final int id){
+        return getById(id, false);
+    }
+
+    @Override
+    public T getById(final int id, boolean batch){
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        T result = null;
+        try{
+            result = entityManager.find(entityBeanType, id);
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public List<T> getByIds(Collection<Integer> ids) { return getByIds(ids, false);
+    }
+    @Override
+    public List<T> getByIds(Collection<Integer> ids, boolean batch) {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        List<T> result = null;
+        try{
+            CriteriaBuilder cb = entityManager.getCriteriaBuilder();
+            CriteriaQuery<T> criteria = cb.createQuery( entityBeanType );
+            Root<T> root = criteria.from( entityBeanType );
+            criteria.select(root);
+            criteria.where(root.get("id").in(ids));
+            result = entityManager.createQuery( criteria ).getResultList();
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+        return result;
+    }
+
+
+
+    public void persist(final T item) {
+        persist(item, false);
+    }
+
+    public void persist(final T item, boolean batch) {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        try{
+            entityManager.persist(item);
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+    }
+
+    @Override
+    public T merge(final T item)   {
+        return merge(item, false);
+    }
+
+    @Override
+    public T merge(final T item, boolean batch)   {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        T result = null;
+        try{
+            result = entityManager.merge(item);
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+                return null;
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+        return (T) result;
+    }
+
+/*    @Override
+    public T save(T item) {
+        return save(item, false);
+    }
+
+    @Override
+    public T save(T item, boolean batch) {
+        if (item.getId() > -1)
+            return merge(item, batch);
+        else
+            persist(item, batch);
+            return item;
+        }
+    }*/
+
+    @Override
+    public void delete(final T item){
+        delete(item, false);
+    }
+
+    @Override
+    public void delete(final T item, boolean batch){
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        EntityTransaction transaction = entityManager.getTransaction();
+        try{
+            entityManager.remove(entityManager.contains(item) ? item : entityManager.merge(item));
+            if (!batch) transaction.commit();
+        }catch(RuntimeException e){
+            try{
+                transaction.rollback();
+            }catch(RuntimeException rbe){
+//                log.error("Couldn’t roll back transaction", rbe);
+            }
+            throw e;
+
+        }finally{
+            if(entityManager!=null && !batch){
+                entityManager.close();
+            }
+        }
+    }
+
+    @Override
+    public void close() {
+        EntityManager entityManager = jpaConnection.getEntityManager();
+        entityManager.getTransaction().commit();
+        entityManager.close();
+    }
+
+    @Override
+    public void flush() {
+        jpaConnection.getEntityManager().flush();
+    }
+
+}

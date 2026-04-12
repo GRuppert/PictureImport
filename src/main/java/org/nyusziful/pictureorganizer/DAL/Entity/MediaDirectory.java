@@ -1,0 +1,87 @@
+package org.nyusziful.pictureorganizer.DAL.Entity;
+
+import org.nyusziful.pictureorganizer.DAL.DAO.HasID;
+
+import jakarta.persistence.*;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
+
+import static java.lang.Integer.parseInt;
+
+@Entity
+@Table(name = "media_directory")
+public class MediaDirectory implements HasID {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    protected int id = -1;
+    @Column(name = "from_date")
+    private LocalDate firstDate = null;
+    @Column(name = "to_date")
+    private LocalDate lastDate = null;
+    @Column(name = "title")
+    private String label;
+    public static DateTimeFormatter FolderFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd");//2018-06-14
+    @Transient
+    private boolean conflicting = false;
+    public MediaDirectory() {
+
+    }
+    @Override
+    public String toString() {
+        return firstDate + " - " + lastDate + (label.isEmpty() ? "" : " " + label);
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
+    }
+
+    public LocalDate getFirstDate() {
+        return firstDate;
+    }
+
+    public LocalDate getLastDate() {
+        return lastDate;
+    }
+
+    public boolean isConflicting() {
+        return conflicting;
+    }
+
+    public void setConflicting(boolean conflicting) {
+        this.conflicting = conflicting;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public void setFirstDate(LocalDate firstDate) {
+        this.firstDate = firstDate;
+    }
+
+    public void setLastDate(LocalDate lastDate) {
+        this.lastDate = lastDate;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof MediaDirectory other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && Objects.equals(getFirstDate(), other.getFirstDate()) && Objects.equals(getLastDate(), other.getLastDate()) && Objects.equals(getLabel(), other.getLabel()));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getId());
+    }
+}

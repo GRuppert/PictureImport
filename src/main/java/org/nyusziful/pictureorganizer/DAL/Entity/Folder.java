@@ -1,0 +1,87 @@
+package org.nyusziful.pictureorganizer.DAL.Entity;
+
+import org.nyusziful.pictureorganizer.Service.DriveService;
+import org.nyusziful.pictureorganizer.Service.FolderService;
+
+import jakarta.persistence.*;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collection;
+import java.util.Objects;
+
+@Entity
+@Table(
+    name = "folder",
+    uniqueConstraints = {@UniqueConstraint(columnNames = {"drive_id", "path"})}
+)
+public class Folder extends TrackingEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    protected int id = -1;
+    private String path;
+    private String name;
+    @ManyToOne(cascade = CascadeType.PERSIST)
+    private Folder parent;
+    @OneToMany(mappedBy = "parent")
+    private Collection<Folder> children;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "drive_id", referencedColumnName = "id")
+    private Drive drive;
+    @Transient
+    private Path javaPath;
+
+    private void loadPath() {
+        String driveLocalLetter = DriveService.getLocalLetter(drive);
+        if (driveLocalLetter != null) javaPath = Paths.get(DriveService.getLocalLetter(drive) + ":" + FolderService.dataToWinPath(path));
+    }
+
+    public Folder() {
+    }
+
+    public Folder(Drive drive, Path path) {
+        javaPath = path;
+        this.path = FolderService.winToDataPath(path);
+        this.name = path.getFileName() == null ? "" : path.getFileName().toString();
+        this.drive = drive;
+    }
+
+    public Path getJavaPath() {
+        if (javaPath == null) loadPath();
+        return javaPath;
+    }
+
+    public Drive getDrive() {
+        return drive;
+    }
+
+    @Override
+    public String toString() {
+        final Path javaPathLocal = getJavaPath();
+        if (javaPathLocal != null) return javaPathLocal.toString();
+        else return drive.getDescription() + ":" + FolderService.dataToWinPath(path);
+    }
+
+    public void updatePath(Path path) {
+        javaPath = path;
+        this.path = FolderService.winToDataPath(path);
+        this.name = path.getFileName() == null ? "" : path.getFileName().toString();
+
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Folder other)) return false;
+        return getId() == other.getId() || ((getId() == -1 || other.getId() == -1) && Objects.equals(path, other.path) && Objects.equals(getDrive(), other.getDrive()));
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(getId());
+    }
+}

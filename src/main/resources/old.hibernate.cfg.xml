@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE hibernate-configuration SYSTEM
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.dialect">org.hibernate.dialect.MySQLDialect</property>
+        <property name="connection.useUnicode">true</property>
+        <property name="connection.characterEncoding">UTF-8</property>
+        <!--property name="hibernate.connection.driver_class">com.mysql.cj.jdbc.Driver</property-->
+        <!--property name="hibernate.connection.url">jdbc:mysql://192.168.0.54:3306/picture</property-->
+        <property name="hibernate.connection.url">jdbc:mysql://127.0.0.1:3306/pictureorganizer</property>
+        <property name="hibernate.connection.username">picture</property>
+        <property name="hibernate.connection.password">picture</property>
+        <property name="hibernate.hbm2ddl.auto">validate</property>
+        <property name="hibernate.current_session_context_class">thread</property>
+        <property name="hibernate.cache.use_second_level_cache">true</property>
+        <property name="hibernate.cache.use_query_cache">true</property>
+        <property name="hibernate.cache.region.factory_class">org.hibernate.cache.ehcache.EhCacheRegionFactory</property>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Drive"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Folder"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Image"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.Media"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaDirectory"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaFile"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MediaFileInstance"/>
+        <mapping class="org.nyusziful.pictureorganizer.DAL.Entity.MetaData"/>
+    </session-factory>
+</hibernate-configuration>

@@ -1,0 +1,20 @@
+Szétszedni
+T:\G\Pictures\Photos\V4\Gabus\2007-03-15 - 2007-07-16
+T:\G\Pictures\Photos\V4\Gabus\2007-09-17 - 2007-10-28
+T:\G\Pictures\Photos\V4\Gabus\2007-11-01 - 2007-11-10
+
+
+Régi G hibás fileok
+Photos\Új\4-6-21 Genfersee\go\DCIM\100GOPRO\GH010280.MP4
+Snowdriftambri\D5C07651.ARW
+
+
+SELECT DISTINCT(f2.path) FROM media_file as m LEFT JOIN folder as f2 ON m.folder_id = f2.id WHERE m.drive_id = 4 AND m.IMAGE_ID NOT IN (19995, 17542, 126225) AND m.IMAGE_ID IN (SELECT distinct(image_id) FROM MEDIA_FILE as m2 LEFT JOIN folder as f ON m2.folder_id = f.id WHERE f.drive_id = 3 AND f.path like '/Pictures/Photos/DBSaved/%');
+
+SELECT DISTINCT(f2.path) FROM media_file as m LEFT JOIN folder as f2 ON m.folder_id = f2.id WHERE m.drive_id = 3 AND m.IMAGE_ID NOT IN (19995, 17542, 126225) AND m.IMAGE_ID IN (SELECT distinct(image_id) FROM MEDIA_FILE as m2 LEFT JOIN folder as f ON m2.folder_id = f.id WHERE f.drive_id = 4 AND f.path like '/Képek/Photos/Új2/6-3 Szilveszter Állatkert AnyuékRigi Frauenlauf/%');
+SELECT DISTINCT(f2.path) FROM media_file as m LEFT JOIN folder as f2 ON m.folder_id = f2.id WHERE m.drive_id = 3 AND m.IMAGE_ID NOT IN (19995, 17542, 126225) AND m.IMAGE_ID IN (SELECT distinct(image_id) FROM MEDIA_FILE as m2 LEFT JOIN folder as f ON m2.folder_id = f.id WHERE f.drive_id = 4 AND f.path like '/Képek/Photos/Új/S4Red%');
+SELECT DISTINCT(f2.path) FROM media_file as m LEFT JOIN folder as f2 ON m.folder_id = f2.id WHERE m.drive_id = 3 AND m.IMAGE_ID NOT IN (19995, 17542, 126225) AND m.IMAGE_ID IN (SELECT distinct(image_id) FROM MEDIA_FILE as m2 LEFT JOIN folder as f ON m2.folder_id = f.id WHERE f.drive_id = 4 AND f.path like '/Képek/Photos/Új/Kicsi/DCIM/%');
+SELECT DISTINCT(f2.path) FROM media_file as m LEFT JOIN folder as f2 ON m.folder_id = f2.id WHERE m.drive_id = 3 AND m.IMAGE_ID NOT IN (19995, 17542, 126225) AND m.IMAGE_ID IN (SELECT distinct(image_id) FROM MEDIA_FILE as m2 LEFT JOIN folder as f ON m2.folder_id = f.id WHERE f.drive_id = 4 AND f.path like '/Képek/Photos/Új/BE/2%');
+
+
+DEV H:\Photos\KékB\Andaluzia\a6500\DCIM\100MSDCF\D5C01928.ARW - Cannot add or update a child row: a foreign key constraint fails - Media persist

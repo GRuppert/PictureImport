@@ -1,0 +1,161 @@
+package org.nyusziful.pictureorganizer.UI.Contoller.Rename;
+
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.concurrent.Task;
+import org.nyusziful.pictureorganizer.DTO.Meta;
+import org.nyusziful.pictureorganizer.UI.Model.RenameTableViewMediaFileInstance;
+import org.nyusziful.pictureorganizer.UI.Model.TableViewMediaFileInstance;
+
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+
+import static org.nyusziful.pictureorganizer.Service.Rename.FileNameFactory.getV;
+
+public class MediaFileSet {
+//    ArrayList<AnalyzingMediaFile> files = new ArrayList<>();
+    private final ObservableList<TableViewMediaFileInstance> dataModel = FXCollections.observableArrayList();
+    SimpleObjectProperty<LocalDate> firstDate;
+    SimpleObjectProperty<LocalDate> lastDate;
+    SimpleStringProperty folderName;
+    private String label;
+
+
+
+    public MediaFileSet() {
+        folderName = new SimpleStringProperty("");
+        firstDate = new SimpleObjectProperty(null);
+        lastDate = new SimpleObjectProperty(null);
+    }
+
+    private void fillData(Collection<? extends TableViewMediaFileInstance> files) {
+//        this.files = files;
+        dataModel.removeAll(dataModel);
+        dataModel.addAll(files);
+    }
+
+    public void addData(Collection<? extends TableViewMediaFileInstance> files) {
+        dataModel.addAll(files);
+    }
+
+    public void addData(TableViewMediaFileInstance file) {
+        dataModel.add(file);
+    }
+
+    public ObservableList<TableViewMediaFileInstance> getDataModel() {
+        return dataModel;
+    }
+
+    public void reset() {
+        dataModel.clear();
+        label = "";
+        firstDate.set(LocalDate.now());
+        lastDate.set(LocalDate.now());
+    }
+
+    public void selectAll() {
+        getDataModel().forEach(f -> f.setProcessing(Boolean.TRUE));
+    }
+
+    public void selectNone() {
+        getDataModel().forEach(f -> f.setProcessing(Boolean.FALSE));
+    }
+
+    public void invertSelection() {
+        getDataModel().forEach(f -> f.setProcessing(!f.getProcessing()));
+    }
+
+    public void updatePaths(String replacePath) {
+        getDataModel().stream().forEach(file -> {if (file.getProcessing()) ((RenameTableViewMediaFileInstance)file).setTargetDirectory(replacePath + "\\" + folderName.getValue());});
+    }
+
+    public Task<Collection<TableViewMediaFileInstance>> applyChanges(TableViewMediaFileInstance.WriteMethod copyOrMove, boolean overwrite) {
+        Task<Collection<TableViewMediaFileInstance>> task = new Task<Collection<TableViewMediaFileInstance>>() {
+            ArrayList<TableViewMediaFileInstance> tableViewMediaFile = new ArrayList();
+
+            @Override
+            public Collection<TableViewMediaFileInstance> call() {
+                int iterations = 0;
+                int size = MediaFileSet.this.getDataModel().size();
+                Iterator<? extends TableViewMediaFileInstance> iter = MediaFileSet.this.getDataModel().iterator();
+                while (iter.hasNext()) {
+                    if (isCancelled()) {
+                        return tableViewMediaFile;
+                    }
+                    TableViewMediaFileInstance actFile = iter.next();
+                    if (actFile.write(copyOrMove, overwrite)) {
+                        tableViewMediaFile.add(actFile);
+                    }
+                    iterations++;
+                    updateProgress(iterations, size);
+                }
+                return tableViewMediaFile;
+            }
+        };
+
+        task.setOnSucceeded(workerStateEvent -> getDataModel().removeAll(task.getValue()));
+        task.setOnFailed(workerStateEvent -> task.getException().printStackTrace());
+        return task;
+    }
+
+    public LocalDate getFirstDate() {
+        return firstDate.getValue();
+    }
+
+    public void setFirstDate(LocalDate firstDate) {
+        this.firstDate.set(firstDate);
+        updateRange();
+    }
+
+    public SimpleObjectProperty<LocalDate> firstDateProperty() {return firstDate;}
+
+    public LocalDate getLastDate() {
+        return lastDate.getValue();
+    }
+
+    public void setLastDate(LocalDate lastDate) {
+        this.lastDate.set(lastDate);
+        updateRange();
+    }
+
+    public SimpleObjectProperty<LocalDate> lastDateProperty() {return lastDate;}
+
+    private void updateRange() {
+/*        if (getFirstDate() != null && getLastDate() != null)
+            folderName.set(getFirstDate().format(FolderFormat) + " - " + getLastDate().format(FolderFormat) + ((label != null && !"".equals(label)) ? " " + label : "")); //2018-06-14 - 2018-07-10 Peru
+        else
+            folderName.set("");*/
+    }
+
+    public SimpleStringProperty folderNameProperty() {
+        return folderName;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public void setLabel(String label) {
+        this.label = label;
+        updateRange();
+    }
+
+    public void resetDates() {
+        for (TableViewMediaFileInstance tableViewMediaFile : getDataModel()) {
+            if (tableViewMediaFile instanceof RenameTableViewMediaFileInstance) {
+                final Meta v = getV(((RenameTableViewMediaFileInstance) tableViewMediaFile).getNewName());
+                if (v != null && v.date != null) {
+                    final LocalDate localDateFromFile = v.date.toLocalDate();
+                    if (firstDate.getValue() == null || firstDate.getValue().isAfter(localDateFromFile)) setFirstDate(localDateFromFile);
+                    if (lastDate.getValue() == null || lastDate.getValue().isBefore(localDateFromFile)) setLastDate(localDateFromFile);
+                }
+            }
+        }
+
+
+    }
+}

@@ -1,0 +1,123 @@
+ALTER TABLE media_file RENAME media_file_old;
+
+CREATE TABLE media_file  (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  main_id INT UNSIGNED NULL
+) select
+mfo.original_filename, mfo.title_in_filename, mfv.file_type, mfv.standalone, mfv.id as original_version_id 
+	FROM media_file_version mfv LEFT JOIN media_file_instance mfi ON mfi.media_file_id = mfv.id LEFT JOIN media_file_old mfo ON mfi.media_file_old_id = mfo.id
+    GROUP BY mfo.original_filename, mfv.file_type, mfv.standalone, mfv.id;
+
+
+
+
+CREATE TABLE media_file_version  (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  commit VARCHAR(45) NULL DEFAULT NULL,
+  invalid TINYINT UNSIGNED,
+  parent_id INT UNSIGNED NULL,
+  media_file_id INT UNSIGNED NULL,  
+  exifbackup BIT(1) NULL
+) select
+filehash, type as file_type, parent_id, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz
+FROM media_file_old 
+GROUP BY
+filehash, type, size, standalone, date_stored, date_stored_local, date_stored_utc, date_stored_tz;
+
+ALTER TABLE `pictureorganizer`.`media_file_version` 
+ADD UNIQUE INDEX `filehash_unique` (`filehash` ASC, `file_type` ASC) VISIBLE;
+ALTER TABLE `pictureorganizer`.`media_file_version` 
+ADD INDEX `filehash_idx` (`filehash` ASC) VISIBLE;
+ALTER TABLE `pictureorganizer`.`media_file_version` 
+ADD INDEX `parent_filehash_idx` (`parent_filehash` ASC) VISIBLE;
+
+
+CREATE TABLE meta_data (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+) SELECT
+duration, latitude, longitude, altitude, orientation, keyword, rating, title
+FROM media_file_old
+GROUP BY
+duration, latitude, longitude, altitude, orientation, keyword, rating, title;
+
+CREATE TABLE media_image (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  invalid TINYINT UNSIGNED
+) SELECT
+mf.id as media_file_id, mfo.image_id, mm.id as meta_data_id, mfo.exifbackup
+FROM media_file_old mfo
+LEFT JOIN media_file_version mf ON mfo.filehash = mf.filehash AND mfo.type = mf.file_type
+LEFT JOIN meta_data mm ON  mfo.duration = mm.duration
+ AND mfo.latitude <=> mm.latitude
+ AND mfo.longitude <=> mm.longitude
+ AND mfo.altitude <=> mm.altitude
+ AND mfo.orientation <=> mm.orientation
+ AND mfo.keyword <=> mm.keyword
+ AND mfo.rating <=> mm.rating
+ AND mfo.title <=> mm.title
+GROUP BY
+mf.id, mfo.image_id, mm.id, mfo.exifbackup
+;
+
+SET @rownr=0;
+CREATE TABLE media_file_instance (
+  id INT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY
+) SELECT id as media_file_old_id, folder_id, filename, name_version, date_mod, XMPattached FROM media_file_version;
+
+UPDATE media_file_instance mfi SET mfi.date_mod = (SELECT mf.date_mod FROM media_file_version mf WHERE mf.id = mfi.media_file_id); 
+UPDATE media_file_instance mfi SET mfi.new_media_id = (SELECT m.id FROM media m WHERE m.filehash = (SELECT mf.filehash FROM media_file_version mf WHERE mf.id = mfi.media_file_id)); 
+UPDATE media_file_instance mfi SET mfi.new_media_id = 375427 WHERE mfi.id = 1162568;
+
+SET SQL_SAFE_UPDATES = 0;
+UPDATE media_file_version mf SET mf.date_stored = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored IS NOT NULL) as t) WHERE mf.date_stored IS NULL;
+UPDATE media_file_version mf SET mf.date_stored_local = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored_local) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored_local IS NOT NULL) as t) WHERE mf.date_stored_local IS NULL;
+UPDATE media_file_version mf SET mf.date_stored_utc = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored_utc) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored_utc IS NOT NULL) as t) WHERE mf.date_stored_utc IS NULL;
+UPDATE media_file_version mf SET mf.date_stored_tz = (SELECT * FROM (SELECT DISTINCT(mf1.date_stored_tz) FROM media_file_version mf1 WHERE mf1.filehash = mf.filehash AND mf1.date_stored_tz IS NOT NULL) as t) WHERE mf.date_stored_tz IS NULL;
+UPDATE media_file_version mf SET mf.date_stored_tz = 'Europe/Berlin' WHERE mf.date_stored_tz IN ('+01:00', '+02:00');
+UPDATE media_file_old mf SET mf.orientation = (SELECT * FROM (SELECT DISTINCT(mf1.orientation) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.orientation IS NOT NULL) as t) WHERE mf.orientation IS NULL;
+UPDATE media_file_old mf SET mf.rating = (SELECT * FROM (SELECT DISTINCT(mf1.rating) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.rating IS NOT NULL) as t) WHERE mf.rating IS NULL;
+UPDATE media_file_old mf SET mf.exifbackup = (SELECT * FROM (SELECT DISTINCT(mf1.exifbackup) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.exifbackup IS NOT NULL) as t) WHERE mf.exifbackup IS NULL;
+UPDATE media_file_old mf SET mf.title = (SELECT * FROM (SELECT DISTINCT(mf1.title) FROM media_file_old mf1 WHERE mf1.filehash = mf.filehash AND mf1.title IS NOT NULL) as t) WHERE mf.title IS NULL;
+
+-- 20160915_204519(0).jpg	2b17887adb8a3c118b0ac98ffa86377d	20885	JPG	20265
+-- 20160915_204519.jpg	573eeb16ccd2bfef59e8c003660831f1	20886	JPG	20266
+
+ALTER TABLE `pictureorganizer`.`media_file`
+    ADD COLUMN `credate` DATETIME NULL AFTER `media_directory_id`,
+ADD COLUMN `creator` VARCHAR(255) NULL AFTER `credate`,
+ADD COLUMN `upddate` DATETIME NULL AFTER `creator`,
+ADD COLUMN `updater` VARCHAR(255) NULL AFTER `upddate`;
+
+ALTER TABLE `pictureorganizer`.`media_file_instance`
+    ADD COLUMN `credate` DATETIME NULL AFTER `media_file_version_id`,
+ADD COLUMN `creator` VARCHAR(255) NULL AFTER `credate`,
+ADD COLUMN `upddate` DATETIME NULL AFTER `creator`,
+ADD COLUMN `updater` VARCHAR(255) NULL AFTER `upddate`;
+
+ALTER TABLE `pictureorganizer`.`media_file_instance`
+    ADD COLUMN `file_type` VARCHAR(5) NULL AFTER `media_file_version_id`;
+UPDATE media_file_instance mfi SET mfi.file_type = (SELECT mfv.file_type FROM media_file_version mfv WHERE mfv.id = mfi.media_file_version_id);
+
+ALTER TABLE `pictureorganizer`.`media_file_instance`
+    ADD COLUMN `media_file_id` INT NULL AFTER `media_file_version_id`;
+UPDATE media_file_instance mfi SET mfi.media_file_id = (SELECT mfv.media_file_id FROM media_file_version mfv WHERE mfv.id = mfi.media_file_version_id);
+
+ALTER TABLE `pictureorganizer`.`media_file_instance` 
+ADD INDEX `media_file_instance_fk_media_file_idx` (`media_file_id` ASC) VISIBLE;
+;
+ALTER TABLE `pictureorganizer`.`media_file_instance` 
+ADD CONSTRAINT `media_file_instance_fk_media_file`
+  FOREIGN KEY (`media_file_id`)
+  REFERENCES `pictureorganizer`.`media_file` (`id`)
+  ON DELETE NO ACTION
+  ON UPDATE NO ACTION;
+
+ALTER TABLE `pictureorganizer`.`media_image`
+    ADD CONSTRAINT `media_image_fk_media_file_version`
+        FOREIGN KEY (`media_file_version_id`)
+            REFERENCES `pictureorganizer`.`media_file_version` (`id`)
+            ON DELETE NO ACTION
+            ON UPDATE NO ACTION;
+
+ALTER TABLE `devpictureorganizer`.`media_image`
+    ADD COLUMN `media_type` VARCHAR(5) NULL DEFAULT 'MAIN' AFTER `title`;

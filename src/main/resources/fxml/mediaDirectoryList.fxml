@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml/1" prefHeight="600" prefWidth="450" fx:controller="org.nyusziful.pictureorganizer.UI.Contoller.Rename.MediaDirectoryViewController">
+    <ListView fx:id="directoryList"/>
+    <HBox>
+        <DatePicker fx:id="firstDatePicker"/>
+        <DatePicker fx:id="lastDatePicker"/>
+        <TextField fx:id="eventNameField"/>
+        <Button fx:id="applyEventName" text="Apply" onAction="#handleApplyEventNameButtonAction"/>
+    </HBox>
+    <Button text="Refresh" onAction="#handleRefreshButtonAction" fx:id="btnRefreshDir" />
+</VBox>

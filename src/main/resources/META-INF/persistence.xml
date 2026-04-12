@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="http://java.sun.com/xml/ns/persistence" version="1.0">
+    <persistence-unit name="mysql-picture">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.Drive</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.Folder</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.MediaDirectory</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.MediaFile</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.MediaFileVersion</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.MediaFileInstance</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFile</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFileVersion</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.RAWMediaFileInstance</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFile</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFileVersion</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.JPGMediaFileInstance</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFile</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFileVersion</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.VideoMediaFileInstance</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.Media</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.JPGMedia</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.RAWMedia</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.VideoMedia</class>
+        <class>org.nyusziful.pictureorganizer.DAL.Entity.Image</class>
+        <properties>
+<!--
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://192.168.178.10:3306/pictureorganizer?useUnicode=yes&amp;characterEncoding=UTF-8" />
+            <property name="jakarta.persistence.jdbc.user" value="nappali" />
+            <property name="jakarta.persistence.jdbc.password" value="nappali" />
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:mysql://127.0.0.1:3306/picture_organizer?useUnicode=yes&amp;characterEncoding=UTF-8" />
+-->
+            <property name="jakarta.persistence.jdbc.user" value="picture" />
+            <property name="jakarta.persistence.jdbc.password" value="picture" />
+            <!--
+                        <property name="jakarta.persistence.schema-generation.scripts.action" value="drop-and-create"/>
+                        <property name="jakarta.persistence.schema-generation.scripts.create-target" value="./create.sql"/>
+                        <property name="jakarta.persistence.schema-generation.scripts.drop-target" value="./drop.sql"/>
+            -->
+            <property name="mysql-picture.logging.level" value="FINE"/>
+            <property name="connection.useUnicode" value="true"/>
+            <property name="connection.characterEncoding" value="UTF-8"/>
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+
+            <property name="hibernate.hbm2ddl.auto" value="validate" />
+
+        </properties>
+    </persistence-unit>
+</persistence>

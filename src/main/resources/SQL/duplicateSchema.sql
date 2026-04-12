@@ -1,0 +1,18 @@
+CREATE TABLE devpictureorganizer.media_directory LIKE pictureorganizer.media_directory;
+INSERT INTO devpictureorganizer.media_directory SELECT * FROM pictureorganizer.media_directory;
+CREATE TABLE devpictureorganizer.folder LIKE pictureorganizer.folder;
+INSERT INTO devpictureorganizer.folder SELECT * FROM pictureorganizer.folder;
+CREATE TABLE devpictureorganizer.image LIKE pictureorganizer.image;
+SET FOREIGN_KEY_CHECKS=0;
+INSERT INTO devpictureorganizer.image SELECT * FROM pictureorganizer.image;
+CREATE TABLE devpictureorganizer.media_file LIKE pictureorganizer.media_file;
+INSERT INTO devpictureorganizer.media_file SELECT * FROM pictureorganizer.media_file;
+CREATE TABLE devpictureorganizer.media_file_version LIKE pictureorganizer.media_file_version;
+INSERT INTO devpictureorganizer.media_file_version SELECT * FROM pictureorganizer.media_file_version;
+SET FOREIGN_KEY_CHECKS=1;
+CREATE TABLE devpictureorganizer.media_image LIKE pictureorganizer.media_image;
+INSERT INTO devpictureorganizer.media_image SELECT * FROM pictureorganizer.media_image;
+CREATE TABLE devpictureorganizer.media_file_old LIKE pictureorganizer.media_file_old;
+INSERT INTO devpictureorganizer.media_file_old SELECT * FROM pictureorganizer.media_file_old;
+CREATE TABLE devpictureorganizer.media_file_instance LIKE pictureorganizer.media_file_instance;
+INSERT INTO devpictureorganizer.media_file_instance SELECT * FROM pictureorganizer.media_file_instance;
