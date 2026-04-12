@@ -5,8 +5,6 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.EntityTransaction;
 import jakarta.persistence.Persistence;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -27,14 +25,9 @@ public class JPAConnection {
         return instance;
     }
 
-    private static final String H2_JDBC_URL =
-            "jdbc:h2:mem:testpictorg;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE";
-
     private JPAConnection() {
         if (mode == DBMode.TEST) {
-            // Run Liquibase to create the H2 schema from the versioned changelogs,
-            // then hand the already-initialised DataSource to Hibernate (hbm2ddl=none).
-            applyLiquibaseSchema(H2_JDBC_URL);
+            // H2 in-memory DB — Hibernate generates schema from entity annotations (create-drop)
             factory = Persistence.createEntityManagerFactory("h2-picture");
         } else {
             Map<String, String> properties = new HashMap<>();
@@ -53,30 +46,6 @@ public class JPAConnection {
      */
     public static void resetInstance() {
         instance = null;
-    }
-
-    /**
-     * Runs all Liquibase changelogs from {@code db/changelog/db.changelog-master.xml}
-     * against the given JDBC URL.  The H2-specific changesets will create the current
-     * schema; MySQL-only changesets are silently skipped by Liquibase's {@code dbms} filter.
-     */
-    private static void applyLiquibaseSchema(String jdbcUrl) {
-        try {
-            Class.forName("org.h2.Driver");
-            try (Connection conn = DriverManager.getConnection(jdbcUrl, "sa", "")) {
-                liquibase.database.Database db =
-                        liquibase.database.DatabaseFactory.getInstance()
-                                .findCorrectDatabaseImplementation(
-                                        new liquibase.database.jvm.JdbcConnection(conn));
-                liquibase.Liquibase liquibase = new liquibase.Liquibase(
-                        "db/changelog/db.changelog-master.xml",
-                        new liquibase.resource.ClassLoaderResourceAccessor(),
-                        db);
-                liquibase.update(new liquibase.Contexts());
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("Liquibase schema initialisation failed for " + jdbcUrl, e);
-        }
     }
 
     public static boolean isDev() {

@@ -49,10 +49,7 @@
     <!--
         Test persistence unit backed by H2 in-memory database.
         Activated when JPAConnection.setMode(DBMode.TEST) is called before getInstance().
-        Hibernate generates the schema automatically from entity annotations (create-drop),
-        which is equivalent to the production MySQL schema for the tables under test.
-        A full Liquibase changelog can be wired in here once db/changelog/db.changelog-master.xml
-        covers all tables in H2-compatible SQL.
+        Hibernate generates the schema from entity annotations (create-drop).
     -->
     <persistence-unit name="h2-picture" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
@@ -83,8 +80,7 @@
             <property name="jakarta.persistence.jdbc.user" value="sa"/>
             <property name="jakarta.persistence.jdbc.password" value=""/>
             <property name="hibernate.dialect" value="org.hibernate.dialect.H2Dialect"/>
-            <!-- Schema is managed by Liquibase (applied in JPAConnection before factory creation) -->
-            <property name="hibernate.hbm2ddl.auto" value="none"/>
+            <property name="hibernate.hbm2ddl.auto" value="create-drop"/>
             <property name="hibernate.show_sql" value="false"/>
         </properties>
     </persistence-unit>

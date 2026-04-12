@@ -283,11 +283,5 @@
             <version>2.2.224</version>
             <scope>test</scope>
         </dependency>
-        <!-- Liquibase for schema migration management (production MySQL + H2 test parity) -->
-        <dependency>
-            <groupId>org.liquibase</groupId>
-            <artifactId>liquibase-core</artifactId>
-            <version>4.26.0</version>
-        </dependency>
     </dependencies>
 </project>
