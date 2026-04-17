@@ -17,7 +17,7 @@
 
 ## Project Summary
 
-A Java 21 desktop application (JavaFX GUI) for managing large personal photo/video collections across multiple storage drives. Core capabilities: deduplication, EXIF metadata handling, metadata encoded in filename, versioning, and batch operations.
+A Java 21 desktop application (JavaFX GUI) for managing large personal photo/video collections across multiple storage drives. Core capabilities: deduplication, EXIF metadata handling, intelligent file renaming, versioning, and batch operations.
 
 **Stack:** Java 21 · JavaFX 23-ea · Hibernate 6 / JPA 3 · MySQL 8 · C3P0 · Metadata-Extractor · Adobe XMP · Garmin FIT SDK · Launch4j
 
@@ -33,10 +33,10 @@ This is the most fundamental architectural split in the system. The three media 
 - The **filename is volatile** — it is a commodity handle for OS-level access, nothing more. Any information encoded only in the filename (e.g. a hash) is permanently lost on rename. This is why provenance must live inside the file.
 - **Sidecar files are not used** for JPG. They are non-conventional, invisible to most tools, and trivially lost on copy, move, or rename. Everything goes into embedded XMP.
 - The **DB is a fast cross-file index plus a capture surface for decisions made at ingest**:
-  - Reading 100k files per query is not realistic; the DB exists so UI queries are fast and drive-independent
-  - Drives may be detached — the DB must serve queries without them
-  - At first ingest of a legacy collection, the user's knowledge ("this copy is the original, that one is a duplicate I made in 2019") is recorded in the DB and — once import writes the `porg:` XMP history — propagates into the file itself
-  - After that, the file carries its own identity (original `contentHash`, history chain, pairing links) and the DB is essentially a queryable cache of what the files say
+    - Reading 100k files per query is not realistic; the DB exists so UI queries are fast and drive-independent
+    - Drives may be detached — the DB must serve queries without them
+    - At first ingest of a legacy collection, the user's knowledge ("this copy is the original, that one is a duplicate I made in 2019") is recorded in the DB and — once import writes the `porg:` XMP history — propagates into the file itself
+    - After that, the file carries its own identity (original `contentHash`, history chain, pairing links) and the DB is essentially a queryable cache of what the files say
 - Cross-file relationships that the files themselves can carry (RAW+JPG pairing via DocumentID, per-file history, original-hash reference) are encoded in the files (via `porg:` XMP fields). A rescan of all files can largely rebuild the DB; the only things a rescan cannot recover are decisions the user made but never imported, and the history of offline drives.
 
 ### RAW (ARW/DNG/NEF) — File is sacred, never written to directly
@@ -102,7 +102,7 @@ This distinction is the foundation for everything else: it lets the system know 
 **Hybrid strategy:**
 - **EXIF** — keep for all camera-standard fields (datetime, orientation, GPS, camera model). Readers expect it here.
 - **XMP** — own namespace (`porg:`) for all provenance, history, hashes, version links. No pointer fragility (XML, self-describing, no offsets). Supported by Lightroom, Capture One, Bridge.
-- **On first import** — back up raw EXIF bytes into `porg:ExifBackup` XMP field. If EXIF pointers break later, the original blob is always recoverable.
+- **On first import — EXIF backup is a retagged duplicate APP1 segment inside the JPEG itself.** The full EXIF APP1 block is copied byte-for-byte into a second APP1 segment whose identifier prefix is replaced with `BACKUPID` (or `BACKUP_EST_ID` when the EXIF values were reconstructed rather than read from the camera). This is implemented by `JPGHash.addBackupExif()`. Rationale: lives on the file itself, portable across drives, survives XMP edits, no XML escaping overhead for the opaque maker blob (which would otherwise bloat the XMP packet). `porg:ExifBackup` as an XMP field was an earlier design; it is **not** what the code does. The architectural goal ("byte-exact backup of the original EXIF attached to the file") is satisfied by the retagged-segment mechanism.
 - **For RAW files (ARW/DNG/NEF)** — write XMP sidecar on first import.
 
 ### 3. The Self-Referential Hash — Canonical Form Trick
@@ -167,7 +167,7 @@ Defence: alongside `porg:CanonicalHash`, store a short (e.g. 8-byte / 64-bit) `p
 Every metadata change is stored as a **delta** (before/after per field) in XMP history, not just as an event. This enables replay-based recovery:
 
 ```
-porg:ExifBackup (raw EXIF from import)
+EXIF backup segment (raw EXIF from import, retagged BACKUPID inside the JPEG)
     → apply delta 1: DateTimeOriginal shifted +1h
     → apply delta 2: GPS added (lat=47.49, lon=19.04)
     → apply delta 3: Caption set "Budapest trip"
@@ -259,8 +259,9 @@ User initiates import (SD card / camera USB)
         ├─ JPG / non-RAW:
         │     ├─ Parse standard EXIF/TIFF tags (MakerNote treated as opaque)
         │     │     → parse fails on standard tags → reject import, surface to user
-        │     ├─ Back up raw EXIF bytes verbatim → write into porg:ExifBackup in XMP
+        │     ├─ Back up raw EXIF bytes verbatim → retagged duplicate APP1 segment (BACKUPID) inside the JPEG
         │     │     (whole blob, including opaque maker sections — enables byte-level restore later)
+        │     │     via JPGHash.addBackupExif()
         │     ├─ Extract: datetime, camera, GPS, orientation, shotnumber
         │     ├─ Write porg:pairedFile → DocumentID of paired RAW (if exists)
         │     ├─ Compute contentHash (pixel data only)
@@ -460,9 +461,9 @@ File missing or corrupted
 │     → verify contentHash after copy
 │
 ├─ EXIF unparseable, pixel data OK:
-│     ├─ Byte-level restore of the whole EXIF blob from porg:ExifBackup
-│     │   (verbatim — including opaque MakerNote bytes we don't interpret)
-│     ├─ Or fallback: Image.exif from DB if porg:ExifBackup is also gone
+│     ├─ Byte-level restore of the whole EXIF blob from the BACKUPID APP1 segment
+│     │   in the same JPEG (verbatim — including opaque MakerNote bytes we don't interpret)
+│     ├─ Or fallback: Image.exif from DB if the BACKUPID segment is also missing/damaged
 │     └─ Create MediaFileVersion(parent=previous, invalid=false)
 │           with stEvt:action="EXIF_RESTORE" in the XMP history (informational)
 │
@@ -506,8 +507,8 @@ Originally scoped as "TIFF/IFD pointer validator + structural corruption repair.
 Detection is already covered elsewhere — any metadata change flips `fullHash` and goes through the Step 2 watcher branch. Recovery is therefore a **byte-level** problem, not a structural one:
 
 - **3a** Parse-success gate on standard IFDs only — treat MakerNote and unknown tags as **opaque pass-through** bytes. A file is `invalid=true` only when the standard TIFF / EXIF / XMP parsers can't read the file at all (not when a maker block looks odd).
-- **3b** Recovery workflow — on `invalid=true`, the user triggers a **byte-level restore** from `porg:ExifBackup` (captured on first import, Step 1). The whole original EXIF blob is written back verbatim; no attempt to fix individual fields. Result: a new `MediaFileVersion(parent=previous, invalid=false)` with `stEvt:action="EXIF_RESTORE"` in the XMP history.
-- **3c** `Image.exif` in DB is a secondary fallback when `porg:ExifBackup` itself was corrupted or stripped.
+- **3b** Recovery workflow — on `invalid=true`, the user triggers a **byte-level restore** from the BACKUPID APP1 segment inside the same JPEG (captured on first import, Step 1). The whole original EXIF blob is written back verbatim; no attempt to fix individual fields. Result: a new `MediaFileVersion(parent=previous, invalid=false)` with `stEvt:action="EXIF_RESTORE"` in the XMP history.
+- **3c** `Image.exif` in DB is a secondary fallback when the BACKUPID segment itself was corrupted or stripped.
 
 Structural validation of maker fields is explicitly **out of scope** unless and until a specific maker's format is fully reverse-engineered — at which point it becomes a per-maker plugin, not a generic phase.
 
@@ -564,7 +565,7 @@ Keep as a light Phase 7 until a concrete use case justifies more:
 ### Phase Dependency Order
 
 ```
-Phase 1 (import pipeline) ───► porg:ExifBackup captured per file
+Phase 1 (import pipeline) ───► BACKUPID EXIF segment captured per file
 │
 ├─── Phase 2 (folder watcher) ─┬──► Phase 3 (EXIF byte-level restore)
 │                              │    (triggered when watcher marks invalid=true)
@@ -588,7 +589,8 @@ Verified against `master` HEAD (`b986987`, 2026-04-17). Entity class and method 
 |---|---|---|
 | Content-aware hashing (pixel only, MD5) | ✅ `JPGHash`, `TIFFHash`, `MP4Hash` via `MediaFileHash.getHash()` | — |
 | EXIF backup embedding | ✅ `JPGHash.addBackupExif()` | No import-path caller wires it in |
-| EXIF parsing (standard tags) | Partial — `TIFFHash` parses IFD tags | Parse-success gate at import (standard tags only); treat MakerNote as opaque; byte-level restore from `porg:ExifBackup` on failure |
+| EXIF parsing (standard tags) | Partial — `TIFFHash` parses IFD tags | Parse-success gate at import (standard tags only); treat MakerNote as opaque; byte-level restore from the BACKUPID APP1 segment on failure |
+| EXIF backup embedding | ✅ `JPGHash.addBackupExif()` — retagged duplicate APP1 segment (BACKUPID / BACKUP_EST_ID) inside the JPEG itself | Wire it into the import pipeline (Phase 1) |
 | `validateAgainstBackupExif()` | ✅ but buggy — result of comparison is discarded, effectively always `false` | One-line fix |
 | `MediaFileVersion` entity | ✅ with `parent`, `filehash`, `size`, `dateStored*`, **`invalid`** (Boolean), `mediaFile` FK | Wire `invalid` into backup gate + dashboard; no `reason` enum by design |
 | `MediaFile.mainMediaFile` (pairing link) | ✅ field + FK | No population logic; no `porg:pairedFile` in files yet |
@@ -629,7 +631,7 @@ Verified against `master` HEAD (`b986987`, 2026-04-17). Entity class and method 
 4. **RAW and its sidecar are backed up as an atomic unit** — backing up one without the other is an error if the sidecar has post-import history.
 5. **`porg:CanonicalHash` must be zeroed before computing the canonical hash** — enforced in `JPGHash` segment parsing; same protocol for sidecar XMP.
 6. **`porg:XmpIntegrity` must be zeroed before computing the XMP short hash** — same zero-before-hash protocol, scoped to the `porg:` subtree only; detects XMP-block corruption independently of pixel hash.
-7. **Every file modification the system performs writes an XMP history entry** — so external observers (including a future rescan) can follow the chain from `porg:ExifBackup` forward.
+7. **Every file modification the system performs writes an XMP history entry** — so external observers (including a future rescan) can follow the chain from the BACKUPID EXIF segment (the pre-modification baseline) forward.
 8. **Backup propagation is gated by "matches latest user-accepted version"** — not simply by hash match. A hash mismatch creates a new `MediaFileVersion` (with `invalid=true` only if the file no longer parses). Whether that new version propagates to backup depends on whether the user has accepted it as canonical. Healthy backup copies on other drives are never overwritten by an unaccepted or invalid version. The cause of the mismatch is irrelevant at this layer.
 9. **Pairing links are stored in both files AND in the DB** — `porg:pairedFile` in JPG XMP + `porg:pairedJpg` in sidecar, using `xmpMM:DocumentID` (not filename) so they survive renames. The DB also stores the pairing (`MediaFile.mainMediaFile`) so the decision is queryable without reading every file.
 10. **The DB captures user decisions at ingest and propagates them into files** — which copy is the original, which arrivals are the same logical image, explicit duplicate-merges. The import flow writes these decisions into the file's `porg:` XMP history (notably `porg:originalContentHash`) so that after a round of ingest, the files themselves carry the decision. In steady state a rescan can rebuild most of the DB; what rescan cannot rebuild is information about drives that are currently offline and decisions that were never committed to file. The DB is therefore backed up like the files but its loss is recoverable, not catastrophic.
