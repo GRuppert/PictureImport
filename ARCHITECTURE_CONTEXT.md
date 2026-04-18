@@ -17,7 +17,7 @@
 
 ## Project Summary
 
-A Java 21 desktop application (JavaFX GUI) for managing large personal photo/video collections across multiple storage drives. Core capabilities: deduplication, EXIF metadata handling, intelligent file renaming, versioning, and batch operations.
+A Java 21 desktop application (JavaFX GUI) for managing large personal photo/video collections across multiple storage drives. Core capabilities: deduplication, EXIF metadata handling, metadata encoded in filename, versioning, and batch operations.
 
 **Stack:** Java 21 · JavaFX 23-ea · Hibernate 6 / JPA 3 · MySQL 8 · C3P0 · Metadata-Extractor · Adobe XMP · Garmin FIT SDK · Launch4j
 

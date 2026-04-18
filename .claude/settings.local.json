@@ -5,6 +5,7 @@
       "Bash(java *)",
       "Bash(javap *)",
       "Bash(jar *)",
+      "Bash(git *)",
 
       "Bash(cat *)",
       "Bash(head *)",
@@ -26,6 +27,13 @@
 
       "Bash(curl *)",
       "Bash(wget *)"
+    ],
+    "ask": [
+      "Bash(git commit *)",
+      "Bash(rm *)"
+    ],
+    "deny": [
+      "Bash(git push *)"
     ]
   }
 }
