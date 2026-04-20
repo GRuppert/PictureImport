@@ -218,6 +218,7 @@ public class MediaFileVersion extends TrackingEntity {
         MediaFileVersion parent = getParent();
         while (parent != null) {
             if (parent.equals(mediaFileVersion)) return true;
+            parent = parent.getParent();
         }
         return false;
     }

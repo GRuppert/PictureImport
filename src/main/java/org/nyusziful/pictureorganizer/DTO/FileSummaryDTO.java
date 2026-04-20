@@ -7,10 +7,10 @@ import org.jetbrains.annotations.NotNull;
 import java.util.*;
 
 public class FileSummaryDTO implements Comparable<FileSummaryDTO>, SummaryDTO {
-    private Integer mediaFileId;
+    private final Integer mediaFileId;
     private String originalFileName;
-    private Set<Integer> mediaFileVersionIds = new HashSet<>();
-    private BooleanProperty selected = new SimpleBooleanProperty(false);
+    private final Set<Integer> mediaFileVersionIds = new HashSet<>();
+    private final BooleanProperty selected = new SimpleBooleanProperty(false);
 
     public FileSummaryDTO(Integer mediaFileId) {
         this.mediaFileId = mediaFileId;

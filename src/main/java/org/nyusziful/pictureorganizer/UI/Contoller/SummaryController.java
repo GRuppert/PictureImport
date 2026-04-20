@@ -160,8 +160,7 @@ public class SummaryController implements Initializable {
                     setGraphic(checkBox);
                     ContextMenu contextMenu = new ContextMenu();
                     setContextMenu(contextMenu);
-                    if (item instanceof FolderSummaryDTO) {
-                        FolderSummaryDTO folderSummaryDTO = (FolderSummaryDTO) item;
+                    if (item instanceof FolderSummaryDTO folderSummaryDTO) {
                         MenuItem copyPathToClipboard = new MenuItem("Copy path to clipboard");
                         copyPathToClipboard.setOnAction(event -> {
                             Path javaPath = folderSummaryDTO.getFolder().getJavaPath();
@@ -196,7 +195,10 @@ public class SummaryController implements Initializable {
                             HashMap<Integer, HashSet<Integer>> parents = new HashMap<>();
                             for (FileSummaryDTO version : folderSummaryDTO.getFilesSummaries()) {
                                 Set<Integer> mediaFileVersionIds = version.getMediaFileVersionIds();
-                                if (mediaFileVersionIds.size() != 1) return; //multiple versions of the same file in the "parent" directory
+                                if (mediaFileVersionIds.size() != 1) {
+                                    JOptionPane.showMessageDialog(null, mediaFileVersionIds.size() + " versions of the " + version + " in the " + folderSummaryDTO.getFolder());
+                                    return;
+                                }
                                 for (Integer mediaFileVersionId : mediaFileVersionIds) {
                                     for (TreeItem<SummaryDTO> sibling : getTreeItem().getParent().getChildren()) {
                                         if (getTreeItem().equals(sibling)) continue;
