@@ -1,21 +1,22 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-04-19
+**Analysis Date:** 2026-04-19 (version-tree section updated 2026-04-20 after commit `5c29453`)
 
 ## Tech Debt
 
 **Version tree — unfinished pieces in the collision/version-tree feature:**
 - Context: Parent linkage is **by design** a manual user action through the "Set as Parent" context menu on `SummaryController.SummaryTreeCell`; there is no import-time auto-inference of parents. Originals correctly have `parent_id = NULL` (`MediaFileVersion.isOriginal()` returns `parent == null`). The three commits that built this feature (`93caa14`, `be4cf0d`, `b6bc686`) took it from "roots-only" to a full navigable forest, and `b6bc686` fixed a real bug in the Set-as-Parent wiring (previous code was `parents.getOrDefault(id, new HashSet<>()).addAll(...)` — the fresh HashSet vanished; now uses `putIfAbsent` + `get` + `flush()`).
+- Resolved in commit `5c29453` (2026-04-20):
+  - ~~`MediaFileVersion.isAncestor()` infinite loop~~ — fixed by adding `parent = parent.getParent();` inside the `while` body (`MediaFileVersion.java:221`). The `setParent` cycle-detection guard now terminates.
+  - ~~`SummaryController:199` — `return` vs `continue`~~ — resolved as all-or-nothing abort by design. The `return` stays, but a `JOptionPane.showMessageDialog("<N> versions of <file> in <folder>")` now surfaces the reason before bailing, so the abort is no longer silent.
 - Concrete unfinished pieces that remain:
-  - **`MediaFileVersion.isAncestor()` infinite loop** at `MediaFileVersion.java:217-223` — missing `parent = parent.getParent();` in the `while` body. Called from `MediaFileVersionDAOImplHib.setParent` line 156 as a cycle-detection guard, so any "Set as Parent" action where the candidate is not an immediate parent hangs the JavaFX thread. *(Being fixed manually.)*
   - **FileSummaryDTO context menu is a stub** — `SummaryController.java:226-233` adds three `MenuItem`s ("Set as original", "Set as invalid", "Set parent") with no `setOnAction` handlers; a catch-all `contextMenu.setOnAction` pops a debug `JOptionPane.showMessageDialog("Works on " + ids)`. The folder-level variants a few lines above are fully wired; this file-level branch was never finished.
   - **`specificVersions` populated only on root nodes** — `MediaGeneralDAOImplHib.loadDirectoryVersions` assigns `specificVersions` only in the root-building phase. The child-building phase added in `b6bc686` never populates it, so `VersionTreeCell`'s tooltip "New Files:" section is always empty for non-root nodes.
   - **Second parent-reconciliation pass lacks a break** — the final block in `loadDirectoryVersions` (`for (VersionDTO childNode : nodes) ... for (VersionDTO parentNode : nodes)`) calls `childNode.setParent(parentNode)` without breaking, so if multiple candidates match, the last one wins. Inconsistent with the labeled `continue nodeLoop` pattern that otherwise reads as first-match-wins.
-  - **`SummaryController:199` — `return` vs `continue`** in the Set-as-Parent lambda aborts the entire click when any one `FileSummaryDTO` in the folder has more than one version. May be intentional all-or-nothing behavior, but silent and undocumented. *(Being addressed manually.)*
   - **Debug scaffolding left in place** — `public static void main` at the bottom of `MediaGeneralDAOImplHib` invoking `loadDirectoryVersions(12)` against DEV DB; `WHATSNOW` scratchpad committed with captured Hibernate DEBUG/TRACE output of a `media_file` UPDATE with most params NULL.
-- Files: `src/main/java/org/nyusziful/pictureorganizer/DAL/Entity/MediaFileVersion.java:217-223`, `src/main/java/org/nyusziful/pictureorganizer/DAL/DAO/MediaFileVersionDAOImplHib.java:146-160`, `src/main/java/org/nyusziful/pictureorganizer/DAL/DAO/MediaGeneralDAOImplHib.java:119-237`, `src/main/java/org/nyusziful/pictureorganizer/UI/Contoller/SummaryController.java:194-233`, `src/main/java/org/nyusziful/pictureorganizer/DTO/VersionDTO.java`, `WHATSNOW`
-- Impact: "Set as Parent" hangs on anything but trivial chains; right-click on individual file entries does nothing useful; child-node tooltips miss their "new files" summary.
-- Fix approach: Fix `isAncestor` (in progress). Decide the semantics of `SummaryController:199` (in progress). Wire real handlers to the `FileSummaryDTO` menu items (mirroring the folder-level handlers). Decide whether `specificVersions` should be populated for children; if yes, extend the child-building pass. Add a `break` after the second-pass `setParent` call (or document why not). Remove the debug `main()` and `WHATSNOW` capture once the feature is trusted.
+- Files: `src/main/java/org/nyusziful/pictureorganizer/DAL/DAO/MediaGeneralDAOImplHib.java:119-243`, `src/main/java/org/nyusziful/pictureorganizer/UI/Contoller/SummaryController.java:226-233`, `src/main/java/org/nyusziful/pictureorganizer/DTO/VersionDTO.java`, `WHATSNOW`
+- Impact: Right-click on individual file entries does nothing useful; child-node tooltips miss their "new files" summary; second-pass may assign an unstable parent when multiple candidates exist.
+- Fix approach: Wire real handlers to the `FileSummaryDTO` menu items (mirroring the folder-level handlers). Decide whether `specificVersions` should be populated for children; if yes, extend the child-building pass. Add a `break` after the second-pass `setParent` call (or document why not). Remove the debug `main()` and `WHATSNOW` capture once the feature is trusted.
 
 **Context on recent commit messages (`b6bc686 "no clue"`, `93caa14 "... setting parent for Versions is missing"`):**
 - These short or self-deprecating messages reflect the author's memory gap after holding stale local changes for months, **not** a quality judgment on the diffs themselves. `b6bc686` in particular is the commit that took the version tree from roots-only to end-to-end navigable and fixed a real `getOrDefault` bug in the Set-as-Parent handler — it is substantive, not throwaway.
@@ -65,14 +66,6 @@
 - Files: `src/main/java/org/nyusziful/pictureorganizer/Main/PresetUseCases.java:297-302`
 - Trigger: Running the "process folder" preset path that chunks ExifTool output.
 - Workaround: None — the branch is unreachable without a runtime crash.
-
-**`MediaFileVersion.isAncestor()` infinite loop:**
-- Symptoms: JavaFX application thread hangs (100% CPU, UI freeze) when the user invokes "Set as Parent" on a version whose candidate parent is not already the immediate parent of the selected child.
-- Files: `src/main/java/org/nyusziful/pictureorganizer/DAL/Entity/MediaFileVersion.java:217-223`; caller: `src/main/java/org/nyusziful/pictureorganizer/DAL/DAO/MediaFileVersionDAOImplHib.java:156`.
-- Cause: The `while (parent != null)` loop body never advances `parent = parent.getParent();`. If the first `equals` check fails, the loop spins forever.
-- Trigger: `MediaFileVersionDAOImplHib.setParent` calls `child.isAncestor(parent)` as a cycle-detection guard before writing the new parent; any non-trivial invocation of the "Set as Parent" UI menu item triggers this.
-- Workaround: None — restart the app.
-- Status: *Being fixed manually by the author.*
 
 **Foreign-key failure on media persist (logged in TODO):**
 - Symptoms: `Cannot add or update a child row: a foreign key constraint fails - Media persist` when processing `DEV H:\Photos\KékB\Andaluzia\a6500\DCIM\100MSDCF\D5C01928.ARW`.
@@ -279,9 +272,9 @@
 - Problem: `JPGHash.addBackupExif(File, boolean)` carries `//TODO use it` — it exists but nothing calls it.
 - Blocks: Backup-exif provenance chain.
 
-**Parent-setting for Versions — UI action partially broken, not missing:**
-- Problem: The "Set as Parent" context menu in `SummaryController.SummaryTreeCell` is wired (as of `b6bc686`), but it currently hangs on the `isAncestor` infinite loop and has unresolved semantics at `SummaryController:199` (`return` vs `continue`). Both are being addressed manually. The `FileSummaryDTO`-level variant of the menu (for per-file set-as-parent) is still stubbed with no handlers. See *Tech Debt → Version tree* for the full list.
-- Blocks: Collision resolution workflow end-to-end until `isAncestor` is fixed.
+**Parent-setting for Versions — UI action working at folder level; file-level menu still stubbed:**
+- Problem: The folder-level "Set as Parent" context menu on `FolderSummaryDTO` in `SummaryController.SummaryTreeCell` is fully working as of commit `5c29453` — the `isAncestor` cycle guard no longer hangs, and parent-side ambiguity now surfaces a `JOptionPane` message instead of silently aborting. The `FileSummaryDTO`-level variant of the menu (per-file "Set as original" / "Set as invalid" / "Set parent") is still stubbed with no `setOnAction` handlers; clicking any of them just shows a debug `JOptionPane.showMessageDialog("Works on ...")`.
+- Blocks: Per-file parent/original/invalid curation from the Summary tree; bulk folder-level curation now works.
 
 **Hash thumbnail separation:**
 - Problem: `ExifReadWriteIMR` line 170: `//TODO thumbnail meta should be separated` — thumbnails inflate hashes.
